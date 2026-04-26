@@ -1,0 +1,121 @@
+spring:
+  application:
+    name: auth-service
+
+  # gRPC server — Netty, dedicated port (separate from Tomcat 8081).
+  grpc:
+    server:
+      port: ${GRPC_PORT:9091}
+
+  # ── Redis ──
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      connect-timeout: 2000ms
+
+  # ── Kafka ──
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:9092}
+    producer:
+      key-serializer:   org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all
+      properties:
+        enable.idempotence: true
+        max.in.flight.requests.per.connection: 5
+    consumer:
+      group-id: auth-service
+      key-deserializer:   org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "com.hieu.auth_service.application.events,com.hieu.*"
+    listener:
+      missing-topics-fatal: false
+
+  # ── Datasource — defaults target the docker-compose Postgres on host port 5433.
+  # Activate the `h2` profile (-Dspring.profiles.active=h2) to run fully in-memory.
+  datasource:
+    driver-class-name: ${DB_DRIVER:org.postgresql.Driver}
+    url: ${DB_URL:jdbc:postgresql://localhost:5433/authdb}
+    username: ${DB_USER:authuser}
+    password: ${DB_PASSWORD:authpass}
+
+  jpa:
+    database-platform: ${JPA_DIALECT:org.hibernate.dialect.PostgreSQLDialect}
+    hibernate:
+      # Flyway owns the schema. Hibernate only validates — catches drift between
+      # JPA entities and real tables in CI. Dev on H2 uses `create-drop` via profile.
+      ddl-auto: ${JPA_DDL:validate}
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+
+  # Flyway migrations — enabled by default for Postgres; disabled for local H2 dev.
+  flyway:
+    enabled: ${FLYWAY_ENABLED:true}
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+# gRPC port now lives under spring.grpc.server (merged into the main spring: block above).
+
+server:
+  port: ${SERVER_PORT:8081}
+
+# ── JWT configuration (bound to JwtProperties record) ──
+jwt:
+  # MUST be >= 32 chars in prod; fallback here is dev-only.
+  secret: ${JWT_SECRET:change-me-change-me-change-me-change-me-please-32chars}
+  access-expiration-seconds: ${JWT_ACCESS_TTL:900}       # 15 minutes
+  refresh-expiration-days: ${JWT_REFRESH_TTL_DAYS:7}     # 7 days
+  issuer: ${JWT_ISSUER:hieu.com}
+
+# ── OpenAPI / Swagger ──
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+    operations-sorter: method
+    tags-sorter: alpha
+
+# ── Actuator ──
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+
+# ── Eureka service discovery ──
+# URL embeds basic-auth creds so the client registers/fetches without extra config.
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL:http://admin:admin123@localhost:8761/eureka/}
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
+
+# ── Cookie-based auth ──
+# Browser clients get HttpOnly cookies instead of raw tokens. Set secure=true in prod
+# (requires HTTPS); dev defaults to false so cookies survive plain http://localhost.
+auth:
+  cookie:
+    secure: ${AUTH_COOKIE_SECURE:false}
+    same-site: ${AUTH_COOKIE_SAME_SITE:Lax}
+
+# ── Logging ──
+logging:
+  level:
+    com.hieu.auth_service: DEBUG
+    org.springframework.security: INFO
+    org.hibernate.SQL: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} %-5level [%thread] %logger{30} - %msg%n"

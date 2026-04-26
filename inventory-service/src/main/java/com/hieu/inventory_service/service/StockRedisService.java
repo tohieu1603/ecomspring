@@ -1,0 +1,75 @@
+package com.hieu.inventory_service.service;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
+import org.springframework.scripting.support.ResourceScriptSource;
+import org.springframework.stereotype.Service;
+
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Redis operations for stock counters.
+ * Keys use prefix {@code inventory:stock:{productId}}.
+ */
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class StockRedisService {
+
+    private static final String KEY_PREFIX = "inventory:stock:";
+    private static final Duration TTL = Duration.ofHours(1);
+
+    private final StringRedisTemplate redisTemplate;
+    private final DefaultRedisScript<Long> reserveStockScript;
+
+    /**
+     * Atomically checks and decrements stock via Lua.
+     * @return 1=success, 0=insufficient, -1=cache miss
+     */
+    public int reserveStockAtomically(Map<Long, Integer> items) {
+        var keys = new ArrayList<String>();
+        var args = new ArrayList<String>();
+        for (var entry : items.entrySet()) {
+            keys.add(KEY_PREFIX + entry.getKey());
+            args.add(String.valueOf(entry.getValue()));
+        }
+        Long result = redisTemplate.execute(reserveStockScript, keys, args.toArray(new String[0]));
+        return result != null ? result.intValue() : 0;
+    }
+
+    /** Seeds or refreshes a stock counter with a 1-hour TTL. */
+    public void setStock(Long productId, int quantity) {
+        redisTemplate.opsForValue().set(KEY_PREFIX + productId, String.valueOf(quantity), TTL);
+    }
+
+    /**
+     * Restores stock (rollback or release).
+     * Uses a Lua script so we only increment if the key already exists — prevents
+     * creating a phantom key with no TTL when the cache has already expired, which
+     * would cause Redis to permanently drift above the DB value.
+     */
+    public void releaseStock(Long productId, int quantity) {
+        String key = KEY_PREFIX + productId;
+        // Conditionally INCRBY + EXPIRE only when the key exists; if missing, the next
+        // setStock() call (triggered by a DB read) will seed a fresh value.
+        String script = """
+                local v = redis.call('GET', KEYS[1])
+                if v then
+                  redis.call('INCRBY', KEYS[1], ARGV[1])
+                  redis.call('EXPIRE', KEYS[1], 3600)
+                end
+                return 0
+                """;
+        redisTemplate.execute(
+            new DefaultRedisScript<>(script, Long.class),
+            List.of(key),
+            String.valueOf(quantity)
+        );
+    }
+}

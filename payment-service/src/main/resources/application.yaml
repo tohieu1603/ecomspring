@@ -1,0 +1,94 @@
+spring:
+  application:
+    name: payment-service
+
+  datasource:
+    driver-class-name: ${DB_DRIVER:org.postgresql.Driver}
+    url: ${DB_URL:jdbc:postgresql://localhost:5437/paymentdb}
+    username: ${DB_USER:paymentuser}
+    password: ${DB_PASSWORD:paymentpass}
+
+  jpa:
+    database-platform: ${JPA_DIALECT:org.hibernate.dialect.PostgreSQLDialect}
+    hibernate:
+      ddl-auto: ${JPA_DDL:validate}
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+
+  flyway:
+    enabled: ${FLYWAY_ENABLED:true}
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:9092}
+    producer:
+      key-serializer:   org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all
+      properties:
+        enable.idempotence: true
+    listener:
+      missing-topics-fatal: false
+
+server:
+  port: ${SERVER_PORT:8086}
+
+# JWT verification (shared secret with auth-service)
+jwt:
+  secret: ${JWT_SECRET:change-me-change-me-change-me-change-me-please-32chars}
+
+# Eureka
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL:http://admin:admin123@localhost:8761/eureka/}
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
+
+# SePay
+sepay:
+  qr-base-url: https://qr.sepay.vn/img
+  bank-code: BIDV
+  bank-account: 96247CISI1
+  account-name: TO TRONG HIEU
+  webhook:
+    api-key: ${SEPAY_WEBHOOK_API_KEY:}
+    # Dev-only escape hatch: bypass Apikey verification on the Sepay webhook. MUST stay
+    # false in prod — service fails startup if api-key is blank AND this is false.
+    allow-insecure: ${SEPAY_WEBHOOK_ALLOW_INSECURE:true}
+
+# MoMo
+momo:
+  partner-code: MOMO_DEMO
+  sandbox-base-url: https://test-payment.momo.vn/v2/gateway/pay
+  return-url: http://localhost:3000/payment/momo/return
+
+# OpenAPI
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+    tags-sorter: alpha
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    com.hieu.payment_service: DEBUG
+    org.hibernate.SQL: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} %-5level [%thread] %logger{30} - %msg%n"

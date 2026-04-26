@@ -1,0 +1,153 @@
+package com.hieu.order_service.interfaces.rest;
+
+import com.hieu.common.security.AuthenticatedUser;
+import com.hieu.order_service.application.command.order.CancelOrderCommand;
+import com.hieu.order_service.application.command.order.CreateOrderCommand;
+import com.hieu.order_service.application.command.order.CreateOrderFromCartCommand;
+import com.hieu.order_service.application.dto.CursorPageDTO;
+import com.hieu.order_service.application.dto.OrderDTO;
+import com.hieu.order_service.application.dto.PageDTO;
+import com.hieu.order_service.application.handler.order.*;
+import com.hieu.order_service.application.query.order.*;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
+
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Map;
+
+@RestController
+@RequestMapping("/api/orders")
+@RequiredArgsConstructor
+public class OrderController {
+
+    private final CreateOrderHandler createOrderHandler;
+    private final CreateOrderFromCartHandler createOrderFromCartHandler;
+    private final CancelOrderHandler cancelOrderHandler;
+    private final GetOrderByIdHandler getOrderByIdHandler;
+    private final GetOrderByIdInternalHandler getOrderByIdInternalHandler;
+    private final GetOrderByNumberHandler getOrderByNumberHandler;
+    private final ListOrdersByUserHandler listOrdersByUserHandler;
+    private final ListOrdersByStatusHandler listOrdersByStatusHandler;
+    private final ListOrdersCursorHandler listOrdersCursorHandler;
+    private final HasUserPurchasedProductHandler hasUserPurchasedProductHandler;
+
+    /**
+     * Extract bearer token from either the {@code Authorization} header or the
+     * {@code ACCESS_TOKEN} cookie — the gateway doesn't rewrite cookies into headers so
+     * cookie-based browser clients would otherwise leave the saga without a token to
+     * forward to downstream services.
+     */
+    private static String resolveToken(String authHeader, HttpServletRequest request) {
+        if (authHeader != null && !authHeader.isBlank()) {
+            return authHeader.startsWith("Bearer ") ? authHeader.substring(7) : authHeader;
+        }
+        if (request.getCookies() == null) return null;
+        for (Cookie c : request.getCookies()) {
+            if ("ACCESS_TOKEN".equals(c.getName()) && c.getValue() != null && !c.getValue().isBlank()) {
+                return c.getValue();
+            }
+        }
+        return null;
+    }
+
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    public OrderDTO createOrder(
+            @Valid @RequestBody CreateOrderRequest req,
+            @RequestHeader(value = "X-Idempotency-Key", required = false) String idempotencyKey,
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            HttpServletRequest httpRequest,
+            @AuthenticationPrincipal AuthenticatedUser user) {
+        String authToken = resolveToken(authHeader, httpRequest);
+        var cmd = new CreateOrderCommand(
+                user.userId(), req.items().stream().map(i -> new CreateOrderCommand.ItemCmd(
+                        i.productId(), i.productName(), i.variantId(), i.variantSku(),
+                        i.variantImage(), i.unitPrice(), i.quantity())).toList(),
+                req.recipientName(), req.recipientPhone(),
+                req.street(), req.ward(), req.district(), req.city(), req.country(), req.postalCode(),
+                req.paymentMethod(), req.notes(), req.voucherCode(), idempotencyKey, authToken
+        );
+        return createOrderHandler.handle(cmd);
+    }
+
+    @PostMapping("/from-cart")
+    @ResponseStatus(HttpStatus.CREATED)
+    public OrderDTO createOrderFromCart(
+            @Valid @RequestBody CreateOrderFromCartRequest req,
+            @RequestHeader(value = "X-Idempotency-Key", required = false) String idempotencyKey,
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            HttpServletRequest httpRequest,
+            @AuthenticationPrincipal AuthenticatedUser user) {
+        String authToken = resolveToken(authHeader, httpRequest);
+        var cmd = new CreateOrderFromCartCommand(
+                user.userId(), req.recipientName(), req.recipientPhone(),
+                req.street(), req.ward(), req.district(), req.city(), req.country(), req.postalCode(),
+                req.paymentMethod(), req.notes(), req.voucherCode(), idempotencyKey, authToken
+        );
+        return createOrderFromCartHandler.handle(cmd);
+    }
+
+    @GetMapping("/{id}")
+    public OrderDTO getById(@PathVariable Long id, @AuthenticationPrincipal AuthenticatedUser user) {
+        var isAdmin = user.roles().contains("ROLE_ADMIN");
+        return getOrderByIdHandler.handle(new GetOrderByIdQuery(id, user.userId(), isAdmin));
+    }
+
+    @GetMapping("/by-number/{orderNumber}")
+    public OrderDTO getByNumber(@PathVariable String orderNumber, @AuthenticationPrincipal AuthenticatedUser user) {
+        var isAdmin = user.roles().contains("ROLE_ADMIN");
+        return getOrderByNumberHandler.handle(new GetOrderByNumberQuery(orderNumber, user.userId(), isAdmin));
+    }
+
+    @GetMapping("/{id}/internal")
+    public OrderDTO getInternal(@PathVariable Long id) {
+        return getOrderByIdInternalHandler.handle(new GetOrderByIdInternalQuery(id));
+    }
+
+    @DeleteMapping("/{id}")
+    public OrderDTO cancelOrder(@PathVariable Long id, @RequestBody Map<String, String> body,
+                                @AuthenticationPrincipal AuthenticatedUser user) {
+        var isAdmin = user.roles().contains("ROLE_ADMIN");
+        return cancelOrderHandler.handle(new CancelOrderCommand(id, body.get("reason"), user.userId(), isAdmin));
+    }
+
+    @GetMapping("/my")
+    public CursorPageDTO<OrderDTO> myOrders(
+            @RequestParam(required = false) String cursor,
+            @RequestParam(defaultValue = "20") int limit,
+            @AuthenticationPrincipal AuthenticatedUser user) {
+        return listOrdersByUserHandler.handle(new ListOrdersByUserQuery(user.userId(), cursor, limit));
+    }
+
+    @GetMapping("/my/by-status/{status}")
+    public PageDTO<OrderDTO> myOrdersByStatus(
+            @PathVariable String status,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @AuthenticationPrincipal AuthenticatedUser user) {
+        return listOrdersByStatusHandler.handle(new ListOrdersByStatusQuery(user.userId(), status, page, size));
+    }
+
+    @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
+    public CursorPageDTO<OrderDTO> listAllOrders(
+            @RequestParam(required = false) String cursor,
+            @RequestParam(defaultValue = "20") int limit,
+            @RequestParam(required = false) String status) {
+        return listOrdersCursorHandler.handle(new ListOrdersCursorQuery(cursor, limit, status));
+    }
+
+    @GetMapping("/user/{userId}/purchased/{productId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public Boolean hasUserPurchased(@PathVariable String userId, @PathVariable Long productId) {
+        return hasUserPurchasedProductHandler.handle(new HasUserPurchasedProductQuery(userId, productId));
+    }
+}

@@ -1,0 +1,284 @@
+package com.hieu.voucher_service.service;
+
+import com.hieu.voucher_service.dto.ApplyVoucherResponse;
+import com.hieu.voucher_service.dto.CreateVoucherRequest;
+import com.hieu.voucher_service.dto.UpdateVoucherRequest;
+import com.hieu.voucher_service.dto.VoucherDTO;
+import com.hieu.voucher_service.entity.VoucherJpaEntity;
+import com.hieu.voucher_service.entity.VoucherUsageRecord;
+import com.hieu.voucher_service.exception.DuplicateVoucherException;
+import com.hieu.voucher_service.exception.VoucherExpiredException;
+import com.hieu.voucher_service.exception.VoucherInactiveException;
+import com.hieu.voucher_service.exception.VoucherMinOrderException;
+import com.hieu.voucher_service.exception.VoucherNotFoundException;
+import com.hieu.voucher_service.exception.VoucherUsageLimitException;
+import com.hieu.voucher_service.repository.VoucherJpaRepository;
+import com.hieu.voucher_service.repository.VoucherUsageRecordRepository;
+import jakarta.persistence.EntityManager;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.Instant;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class VoucherApplicationService {
+
+    private static final String PERCENTAGE = "PERCENTAGE";
+
+    private final VoucherJpaRepository voucherRepository;
+    private final VoucherUsageRecordRepository usageRecordRepository;
+    private final EntityManager entityManager;
+
+    @Transactional
+    public VoucherDTO createVoucher(CreateVoucherRequest req) {
+        String code = req.getCode().trim().toUpperCase();
+
+        if (PERCENTAGE.equals(req.getType())
+                && req.getDiscountValue().compareTo(BigDecimal.valueOf(100)) > 0) {
+            throw new IllegalArgumentException("Percentage discount cannot exceed 100");
+        }
+        if (req.getStartDate() != null && req.getEndDate() != null
+                && !req.getStartDate().isBefore(req.getEndDate())) {
+            throw new IllegalArgumentException("startDate must be before endDate");
+        }
+
+        VoucherJpaEntity entity = new VoucherJpaEntity();
+        entity.setCode(code);
+        entity.setType(req.getType());
+        entity.setDiscountValue(req.getDiscountValue());
+        entity.setMinOrderAmount(req.getMinOrderAmount());
+        entity.setMaxDiscountAmount(req.getMaxDiscountAmount());
+        entity.setUsageLimit(req.getUsageLimit());
+        entity.setUsageLimitPerUser(req.getUsageLimitPerUser());
+        entity.setStartDate(req.getStartDate());
+        entity.setEndDate(req.getEndDate());
+        entity.setDescription(req.getDescription());
+
+        try {
+            VoucherJpaEntity saved = voucherRepository.save(entity);
+            log.debug("Created voucher {} id={}", saved.getCode(), saved.getId());
+            return toDTO(saved);
+        } catch (org.springframework.dao.DataIntegrityViolationException ex) {
+            throw new DuplicateVoucherException(code);
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public VoucherDTO getVoucher(Long id) {
+        return toDTO(findById(id));
+    }
+
+    @Transactional(readOnly = true)
+    public VoucherDTO getVoucherByCode(String code) {
+        return toDTO(findByCode(code));
+    }
+
+    @Transactional(readOnly = true)
+    public Page<VoucherDTO> listVouchers(int page, int size) {
+        return voucherRepository.findAll(PageRequest.of(page, size)).map(this::toDTO);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<VoucherDTO> listActiveVouchers(int page, int size) {
+        return voucherRepository.findByActiveTrue(PageRequest.of(page, size)).map(this::toDTO);
+    }
+
+    @Transactional
+    public VoucherDTO updateVoucher(Long id, UpdateVoucherRequest req) {
+        VoucherJpaEntity entity = findById(id);
+
+        if (req.getType() != null) entity.setType(req.getType());
+        if (req.getDiscountValue() != null) entity.setDiscountValue(req.getDiscountValue());
+        if (req.getMinOrderAmount() != null) entity.setMinOrderAmount(req.getMinOrderAmount());
+        if (req.getMaxDiscountAmount() != null) entity.setMaxDiscountAmount(req.getMaxDiscountAmount());
+        if (req.getUsageLimit() != null) entity.setUsageLimit(req.getUsageLimit());
+        if (req.getStartDate() != null) entity.setStartDate(req.getStartDate());
+        if (req.getEndDate() != null) entity.setEndDate(req.getEndDate());
+        if (req.getActive() != null) entity.setActive(req.getActive());
+        if (req.getDescription() != null) entity.setDescription(req.getDescription());
+
+        VoucherJpaEntity saved = voucherRepository.save(entity);
+        log.debug("Updated voucher id={}", id);
+        return toDTO(saved);
+    }
+
+    @Transactional
+    public VoucherDTO deactivateVoucher(Long id) {
+        VoucherJpaEntity entity = findById(id);
+        entity.setActive(false);
+        VoucherJpaEntity saved = voucherRepository.save(entity);
+        log.debug("Deactivated voucher id={}", id);
+        return toDTO(saved);
+    }
+
+    /**
+     * Validate và apply voucher trong một pessimistic-locked transaction.
+     * userId là String (UUID) để match auth-service/order-service.
+     * productIds là List<String> để match catalog-service.
+     */
+    @Transactional
+    public ApplyVoucherResponse validateAndApply(
+            String code, BigDecimal orderAmount, String userId, String orderId, List<String> productIds) {
+
+        // Pessimistic write lock trước khi đọc usedCount
+        VoucherJpaEntity entity = voucherRepository.findByCodeForUpdate(code)
+                .orElseThrow(() -> new VoucherNotFoundException(code));
+
+        if (!entity.isActive()) {
+            throw new VoucherInactiveException(code);
+        }
+
+        Instant now = Instant.now();
+        if (entity.getStartDate() != null && now.isBefore(entity.getStartDate())) {
+            throw new VoucherExpiredException(code);
+        }
+        if (entity.getEndDate() != null && now.isAfter(entity.getEndDate())) {
+            throw new VoucherExpiredException(code);
+        }
+
+        // Global usage limit
+        if (entity.getUsageLimit() != null && entity.getUsedCount() >= entity.getUsageLimit()) {
+            throw new VoucherUsageLimitException(code);
+        }
+
+        // targetUserIds restriction
+        if (entity.getTargetUserIds() != null && !entity.getTargetUserIds().isBlank()) {
+            List<String> allowedUsers = parseCsvStrings(entity.getTargetUserIds());
+            if (!allowedUsers.contains(userId)) {
+                throw new IllegalArgumentException("Voucher '" + code + "' is not applicable for this user");
+            }
+        }
+
+        // applicableProductIds restriction
+        if (entity.getApplicableProductIds() != null && !entity.getApplicableProductIds().isBlank()) {
+            List<String> allowedProducts = parseCsvStrings(entity.getApplicableProductIds());
+            boolean hasOverlap = productIds != null
+                    && productIds.stream().anyMatch(allowedProducts::contains);
+            if (!hasOverlap) {
+                throw new IllegalArgumentException("Voucher '" + code + "' is not applicable for any product in this order");
+            }
+        }
+
+        // Per-user usage limit
+        if (entity.getUsageLimitPerUser() != null) {
+            long userUsageCount = usageRecordRepository.countByVoucherIdAndUserId(entity.getId(), userId);
+            if (userUsageCount >= entity.getUsageLimitPerUser()) {
+                throw new VoucherUsageLimitException("Voucher usage limit per user exceeded for '" + code + "'");
+            }
+        }
+
+        // Min order amount
+        if (entity.getMinOrderAmount() != null
+                && orderAmount.compareTo(entity.getMinOrderAmount()) < 0) {
+            throw new VoucherMinOrderException(code, entity.getMinOrderAmount());
+        }
+
+        BigDecimal discountAmount = calculateDiscount(entity, orderAmount);
+
+        // Increment dưới pessimistic lock
+        entity.setUsedCount(entity.getUsedCount() + 1);
+        voucherRepository.save(entity);
+
+        // Flush ngay để DB write xảy ra trong scope của lock
+        entityManager.flush();
+
+        // Ghi usage record
+        usageRecordRepository.save(new VoucherUsageRecord(entity.getId(), userId, orderId));
+
+        BigDecimal finalAmount = orderAmount.subtract(discountAmount).max(BigDecimal.ZERO);
+        log.debug("Applied voucher {} to order {} for user {}; discount={}", code, orderId, userId, discountAmount);
+
+        return ApplyVoucherResponse.builder()
+                .code(code)
+                .discountAmount(discountAmount)
+                .finalAmount(finalAmount)
+                .message("Voucher applied successfully")
+                .build();
+    }
+
+    /**
+     * Release voucher khi order bị cancel. Idempotent — nếu không có record thì skip.
+     */
+    @Transactional
+    public void releaseVoucher(String code, String orderId) {
+        usageRecordRepository.findByOrderId(orderId).ifPresentOrElse(
+            record -> {
+                VoucherJpaEntity entity = findByCode(code);
+                if (entity.getUsedCount() > 0) {
+                    entity.setUsedCount(entity.getUsedCount() - 1);
+                    voucherRepository.save(entity);
+                    log.debug("Released voucher {} orderId={}; usedCount now={}", code, orderId, entity.getUsedCount());
+                } else {
+                    log.warn("releaseVoucher: usedCount already 0 for code={} orderId={}", code, orderId);
+                }
+                usageRecordRepository.deleteByOrderId(orderId);
+            },
+            () -> log.warn("releaseVoucher: no usage record for orderId={}; skipping (idempotent)", orderId)
+        );
+    }
+
+    // --- private helpers ---
+
+    private VoucherJpaEntity findById(Long id) {
+        return voucherRepository.findById(id)
+                .orElseThrow(() -> new VoucherNotFoundException(id));
+    }
+
+    private VoucherJpaEntity findByCode(String code) {
+        return voucherRepository.findByCode(code)
+                .orElseThrow(() -> new VoucherNotFoundException(code));
+    }
+
+    private List<String> parseCsvStrings(String csv) {
+        return Arrays.stream(csv.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toList());
+    }
+
+    private BigDecimal calculateDiscount(VoucherJpaEntity entity, BigDecimal orderAmount) {
+        if (PERCENTAGE.equals(entity.getType())) {
+            BigDecimal discount = orderAmount
+                    .multiply(entity.getDiscountValue())
+                    .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+            if (entity.getMaxDiscountAmount() != null) {
+                discount = discount.min(entity.getMaxDiscountAmount());
+            }
+            return discount;
+        } else {
+            // FIXED_AMOUNT: discount không vượt quá order amount
+            return entity.getDiscountValue().min(orderAmount);
+        }
+    }
+
+    private VoucherDTO toDTO(VoucherJpaEntity e) {
+        return VoucherDTO.builder()
+                .id(e.getId())
+                .code(e.getCode())
+                .type(e.getType())
+                .discountValue(e.getDiscountValue())
+                .minOrderAmount(e.getMinOrderAmount())
+                .maxDiscountAmount(e.getMaxDiscountAmount())
+                .usageLimit(e.getUsageLimit())
+                .usedCount(e.getUsedCount())
+                .startDate(e.getStartDate())
+                .endDate(e.getEndDate())
+                .active(e.isActive())
+                .description(e.getDescription())
+                .createdAt(e.getCreatedAt())
+                .updatedAt(e.getUpdatedAt())
+                .version(e.getVersion())
+                .build();
+    }
+}
