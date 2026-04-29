@@ -1,21 +1,24 @@
 package com.hieu.order_service.domain.events.order;
 
 import com.hieu.order_service.domain.events.DomainEvent;
-import lombok.Getter;
 
-@Getter
-public final class OrderConfirmedEvent extends DomainEvent {
-    private final Long orderId;
-    private final String orderNumber;
-    private final String userId;
-    private final Long paymentId;
+import java.time.Instant;
+import java.util.UUID;
 
+public record OrderConfirmedEvent(
+        UUID eventId,
+        Instant occurredOn,
+        Long orderId,
+        String orderNumber,
+        String userId,
+        Long paymentId
+) implements DomainEvent {
+
+    /** Convenience factory — generates eventId and occurredOn automatically. */
     public OrderConfirmedEvent(Long orderId, String orderNumber, String userId, Long paymentId) {
-        this.orderId = orderId;
-        this.orderNumber = orderNumber;
-        this.userId = userId;
-        this.paymentId = paymentId;
+        this(UUID.randomUUID(), Instant.now(), orderId, orderNumber, userId, paymentId);
     }
 
-    @Override public String aggregateId() { return String.valueOf(orderId); }
+    @Override
+    public String aggregateId() { return String.valueOf(orderId); }
 }

@@ -1,7 +1,5 @@
 package com.hieu.auth_service.domain.models.permission.vo;
 
-import com.hieu.auth_service.domain.models.refreshtoken.vo.TokenId;
-
 import java.util.UUID;
 
 public record PermissionId(String value) {

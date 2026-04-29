@@ -1,19 +1,22 @@
 package com.hieu.order_service.domain.events.returnrequest;
 
 import com.hieu.order_service.domain.events.DomainEvent;
-import lombok.Getter;
 
-@Getter
-public final class OrderReturnRejectedEvent extends DomainEvent {
-    private final Long orderId;
-    private final Long returnRequestId;
-    private final String userId;
+import java.time.Instant;
+import java.util.UUID;
+
+public record OrderReturnRejectedEvent(
+        UUID eventId,
+        Instant occurredOn,
+        Long orderId,
+        Long returnRequestId,
+        String userId
+) implements DomainEvent {
 
     public OrderReturnRejectedEvent(Long orderId, Long returnRequestId, String userId) {
-        this.orderId = orderId;
-        this.returnRequestId = returnRequestId;
-        this.userId = userId;
+        this(UUID.randomUUID(), Instant.now(), orderId, returnRequestId, userId);
     }
 
-    @Override public String aggregateId() { return String.valueOf(orderId); }
+    @Override
+    public String aggregateId() { return String.valueOf(orderId); }
 }

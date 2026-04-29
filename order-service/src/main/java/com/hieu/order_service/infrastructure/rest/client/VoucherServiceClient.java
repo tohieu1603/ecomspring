@@ -1,27 +1,27 @@
 package com.hieu.order_service.infrastructure.rest.client;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hieu.order_service.domain.exception.ServiceUnavailableException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
-import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
-import java.util.LinkedHashMap;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
 /**
  * REST client for voucher-service — validate (apply) + release.
- * Same RestTemplate + envelope-aware unwrap pattern as PaymentServiceClient.
+ * Uses Spring 6 {@link RestClient} fluent API; behavior is identical to the former
+ * {@link org.springframework.web.client.RestTemplate} version.
  *
  * <p>Validation errors (4xx from voucher-service: 404 not-found, 422 min-order/expired,
  * 409 limit-reached) surface as {@link VoucherInvalidException} so saga can mark order
@@ -34,12 +34,15 @@ public class VoucherServiceClient {
     private static final ParameterizedTypeReference<Map<String, Object>> MAP_TYPE =
             new ParameterizedTypeReference<>() {};
 
-    private final RestTemplate restTemplate;
+    private final RestClient restClient;
+    private final ObjectMapper objectMapper;
     private final String voucherServiceUrl;
 
-    public VoucherServiceClient(RestTemplate restTemplate,
+    public VoucherServiceClient(@Qualifier("serviceRestClient") RestClient restClient,
+                                ObjectMapper objectMapper,
                                 @Value("${services.voucher-url:http://localhost:8094}") String voucherServiceUrl) {
-        this.restTemplate = restTemplate;
+        this.restClient = restClient;
+        this.objectMapper = objectMapper;
         this.voucherServiceUrl = voucherServiceUrl;
     }
 
@@ -56,34 +59,45 @@ public class VoucherServiceClient {
      */
     public BigDecimal validateAndApply(String code, BigDecimal orderAmount, String userId,
                                        Long orderId, List<Long> productIds, String authToken) {
-        Map<String, Object> body = new LinkedHashMap<>();
+        var body = new java.util.LinkedHashMap<String, Object>();
         body.put("code", code);
         body.put("orderAmount", orderAmount);
         body.put("userId", userId);
         body.put("orderId", orderId);
         if (productIds != null && !productIds.isEmpty()) body.put("productIds", productIds);
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        if (authToken != null && !authToken.isBlank()) {
-            String bearer = authToken.startsWith("Bearer ") ? authToken : "Bearer " + authToken;
-            headers.set(HttpHeaders.AUTHORIZATION, bearer);
-        }
-
-        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
         try {
-            ResponseEntity<Map<String, Object>> resp = restTemplate.exchange(
-                    voucherServiceUrl + "/api/vouchers/validate", HttpMethod.POST, entity, MAP_TYPE);
-            Map<String, Object> payload = unwrap(resp);
+            var spec = restClient.post()
+                    .uri(voucherServiceUrl + "/api/vouchers/validate")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(body);
+
+            if (authToken != null && !authToken.isBlank()) {
+                String bearer = authToken.startsWith("Bearer ") ? authToken : "Bearer " + authToken;
+                spec = spec.header(HttpHeaders.AUTHORIZATION, bearer);
+            }
+
+            Map<String, Object> payload = spec.retrieve()
+                    .onStatus(HttpStatusCode::is4xxClientError, (req, resp) -> {
+                        // 4xx → voucher rejected. Read message from ApiResponse envelope.
+                        // Don't log full response body — may contain PII (orderId/userId/amount).
+                        log.warn("Voucher {} rejected: {}", code, resp.getStatusCode());
+                        String message = extractMessage(resp);
+                        throw new VoucherInvalidException(message, null);
+                    })
+                    .onStatus(HttpStatusCode::is5xxServerError, (req, resp) -> {
+                        throw new ServiceUnavailableException("voucher-service");
+                    })
+                    .body(MAP_TYPE);
+
+            payload = unwrap(payload);
             if (payload == null || payload.get("discountAmount") == null) {
                 throw new ServiceUnavailableException("voucher-service: missing discountAmount");
             }
             return new BigDecimal(payload.get("discountAmount").toString());
 
-        } catch (HttpClientErrorException e) {
-            // 4xx → voucher rejected (not found / min not met / expired / limit reached)
-            log.warn("Voucher {} rejected: {} {}", code, e.getStatusCode(), e.getResponseBodyAsString());
-            throw new VoucherInvalidException(extractMessage(e), e);
+        } catch (VoucherInvalidException | ServiceUnavailableException e) {
+            throw e;
         } catch (RestClientException e) {
             log.error("REST voucher.validate({}) failed: {}", code, e.getMessage());
             throw new ServiceUnavailableException("voucher-service");
@@ -92,13 +106,13 @@ public class VoucherServiceClient {
 
     /** Idempotent release. Voucher-service handles double-release silently. */
     public void release(String code, Long orderId) {
-        Map<String, Object> body = Map.of("code", code, "orderId", orderId);
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-
         try {
-            restTemplate.exchange(voucherServiceUrl + "/api/vouchers/release",
-                    HttpMethod.POST, new HttpEntity<>(body, headers), MAP_TYPE);
+            restClient.post()
+                    .uri(voucherServiceUrl + "/api/vouchers/release")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(Map.of("code", code, "orderId", orderId))
+                    .retrieve()
+                    .toBodilessEntity();
             log.info("Released voucher {} for order {}", code, orderId);
         } catch (RestClientException e) {
             // Compensation must not throw — voucher cleanup is best-effort. Voucher-service
@@ -109,25 +123,21 @@ public class VoucherServiceClient {
     }
 
     @SuppressWarnings("unchecked")
-    private static Map<String, Object> unwrap(ResponseEntity<Map<String, Object>> resp) {
-        Map<String, Object> b = resp.getBody();
+    private static Map<String, Object> unwrap(Map<String, Object> b) {
         if (b == null) return null;
         Object data = b.get("data");
         return data instanceof Map<?, ?> ? (Map<String, Object>) data : b;
     }
 
-    private static String extractMessage(HttpClientErrorException e) {
+    /** Pulls "message" out of voucher-service's ApiResponse error envelope via response body. */
+    private String extractMessage(org.springframework.http.client.ClientHttpResponse resp) {
         try {
-            // ApiResponse error envelope: {"success":false,"code":"VOUCHER-422","message":"..."}
-            String body = e.getResponseBodyAsString();
-            int idx = body.indexOf("\"message\"");
-            if (idx < 0) return e.getStatusText();
-            int colon = body.indexOf(':', idx);
-            int q1 = body.indexOf('"', colon + 1);
-            int q2 = body.indexOf('"', q1 + 1);
-            return q1 >= 0 && q2 > q1 ? body.substring(q1 + 1, q2) : e.getStatusText();
+            byte[] bytes = resp.getBody().readAllBytes();
+            var node = objectMapper.readTree(new String(bytes, StandardCharsets.UTF_8));
+            var msg = node.path("message").asText(null);
+            return (msg == null || msg.isBlank()) ? resp.getStatusCode().toString() : msg;
         } catch (Exception ignored) {
-            return e.getStatusText();
+            try { return resp.getStatusCode().toString(); } catch (Exception e2) { return "voucher rejected"; }
         }
     }
 

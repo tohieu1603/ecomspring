@@ -1,23 +1,24 @@
 package com.hieu.order_service.domain.events.returnrequest;
 
 import com.hieu.order_service.domain.events.DomainEvent;
-import lombok.Getter;
 
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.UUID;
 
-@Getter
-public final class OrderReturnedEvent extends DomainEvent {
-    private final Long orderId;
-    private final Long returnRequestId;
-    private final String userId;
-    private final BigDecimal refundAmount;
+public record OrderReturnedEvent(
+        UUID eventId,
+        Instant occurredOn,
+        Long orderId,
+        Long returnRequestId,
+        String userId,
+        BigDecimal refundAmount
+) implements DomainEvent {
 
     public OrderReturnedEvent(Long orderId, Long returnRequestId, String userId, BigDecimal refundAmount) {
-        this.orderId = orderId;
-        this.returnRequestId = returnRequestId;
-        this.userId = userId;
-        this.refundAmount = refundAmount;
+        this(UUID.randomUUID(), Instant.now(), orderId, returnRequestId, userId, refundAmount);
     }
 
-    @Override public String aggregateId() { return String.valueOf(orderId); }
+    @Override
+    public String aggregateId() { return String.valueOf(orderId); }
 }

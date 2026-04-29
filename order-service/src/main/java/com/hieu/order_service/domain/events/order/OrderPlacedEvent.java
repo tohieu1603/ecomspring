@@ -1,11 +1,12 @@
 package com.hieu.order_service.domain.events.order;
 
 import com.hieu.order_service.domain.events.DomainEvent;
-import lombok.Getter;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 
 /**
  * Fired after an order is persisted with initial state. Consumers (analytics, search
@@ -13,30 +14,38 @@ import java.util.Objects;
  * shipping address — so we carry them on the event instead of forcing each consumer
  * to round-trip back to order-service.
  */
-@Getter
-public final class OrderPlacedEvent extends DomainEvent {
+public record OrderPlacedEvent(
+        UUID eventId,
+        Instant occurredOn,
+        Long orderId,
+        String orderNumber,
+        String userId,
+        BigDecimal totalAmount,
+        String paymentMethod,
+        AddressSnapshot shippingAddress,
+        List<ItemSnapshot> items
+) implements DomainEvent {
 
-    private final Long orderId;
-    private final String orderNumber;
-    private final String userId;
-    private final BigDecimal totalAmount;
-    private final String paymentMethod;
-    private final AddressSnapshot shippingAddress;
-    private final List<ItemSnapshot> items;
-
-    public OrderPlacedEvent(Long orderId, String orderNumber, String userId,
-                             BigDecimal totalAmount, String paymentMethod,
-                             AddressSnapshot shippingAddress, List<ItemSnapshot> items) {
-        this.orderId = Objects.requireNonNull(orderId, "orderId");
-        this.orderNumber = Objects.requireNonNull(orderNumber, "orderNumber");
-        this.userId = Objects.requireNonNull(userId, "userId");
-        this.totalAmount = Objects.requireNonNull(totalAmount, "totalAmount");
-        this.paymentMethod = paymentMethod;
-        this.shippingAddress = shippingAddress;
-        this.items = List.copyOf(Objects.requireNonNullElse(items, List.of()));
+    public OrderPlacedEvent {
+        Objects.requireNonNull(eventId, "eventId");
+        Objects.requireNonNull(occurredOn, "occurredOn");
+        Objects.requireNonNull(orderId, "orderId");
+        Objects.requireNonNull(orderNumber, "orderNumber");
+        Objects.requireNonNull(userId, "userId");
+        Objects.requireNonNull(totalAmount, "totalAmount");
+        items = List.copyOf(Objects.requireNonNullElse(items, List.of()));
     }
 
-    @Override public String aggregateId() { return String.valueOf(orderId); }
+    /** Convenience factory — generates eventId and occurredOn automatically. */
+    public OrderPlacedEvent(Long orderId, String orderNumber, String userId,
+                            BigDecimal totalAmount, String paymentMethod,
+                            AddressSnapshot shippingAddress, List<ItemSnapshot> items) {
+        this(UUID.randomUUID(), Instant.now(),
+             orderId, orderNumber, userId, totalAmount, paymentMethod, shippingAddress, items);
+    }
+
+    @Override
+    public String aggregateId() { return String.valueOf(orderId); }
 
     /** Flat projection of the shipping address — avoids leaking the VO across services. */
     public record AddressSnapshot(String recipientName, String recipientPhone,

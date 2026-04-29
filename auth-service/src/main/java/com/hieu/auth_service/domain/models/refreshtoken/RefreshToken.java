@@ -1,19 +1,25 @@
 package com.hieu.auth_service.domain.models.refreshtoken;
 
+import java.time.Instant;
+import java.util.Objects;
+
 import com.hieu.auth_service.domain.models.refreshtoken.events.TokenCreatedEvent;
 import com.hieu.auth_service.domain.models.refreshtoken.events.TokenRevokedEvent;
 import com.hieu.auth_service.domain.models.refreshtoken.events.TokenRotatedEvent;
 import com.hieu.auth_service.domain.models.refreshtoken.exceptions.TokenExpiredException;
 import com.hieu.auth_service.domain.models.refreshtoken.exceptions.TokenRevokedException;
-import com.hieu.auth_service.domain.models.refreshtoken.vo.*;
+import com.hieu.auth_service.domain.models.refreshtoken.vo.GenerationNumber;
+import com.hieu.auth_service.domain.models.refreshtoken.vo.RevokedReason;
+import com.hieu.auth_service.domain.models.refreshtoken.vo.TokenExpiry;
+import com.hieu.auth_service.domain.models.refreshtoken.vo.TokenFamily;
+import com.hieu.auth_service.domain.models.refreshtoken.vo.TokenId;
+import com.hieu.auth_service.domain.models.refreshtoken.vo.TokenValue;
 import com.hieu.auth_service.domain.models.user.vo.UserId;
 import com.hieu.auth_service.domain.shared.AggregateRoot;
+
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
-
-import java.time.Instant;
-import java.util.Objects;
 
 /**
  * RefreshToken aggregate root.
@@ -141,7 +147,7 @@ public final class RefreshToken extends AggregateRoot {
                 reason.value()));
     }
 
-    /** Shortcut for user-initiated / normal rotation revocations. */
+    /** Shortcut for user-initiated / normal rotation  revocations. */
     public void revoke() {
         revoke(RevokedReason.NORMAL);
     }

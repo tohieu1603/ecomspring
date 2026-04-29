@@ -11,6 +11,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * Polls the {@code outbox_events} table and publishes pending events to Kafka.
@@ -33,6 +35,12 @@ public class OutboxPoller {
     private static final int MAX_RETRIES = 10;
     private static final long BACKOFF_BASE_SECONDS = 2L;
     private static final long BACKOFF_CAP_SECONDS = 300L; // 5 minutes
+    /**
+     * Per-send timeout. Bounds the worst-case DB connection hold inside the @Transactional
+     * poll loop: with batchSize=100, total hold ≤ 100 × this. Without a timeout, a stalled
+     * Kafka broker can pin every connection in the HikariCP pool indefinitely.
+     */
+    private static final long SEND_TIMEOUT_SECONDS = 5L;
     /** Dead-letter topic — operators replay from here via a CLI script. */
     public static final String DLT_TOPIC = "order.outbox.dlt";
 
@@ -55,10 +63,17 @@ public class OutboxPoller {
                 continue;
             }
             try {
-                stringKafkaTemplate.send(event.getTopic(), event.getAggregateId(), event.getPayload()).get();
+                stringKafkaTemplate.send(event.getTopic(), event.getAggregateId(), event.getPayload())
+                        .get(SEND_TIMEOUT_SECONDS, TimeUnit.SECONDS);
                 repository.markProcessed(event.getId(), Instant.now());
                 log.debug("Outbox published id={} type={} topic={}",
                         event.getId(), event.getEventType(), event.getTopic());
+            } catch (TimeoutException te) {
+                int newRetryCount = event.getRetryCount() + 1;
+                Instant nextAttempt = Instant.now().plusSeconds(backoffSeconds(newRetryCount));
+                repository.bumpRetry(event.getId(), newRetryCount, nextAttempt);
+                log.warn("Outbox publish timed out id={} after {}s retry={}",
+                        event.getId(), SEND_TIMEOUT_SECONDS, newRetryCount);
             } catch (Exception e) {
                 int newRetryCount = event.getRetryCount() + 1;
                 Instant nextAttempt = Instant.now().plusSeconds(backoffSeconds(newRetryCount));
@@ -74,7 +89,8 @@ public class OutboxPoller {
             // Prefix the key so DLT consumers can tell which topic the message belongs to
             // without needing to parse the payload.
             String dltKey = event.getTopic() + ":" + event.getAggregateId();
-            stringKafkaTemplate.send(DLT_TOPIC, dltKey, event.getPayload()).get();
+            stringKafkaTemplate.send(DLT_TOPIC, dltKey, event.getPayload())
+                    .get(SEND_TIMEOUT_SECONDS, TimeUnit.SECONDS);
             repository.markProcessed(event.getId(), Instant.now());
             log.error("Outbox event id={} type={} DLT'd after {} retries — operator action required",
                     event.getId(), event.getEventType(), event.getRetryCount());

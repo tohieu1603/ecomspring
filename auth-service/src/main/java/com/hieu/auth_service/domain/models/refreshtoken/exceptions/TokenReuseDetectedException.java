@@ -1,6 +1,7 @@
 package com.hieu.auth_service.domain.models.refreshtoken.exceptions;
 
 import com.hieu.auth_service.domain.shared.DomainException;
+import com.hieu.common.error.ErrorCode;
 
 /**
  * Raised when a previously-revoked refresh token is re-presented. Treated as token theft:
@@ -11,7 +12,7 @@ public final class TokenReuseDetectedException extends DomainException {
     private final int generation;
 
     public TokenReuseDetectedException(String family, int generation) {
-        super("AUTH-1012",
+        super(ErrorCode.TOKEN_REUSE_DETECTED.code(),
                 "Token reuse detected for family=" + family + " at generation=" + generation
                         + "; all tokens in the family have been revoked.");
         this.family = family;

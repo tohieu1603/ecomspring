@@ -13,8 +13,10 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -39,12 +41,32 @@ public class OrderController {
     private final ListOrdersCursorHandler listOrdersCursorHandler;
     private final HasUserPurchasedProductHandler hasUserPurchasedProductHandler;
 
+    /** Shared secret for service-to-service /internal calls. Configure per environment. */
+    @Value("${security.internal-token:}")
+    private String internalToken;
+
     /**
      * Extract bearer token from either the {@code Authorization} header or the
      * {@code ACCESS_TOKEN} cookie — the gateway doesn't rewrite cookies into headers so
      * cookie-based browser clients would otherwise leave the saga without a token to
      * forward to downstream services.
      */
+    /**
+     * Reject overlong / non-printable idempotency keys before they reach Redis + DB.
+     * 128 chars is enough for UUID-shaped keys and short business keys; anything beyond
+     * is almost always abuse or a misconfigured client.
+     */
+    private static String validateIdempotencyKey(String key) {
+        if (key == null || key.isBlank()) return null;
+        if (key.length() > 128) {
+            throw new IllegalArgumentException("X-Idempotency-Key exceeds 128 chars");
+        }
+        if (!key.matches("[A-Za-z0-9_\\-:.]+")) {
+            throw new IllegalArgumentException("X-Idempotency-Key contains invalid chars");
+        }
+        return key;
+    }
+
     private static String resolveToken(String authHeader, HttpServletRequest request) {
         if (authHeader != null && !authHeader.isBlank()) {
             return authHeader.startsWith("Bearer ") ? authHeader.substring(7) : authHeader;
@@ -66,6 +88,7 @@ public class OrderController {
             @RequestHeader(value = "Authorization", required = false) String authHeader,
             HttpServletRequest httpRequest,
             @AuthenticationPrincipal AuthenticatedUser user) {
+        idempotencyKey = validateIdempotencyKey(idempotencyKey);
         String authToken = resolveToken(authHeader, httpRequest);
         var cmd = new CreateOrderCommand(
                 user.userId(), req.items().stream().map(i -> new CreateOrderCommand.ItemCmd(
@@ -86,6 +109,7 @@ public class OrderController {
             @RequestHeader(value = "Authorization", required = false) String authHeader,
             HttpServletRequest httpRequest,
             @AuthenticationPrincipal AuthenticatedUser user) {
+        idempotencyKey = validateIdempotencyKey(idempotencyKey);
         String authToken = resolveToken(authHeader, httpRequest);
         var cmd = new CreateOrderFromCartCommand(
                 user.userId(), req.recipientName(), req.recipientPhone(),
@@ -108,7 +132,11 @@ public class OrderController {
     }
 
     @GetMapping("/{id}/internal")
-    public OrderDTO getInternal(@PathVariable Long id) {
+    public OrderDTO getInternal(@PathVariable Long id,
+                                @RequestHeader(value = "X-Internal-Token", required = false) String token) {
+        if (internalToken == null || internalToken.isBlank() || !internalToken.equals(token)) {
+            throw new AccessDeniedException("Internal endpoint requires X-Internal-Token");
+        }
         return getOrderByIdInternalHandler.handle(new GetOrderByIdInternalQuery(id));
     }
 

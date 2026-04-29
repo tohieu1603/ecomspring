@@ -9,6 +9,8 @@ import com.hieu.order_service.domain.repository.OrderRepository;
 import com.hieu.order_service.infrastructure.persistence.jpa.entities.OrderJpaEntity;
 import com.hieu.order_service.infrastructure.persistence.jpa.repositories.OrderJpaRepository;
 import com.hieu.order_service.infrastructure.persistence.mapper.OrderJpaMapper;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -29,11 +31,27 @@ public class OrderRepositoryImpl implements OrderRepository {
     private final OrderJpaRepository jpa;
     private final OrderJpaMapper mapper;
 
+    @PersistenceContext
+    private EntityManager entityManager;
+
+    /**
+     * For UPDATEs, prefer the persistence-context cache: if the saga loaded the same
+     * order earlier in this transaction (e.g. {@code findByIdWithLock} in
+     * {@code OrderStateTransitioner}), {@link EntityManager#find} returns the managed
+     * instance without a new SELECT — items are already initialized on it. Falls back
+     * to {@code findByIdWithItems} only on a true cache miss (e.g. {@code REQUIRES_NEW}
+     * crossed from a different transaction). For INSERTs ({@code order.getId() == null})
+     * we skip the lookup entirely.
+     */
     @Override
     public Order save(Order order) {
-        OrderJpaEntity existing = order.getId() != null
-                ? jpa.findByIdWithItems(order.getId().value()).orElse(null)
-                : null;
+        OrderJpaEntity existing = null;
+        if (order.getId() != null) {
+            existing = entityManager.find(OrderJpaEntity.class, order.getId().value());
+            if (existing == null) {
+                existing = jpa.findByIdWithItems(order.getId().value()).orElse(null);
+            }
+        }
         var saved = jpa.saveAndFlush(mapper.toJpa(order, existing));
         mapper.syncGeneratedIds(order, saved);
         return order;

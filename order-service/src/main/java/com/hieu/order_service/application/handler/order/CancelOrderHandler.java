@@ -28,6 +28,6 @@ public class CancelOrderHandler implements CommandHandler<CancelOrderCommand, Or
         // executeCancelOrderSaga is itself @Transactional(REQUIRES_NEW); wrapping it in
         // an outer transaction here would suspend that inner TX and leave changes
         // uncommitted until this method returns — defeating the REQUIRES_NEW semantics.
-        return saga.executeCancelOrderSaga(cmd.orderId(), cmd.reason(), cmd.requestingUserId());
+        return saga.executeCancelOrderSaga(cmd.orderId(), cmd.reason(), cmd.requestingUserId(), cmd.isAdmin());
     }
 }

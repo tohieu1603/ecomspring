@@ -1,5 +1,7 @@
 package com.hieu.catalog_service.application.common;
 
+import com.hieu.common.error.ErrorCode;
+
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -9,12 +11,12 @@ public final class ValidationException extends ApplicationException {
     private final Map<String, String> fieldErrors;
 
     public ValidationException(String message) {
-        super("APP-400", message);
+        super(ErrorCode.APP_BAD_REQUEST.code(), message);
         this.fieldErrors = new LinkedHashMap<>();
     }
 
     public ValidationException(String message, Map<String, String> fieldErrors) {
-        super("APP-400", message);
+        super(ErrorCode.APP_BAD_REQUEST.code(), message);
         this.fieldErrors = fieldErrors == null ? new LinkedHashMap<>() : new LinkedHashMap<>(fieldErrors);
     }
 

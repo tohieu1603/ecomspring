@@ -27,26 +27,26 @@ public class PaymentEventConsumer {
     @Transactional
     public void onPaymentEvent(Map<String, Object> payload,
                                org.apache.kafka.clients.consumer.ConsumerRecord<String, Object> record) {
-        try {
-            var topic = record.topic();
-            var orderNumber = payload.get("orderId") != null ? payload.get("orderId").toString() : null;
-            if (orderNumber == null) { log.warn("Payment event missing orderId"); return; }
+        var topic = record.topic();
+        var orderNumber = payload.get("orderId") != null ? payload.get("orderId").toString() : null;
+        // Malformed payload — ack & drop, retry won't help.
+        if (orderNumber == null) { log.warn("Payment event missing orderId, dropping"); return; }
 
-            var order = orderRepository.findByOrderNumber(OrderNumber.of(orderNumber))
-                    .orElseThrow(() -> new OrderNotFoundException(orderNumber));
+        // Let exceptions propagate so Spring Kafka's DefaultErrorHandler
+        // performs configured retry → DLT instead of silently committing the offset
+        // and losing the state transition.
+        var order = orderRepository.findByOrderNumber(OrderNumber.of(orderNumber))
+                .orElseThrow(() -> new OrderNotFoundException(orderNumber));
 
-            if ("payment.completed".equals(topic)) {
-                order.markPaymentCompleted();
-                order.confirm();
-            } else {
-                var reason = payload.get("reason") != null ? payload.get("reason").toString() : "Payment failed";
-                order.markFailed(reason);
-            }
-
-            var saved = orderRepository.save(order);
-            eventPublisher.publishEventsOf(saved);
-        } catch (Exception e) {
-            log.error("Failed to process payment event: {}", e.getMessage(), e);
+        if ("payment.completed".equals(topic)) {
+            order.markPaymentCompleted();
+            order.confirm();
+        } else {
+            var reason = payload.get("reason") != null ? payload.get("reason").toString() : "Payment failed";
+            order.markFailed(reason);
         }
+
+        var saved = orderRepository.save(order);
+        eventPublisher.publishEventsOf(saved);
     }
 }

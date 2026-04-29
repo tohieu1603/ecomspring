@@ -3,23 +3,22 @@ package com.hieu.order_service.domain.events;
 import java.time.Instant;
 import java.util.UUID;
 
-/** Base class for in-process domain events raised by order aggregates. */
-public abstract class DomainEvent {
+/**
+ * Marker interface for in-process domain events raised by order aggregates.
+ *
+ * <p>Note: cross-package {@code sealed permits} requires a module-info, which the
+ * unnamed-module Spring Boot fat jar doesn't have. Kept as a non-sealed interface;
+ * exhaustive pattern-matching in dispatchers is enforced via a {@code default}
+ * branch that throws on unknown subtypes.
+ */
+public interface DomainEvent {
 
-    private final UUID eventId = UUID.randomUUID();
-    private final Instant occurredOn = Instant.now();
+    UUID eventId();
 
-    public final UUID eventId()       { return eventId; }
-    public final Instant occurredOn() { return occurredOn; }
-
-    public String eventType() { return getClass().getSimpleName(); }
+    Instant occurredOn();
 
     /** Aggregate id — used as Kafka partition key. */
-    public abstract String aggregateId();
+    String aggregateId();
 
-    @Override
-    public String toString() {
-        return "%s{eventId=%s, aggregateId=%s, occurredOn=%s}"
-                .formatted(eventType(), eventId, aggregateId(), occurredOn);
-    }
+    default String eventType() { return getClass().getSimpleName(); }
 }

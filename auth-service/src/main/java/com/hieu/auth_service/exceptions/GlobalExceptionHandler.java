@@ -9,6 +9,7 @@ import com.hieu.auth_service.domain.models.user.exceptions.InvalidCredentialsExc
 import com.hieu.auth_service.domain.models.user.exceptions.UserAlreadyExistsException;
 import com.hieu.auth_service.domain.models.user.exceptions.UserNotFoundException;
 import com.hieu.auth_service.domain.shared.DomainException;
+import com.hieu.common.error.ErrorCode;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.security.SignatureException;
@@ -83,34 +84,34 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ErrorResponse> handleBadCredentials(BadCredentialsException ex, WebRequest request) {
-        return buildResponse(HttpStatus.UNAUTHORIZED, "AUTH-1001", "Invalid username or password", request);
+        return buildResponse(HttpStatus.UNAUTHORIZED, ErrorCode.INVALID_CREDENTIALS.code(), "Invalid username or password", request);
     }
 
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<ErrorResponse> handleAuth(AuthenticationException ex, WebRequest request) {
-        return buildResponse(HttpStatus.UNAUTHORIZED, "COMMON-401", "Authentication failed", request);
+        return buildResponse(HttpStatus.UNAUTHORIZED, ErrorCode.UNAUTHORIZED.code(), "Authentication failed", request);
     }
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedException ex, WebRequest request) {
-        return buildResponse(HttpStatus.FORBIDDEN, "COMMON-403",
+        return buildResponse(HttpStatus.FORBIDDEN, ErrorCode.FORBIDDEN.code(),
                 "You don't have permission to access this resource", request);
     }
 
     @ExceptionHandler(ExpiredJwtException.class)
     public ResponseEntity<ErrorResponse> handleJwtExpired(ExpiredJwtException ex, WebRequest request) {
-        return buildResponse(HttpStatus.UNAUTHORIZED, "AUTH-1004", "JWT token has expired", request);
+        return buildResponse(HttpStatus.UNAUTHORIZED, ErrorCode.TOKEN_EXPIRED.code(), "JWT token has expired", request);
     }
 
     @ExceptionHandler({SignatureException.class, MalformedJwtException.class})
     public ResponseEntity<ErrorResponse> handleJwt(Exception ex, WebRequest request) {
-        return buildResponse(HttpStatus.UNAUTHORIZED, "AUTH-1005", "Invalid JWT token", request);
+        return buildResponse(HttpStatus.UNAUTHORIZED, ErrorCode.TOKEN_INVALID.code(), "Invalid JWT token", request);
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleAll(Exception ex, WebRequest request) {
         log.error("Unexpected error", ex);
-        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "COMMON-500",
+        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, ErrorCode.INTERNAL_ERROR.code(),
                 "An unexpected error occurred. Please try again later.", request);
     }
 

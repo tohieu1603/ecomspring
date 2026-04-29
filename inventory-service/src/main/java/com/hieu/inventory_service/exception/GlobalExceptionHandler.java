@@ -1,5 +1,6 @@
 package com.hieu.inventory_service.exception;
 
+import com.hieu.common.error.ErrorCode;
 import com.hieu.common.error.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
@@ -26,12 +27,12 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(InventoryNotFoundException.class)
     public ResponseEntity<ErrorResponse> notFound(InventoryNotFoundException ex, HttpServletRequest req) {
-        return body(HttpStatus.NOT_FOUND, "INV-404", ex.getMessage(), req, null);
+        return body(HttpStatus.NOT_FOUND, ErrorCode.INVENTORY_NOT_FOUND.code(), ex.getMessage(), req, null);
     }
 
     @ExceptionHandler(InsufficientStockException.class)
     public ResponseEntity<ErrorResponse> insufficientStock(InsufficientStockException ex, HttpServletRequest req) {
-        return body(HttpStatus.CONFLICT, "INV-409", ex.getMessage(), req, null);
+        return body(HttpStatus.CONFLICT, ErrorCode.INVENTORY_INSUFFICIENT.code(), ex.getMessage(), req, null);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -39,44 +40,44 @@ public class GlobalExceptionHandler {
         var fields = ex.getBindingResult().getFieldErrors().stream()
             .map(fe -> new ErrorResponse.FieldError(fe.getField(), fe.getDefaultMessage(), fe.getRejectedValue()))
             .toList();
-        return body(HttpStatus.BAD_REQUEST, "APP-400", "Validation failed", req, fields);
+        return body(HttpStatus.BAD_REQUEST, ErrorCode.APP_BAD_REQUEST.code(), "Validation failed", req, fields);
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<ErrorResponse> constraintViolation(ConstraintViolationException ex, HttpServletRequest req) {
-        return body(HttpStatus.BAD_REQUEST, "APP-400", ex.getMessage(), req, null);
+        return body(HttpStatus.BAD_REQUEST, ErrorCode.APP_BAD_REQUEST.code(), ex.getMessage(), req, null);
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ErrorResponse> dataIntegrity(DataIntegrityViolationException ex, HttpServletRequest req) {
         log.warn("Data integrity violation: {}", ex.getMostSpecificCause().getMessage());
-        return body(HttpStatus.CONFLICT, "APP-409", "Constraint violation", req, null);
+        return body(HttpStatus.CONFLICT, ErrorCode.APP_CONFLICT.code(), "Constraint violation", req, null);
     }
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ErrorResponse> accessDenied(AccessDeniedException ex, HttpServletRequest req) {
-        return body(HttpStatus.FORBIDDEN, "APP-403", "Access denied", req, null);
+        return body(HttpStatus.FORBIDDEN, ErrorCode.APP_FORBIDDEN.code(), "Access denied", req, null);
     }
 
     @ExceptionHandler(AuthenticationCredentialsNotFoundException.class)
     public ResponseEntity<ErrorResponse> unauthenticated(AuthenticationCredentialsNotFoundException ex, HttpServletRequest req) {
-        return body(HttpStatus.UNAUTHORIZED, "APP-401", "Authentication required", req, null);
+        return body(HttpStatus.UNAUTHORIZED, ErrorCode.APP_UNAUTHORIZED.code(), "Authentication required", req, null);
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ErrorResponse> illegalArg(IllegalArgumentException ex, HttpServletRequest req) {
-        return body(HttpStatus.BAD_REQUEST, "APP-400", ex.getMessage(), req, null);
+        return body(HttpStatus.BAD_REQUEST, ErrorCode.APP_BAD_REQUEST.code(), ex.getMessage(), req, null);
     }
 
     @ExceptionHandler(IllegalStateException.class)
     public ResponseEntity<ErrorResponse> illegalState(IllegalStateException ex, HttpServletRequest req) {
-        return body(HttpStatus.UNPROCESSABLE_ENTITY, "APP-422", ex.getMessage(), req, null);
+        return body(HttpStatus.UNPROCESSABLE_ENTITY, ErrorCode.APP_UNPROCESSABLE.code(), ex.getMessage(), req, null);
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> unknown(Exception ex, HttpServletRequest req) {
         log.error("Unhandled exception", ex);
-        return body(HttpStatus.INTERNAL_SERVER_ERROR, "APP-500", "Internal server error", req, null);
+        return body(HttpStatus.INTERNAL_SERVER_ERROR, ErrorCode.APP_INTERNAL.code(), "Internal server error", req, null);
     }
 
     private static ResponseEntity<ErrorResponse> body(HttpStatus status, String code, String message,

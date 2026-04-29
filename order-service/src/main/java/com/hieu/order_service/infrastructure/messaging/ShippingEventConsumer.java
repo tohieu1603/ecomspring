@@ -27,24 +27,23 @@ public class ShippingEventConsumer {
     @Transactional
     public void onShippingEvent(Map<String, Object> payload,
                                 org.apache.kafka.clients.consumer.ConsumerRecord<String, Object> record) {
-        try {
-            var topic = record.topic();
-            var orderNumber = payload.get("orderId") != null ? payload.get("orderId").toString() : null;
-            if (orderNumber == null) { log.warn("Shipping event missing orderId"); return; }
+        var topic = record.topic();
+        var orderNumber = payload.get("orderId") != null ? payload.get("orderId").toString() : null;
+        // Malformed payload — ack & drop, retry won't help.
+        if (orderNumber == null) { log.warn("Shipping event missing orderId, dropping"); return; }
 
-            var status = payload.get("status") != null ? payload.get("status").toString() : "";
+        var status = payload.get("status") != null ? payload.get("status").toString() : "";
 
-            if ("shipping.delivered".equals(topic) || "DELIVERED".equalsIgnoreCase(status)) {
-                var order = orderRepository.findByOrderNumber(OrderNumber.of(orderNumber))
-                        .orElseThrow(() -> new OrderNotFoundException(orderNumber));
-                if (order.getStatus().canTransitionTo(com.hieu.order_service.domain.model.order.valueobject.OrderStatus.DELIVERED)) {
-                    order.markDelivered();
-                    var saved = orderRepository.save(order);
-                    eventPublisher.publishEventsOf(saved);
-                }
+        // Let exceptions propagate so Spring Kafka's DefaultErrorHandler retries → DLT
+        // instead of silently committing the offset and losing the state transition.
+        if ("shipping.delivered".equals(topic) || "DELIVERED".equalsIgnoreCase(status)) {
+            var order = orderRepository.findByOrderNumber(OrderNumber.of(orderNumber))
+                    .orElseThrow(() -> new OrderNotFoundException(orderNumber));
+            if (order.getStatus().canTransitionTo(com.hieu.order_service.domain.model.order.valueobject.OrderStatus.DELIVERED)) {
+                order.markDelivered();
+                var saved = orderRepository.save(order);
+                eventPublisher.publishEventsOf(saved);
             }
-        } catch (Exception e) {
-            log.error("Failed to process shipping event: {}", e.getMessage(), e);
         }
     }
 }

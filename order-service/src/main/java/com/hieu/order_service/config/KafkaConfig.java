@@ -10,7 +10,11 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.kafka.config.TopicBuilder;
 import org.springframework.kafka.core.DefaultKafkaProducerFactory;
+import org.springframework.kafka.core.KafkaOperations;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.listener.DeadLetterPublishingRecoverer;
+import org.springframework.kafka.listener.DefaultErrorHandler;
+import org.springframework.util.backoff.FixedBackOff;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -57,5 +61,17 @@ public class KafkaConfig {
     @Bean public NewTopic orderOutboxDlt() {
         return TopicBuilder.name(com.hieu.order_service.infrastructure.outbox.OutboxPoller.DLT_TOPIC)
                 .partitions(1).replicas(1).build();
+    }
+
+    // Inbound consumers (PaymentEventConsumer / ShippingEventConsumer) re-throw on
+    // failure; this handler retries 3× with 1s backoff then publishes to <topic>.DLT.
+    // Without it, exceptions silently commit the offset and lose events.
+    @Bean public NewTopic consumerDlt()           { return TopicBuilder.name("order-service.DLT").partitions(1).replicas(1).build(); }
+
+    @Bean
+    public DefaultErrorHandler kafkaErrorHandler(KafkaOperations<Object, Object> kafkaOps) {
+        var recoverer = new DeadLetterPublishingRecoverer(kafkaOps,
+                (rec, ex) -> new org.apache.kafka.common.TopicPartition(rec.topic() + ".DLT", rec.partition()));
+        return new DefaultErrorHandler(recoverer, new FixedBackOff(1000L, 3L));
     }
 }

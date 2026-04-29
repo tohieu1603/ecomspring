@@ -8,6 +8,7 @@ import com.hieu.order_service.domain.repository.IdempotencyRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
@@ -55,9 +56,17 @@ public class IdempotencyService {
         );
 
         if (luaResult == null || "new".equals(luaResult)) {
-            // New request — insert DB record and proceed
-            idempotencyRepository.save(IdempotencyRecord.create(key));
-            return Optional.empty();
+            // Redis claimed; persist for durable audit. The DB has a UNIQUE(key) constraint —
+            // a concurrent request that also passed the Lua claim (rare cross-region or after
+            // Redis flush) will collide here. Treat that collision as the canonical "duplicate"
+            // signal instead of leaking DataIntegrityViolationException.
+            try {
+                idempotencyRepository.save(IdempotencyRecord.create(key));
+                return Optional.empty();
+            } catch (DataIntegrityViolationException dup) {
+                log.warn("Idempotency DB UNIQUE collided after Redis claim for key {} — treating as duplicate", key);
+                throw new DuplicateOrderException(key);
+            }
         }
 
         // Step 2: If result starts with '{' it's a cached DTO JSON

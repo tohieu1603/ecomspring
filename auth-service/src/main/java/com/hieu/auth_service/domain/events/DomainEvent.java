@@ -6,7 +6,7 @@ import java.util.UUID;
 /**
  * Base class for in-process domain events raised by aggregates.
  *
- * <p>Subclasses should be immutable (final fields, no setters) and carry only the
+ * <p>Subclasses should be immutable (final fields, no  ) and carry only the
  * context needed by downstream consumers — no framework types, no entity references.
  * {@code eventId}, {@code occurredOn}, and {@code eventType} are assigned automatically.
  */

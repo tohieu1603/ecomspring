@@ -1,21 +1,23 @@
 package com.hieu.order_service.domain.events.order;
 
 import com.hieu.order_service.domain.events.DomainEvent;
-import lombok.Getter;
 
-@Getter
-public final class OrderFailedEvent extends DomainEvent {
-    private final Long orderId;
-    private final String orderNumber;
-    private final String userId;
-    private final String reason;
+import java.time.Instant;
+import java.util.UUID;
+
+public record OrderFailedEvent(
+        UUID eventId,
+        Instant occurredOn,
+        Long orderId,
+        String orderNumber,
+        String userId,
+        String reason
+) implements DomainEvent {
 
     public OrderFailedEvent(Long orderId, String orderNumber, String userId, String reason) {
-        this.orderId = orderId;
-        this.orderNumber = orderNumber;
-        this.userId = userId;
-        this.reason = reason;
+        this(UUID.randomUUID(), Instant.now(), orderId, orderNumber, userId, reason);
     }
 
-    @Override public String aggregateId() { return String.valueOf(orderId); }
+    @Override
+    public String aggregateId() { return String.valueOf(orderId); }
 }

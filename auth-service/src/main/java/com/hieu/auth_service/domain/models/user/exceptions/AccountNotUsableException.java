@@ -1,6 +1,7 @@
 package com.hieu.auth_service.domain.models.user.exceptions;
 
 import com.hieu.auth_service.domain.shared.DomainException;
+import com.hieu.common.error.ErrorCode;
 
 /**
  * Thrown when an otherwise authenticated user cannot log in due to account-state flags.
@@ -10,10 +11,10 @@ import com.hieu.auth_service.domain.shared.DomainException;
 public final class AccountNotUsableException extends DomainException {
 
     public enum Reason {
-        DISABLED("AUTH-1007", "Account is disabled"),
-        LOCKED("AUTH-1006", "Account is locked"),
-        EXPIRED("AUTH-1014", "Account has expired"),
-        CREDENTIALS_EXPIRED("AUTH-1015", "Credentials have expired");
+        DISABLED(ErrorCode.ACCOUNT_DISABLED.code(), "Account is disabled"),
+        LOCKED(ErrorCode.ACCOUNT_LOCKED.code(), "Account is locked"),
+        EXPIRED(ErrorCode.AUTH_RATE_LIMITED.code(), "Account has expired"),
+        CREDENTIALS_EXPIRED(ErrorCode.AUTH_BLACKLISTED.code(), "Credentials have expired");
 
         private final String code;
         private final String message;

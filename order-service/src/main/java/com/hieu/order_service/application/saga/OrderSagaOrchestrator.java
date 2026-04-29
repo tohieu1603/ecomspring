@@ -186,9 +186,14 @@ public class OrderSagaOrchestrator {
      * concurrent "cancel" clicks don't produce divergent states.
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public OrderDTO executeCancelOrderSaga(Long orderId, String reason, String userId) {
+    public OrderDTO executeCancelOrderSaga(Long orderId, String reason, String userId, boolean isAdmin) {
         var order = orderRepository.findByIdWithLock(OrderId.of(orderId))
                 .orElseThrow(() -> new OrderNotFoundException(orderId));
+        // Owner-or-admin gate. Without this, any authenticated user can cancel any order.
+        if (!isAdmin && !order.getUserId().value().equals(userId)) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "User not allowed to cancel order " + orderId);
+        }
         if (order.getReservationId() != null) {
             try {
                 inventoryGrpcClient.releaseStock(order.getReservationId().value());

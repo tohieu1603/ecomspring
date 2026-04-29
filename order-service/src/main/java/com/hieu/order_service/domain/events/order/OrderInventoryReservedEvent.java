@@ -1,19 +1,23 @@
 package com.hieu.order_service.domain.events.order;
 
 import com.hieu.order_service.domain.events.DomainEvent;
-import lombok.Getter;
 
-@Getter
-public final class OrderInventoryReservedEvent extends DomainEvent {
-    private final Long orderId;
-    private final String orderNumber;
-    private final String reservationId;
+import java.time.Instant;
+import java.util.UUID;
 
+public record OrderInventoryReservedEvent(
+        UUID eventId,
+        Instant occurredOn,
+        Long orderId,
+        String orderNumber,
+        String reservationId
+) implements DomainEvent {
+
+    /** Convenience factory — generates eventId and occurredOn automatically. */
     public OrderInventoryReservedEvent(Long orderId, String orderNumber, String reservationId) {
-        this.orderId = orderId;
-        this.orderNumber = orderNumber;
-        this.reservationId = reservationId;
+        this(UUID.randomUUID(), Instant.now(), orderId, orderNumber, reservationId);
     }
 
-    @Override public String aggregateId() { return String.valueOf(orderId); }
+    @Override
+    public String aggregateId() { return String.valueOf(orderId); }
 }

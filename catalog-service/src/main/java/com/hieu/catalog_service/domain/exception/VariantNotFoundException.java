@@ -1,10 +1,11 @@
 package com.hieu.catalog_service.domain.exception;
 
 import com.hieu.catalog_service.domain.shared.DomainException;
+import com.hieu.common.error.ErrorCode;
 
 public final class VariantNotFoundException extends DomainException {
     public VariantNotFoundException(Long variantId) {
-        super(CatalogErrorCodes.VARIANT_NOT_FOUND, "Variant not found: " + variantId);
+        super(ErrorCode.VARIANT_NOT_FOUND.code(), "Variant not found: " + variantId);
     }
 
     public static VariantNotFoundException bySku(String sku) {
@@ -12,6 +13,6 @@ public final class VariantNotFoundException extends DomainException {
     }
 
     private VariantNotFoundException(String sku, boolean bySku) {
-        super(CatalogErrorCodes.VARIANT_NOT_FOUND, "Variant not found by SKU: " + sku);
+        super(ErrorCode.VARIANT_NOT_FOUND.code(), "Variant not found by SKU: " + sku);
     }
 }

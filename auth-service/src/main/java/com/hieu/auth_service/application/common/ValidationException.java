@@ -1,5 +1,7 @@
 package com.hieu.auth_service.application.common;
 
+import com.hieu.common.error.ErrorCode;
+
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -20,7 +22,7 @@ public final class ValidationException extends ApplicationException {
      * @param message human-readable summary
      */
     public ValidationException(String message) {
-        super("APP-400", message);
+        super(ErrorCode.APP_BAD_REQUEST.code(), message);
         this.fieldErrors = new LinkedHashMap<>();
     }
 
@@ -31,7 +33,7 @@ public final class ValidationException extends ApplicationException {
      * @param fieldErrors map of {@code field → error message}; a defensive copy is stored
      */
     public ValidationException(String message, Map<String, String> fieldErrors) {
-        super("APP-400", message);
+        super(ErrorCode.APP_BAD_REQUEST.code(), message);
         this.fieldErrors = fieldErrors == null ? new LinkedHashMap<>() : new LinkedHashMap<>(fieldErrors);
     }
 

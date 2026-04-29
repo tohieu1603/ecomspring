@@ -33,13 +33,13 @@ public class RefundOnReturnCompletedListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onReturned(OrderReturnedEvent event) {
         try {
-            var order = orderRepository.findById(OrderId.of(event.getOrderId())).orElse(null);
+            var order = orderRepository.findById(OrderId.of(event.orderId())).orElse(null);
             if (order == null) {
                 log.warn("Refund skipped — order {} not found for returned event {}",
-                        event.getOrderId(), event.getReturnRequestId());
+                        event.orderId(), event.returnRequestId());
                 return;
             }
-            if (event.getRefundAmount() == null) {
+            if (event.refundAmount() == null) {
                 log.info("Refund skipped for order {} — no refund amount on return request",
                         order.getOrderNumber().value());
                 return;
@@ -49,14 +49,14 @@ public class RefundOnReturnCompletedListener {
             // skip gracefully in dev when it's unset).
             paymentServiceClient.processRefundForOrder(
                     order.getOrderNumber().value(),
-                    event.getRefundAmount(),
+                    event.refundAmount(),
                     null /* TODO: system admin token from secrets / machine-to-machine auth */);
             log.info("Refund triggered for order {} returnRequest {}",
-                    order.getOrderNumber().value(), event.getReturnRequestId());
+                    order.getOrderNumber().value(), event.returnRequestId());
         } catch (Exception e) {
             // Never let an event listener crash — refund can be retried by a background job.
             log.error("Refund call failed for returnRequest {}: {}",
-                    event.getReturnRequestId(), e.getMessage());
+                    event.returnRequestId(), e.getMessage());
         }
     }
 }

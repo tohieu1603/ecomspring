@@ -2,6 +2,7 @@ package com.hieu.auth_service.interfaces.rest.filter;
 
 import tools.jackson.databind.ObjectMapper;
 import com.hieu.auth_service.exceptions.ErrorResponse;
+import com.hieu.common.error.ErrorCode;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -38,7 +39,7 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
         ErrorResponse body = ErrorResponse.builder()
                 .timestamp(LocalDateTime.now())
                 .status(HttpStatus.UNAUTHORIZED.value())
-                .error("COMMON-401")
+                .error(ErrorCode.UNAUTHORIZED.code())
                 .message(authException.getMessage() == null ? "Authentication required" : authException.getMessage())
                 .path(request.getRequestURI())
                 .build();

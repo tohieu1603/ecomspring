@@ -1,4 +1,8 @@
 spring:
+  threads:
+    virtual:
+      enabled: true     # Java 25 virtual threads for Tomcat + @Async + sagaExecutor
+
   application:
     name: order-service
 
@@ -31,7 +35,17 @@ spring:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD:}
-      timeout: 2s
+      # Idempotency Lua claim sits on the request thread — keep timeouts tight so a
+      # Redis hiccup fails fast instead of pinning saga workers.
+      timeout: 1s
+      connect-timeout: 500ms
+      lettuce:
+        pool:
+          max-active: 16
+          max-idle: 8
+          min-idle: 2
+          max-wait: 500ms
+        shutdown-timeout: 100ms
 
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:9092}
@@ -59,6 +73,9 @@ server:
 
 jwt:
   secret: ${JWT_SECRET:change-me-change-me-change-me-change-me-please-32chars}
+
+security:
+  internal-token: ${INTERNAL_TOKEN:change-me-internal-token-min-32-chars-please}
 
 eureka:
   client:
@@ -89,7 +106,9 @@ services:
 
 outbox:
   poll-delay-ms: 500
-  batch-size: 100
+  # Cap batch so worst-case Kafka stall (batch-size × send-timeout) stays under
+  # Hikari's pool-keepalive — prevents pool starvation when broker is degraded.
+  batch-size: 25
 
 springdoc:
   api-docs:
