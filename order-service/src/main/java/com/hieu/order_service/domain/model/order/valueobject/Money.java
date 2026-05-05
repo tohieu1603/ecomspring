@@ -24,7 +24,10 @@ public record Money(BigDecimal amount) {
         var result = amount.subtract(other.amount);
         return new Money(result.compareTo(BigDecimal.ZERO) < 0 ? BigDecimal.ZERO : result);
     }
-    public Money multiply(int qty) { return new Money(amount.multiply(BigDecimal.valueOf(qty))); }
+    public Money multiply(int qty) {
+        if (qty < 0) throw new IllegalArgumentException("multiply qty must be non-negative, got: " + qty);
+        return new Money(amount.multiply(BigDecimal.valueOf(qty)));
+    }
 
     public boolean isZero() { return amount.compareTo(BigDecimal.ZERO) == 0; }
     public boolean isWithin(Money other, BigDecimal tolerance) {

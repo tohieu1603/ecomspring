@@ -91,7 +91,8 @@ public class VoucherApplicationService {
 
     @Transactional(readOnly = true)
     public Page<VoucherDTO> listActiveVouchers(int page, int size) {
-        return voucherRepository.findByActiveTrue(PageRequest.of(page, size)).map(this::toDTO);
+        // Filter by time window so expired vouchers are excluded even if active=true
+        return voucherRepository.findActiveAtTime(Instant.now(), PageRequest.of(page, size)).map(this::toDTO);
     }
 
     @Transactional
@@ -214,7 +215,9 @@ public class VoucherApplicationService {
     public void releaseVoucher(String code, String orderId) {
         usageRecordRepository.findByOrderId(orderId).ifPresentOrElse(
             record -> {
-                VoucherJpaEntity entity = findByCode(code);
+                // Use pessimistic write lock to prevent race with concurrent validateAndApply
+                VoucherJpaEntity entity = voucherRepository.findByCodeForUpdate(code)
+                        .orElseThrow(() -> new VoucherNotFoundException(code));
                 if (entity.getUsedCount() > 0) {
                     entity.setUsedCount(entity.getUsedCount() - 1);
                     voucherRepository.save(entity);
@@ -278,7 +281,6 @@ public class VoucherApplicationService {
                 .description(e.getDescription())
                 .createdAt(e.getCreatedAt())
                 .updatedAt(e.getUpdatedAt())
-                .version(e.getVersion())
                 .build();
     }
 }

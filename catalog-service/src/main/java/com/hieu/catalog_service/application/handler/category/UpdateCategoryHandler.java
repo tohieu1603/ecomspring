@@ -30,8 +30,19 @@ public class UpdateCategoryHandler implements CommandHandler<UpdateCategoryComma
         var category = categoryRepository.findById(CategoryId.of(cmd.categoryId()))
             .orElseThrow(() -> new CategoryNotFoundException(cmd.categoryId()));
         CategoryId parent = Optional.ofNullable(cmd.parentId()).map(CategoryId::of).orElse(null);
-        if (parent != null && !categoryRepository.existsById(parent)) {
-            throw new CategoryNotFoundException(parent.value());
+        if (parent != null) {
+            if (!categoryRepository.existsById(parent)) {
+                throw new CategoryNotFoundException(parent.value());
+            }
+            // Indirect cycle guard: re-parenting a category to one of its own descendants
+            // would form a cycle (A→B→C→A). The new parent's ancestor chain must not contain
+            // the category itself.
+            boolean wouldCycle = categoryRepository.findAncestors(parent).stream()
+                .anyMatch(c -> c.getId() != null && c.getId().equals(category.getId()));
+            if (wouldCycle) {
+                throw new IllegalArgumentException(
+                    "Cannot move category " + cmd.categoryId() + " under " + parent.value() + ": would create a cycle");
+            }
         }
         category.update(CategoryName.of(cmd.name()), CategoryDescription.of(cmd.description()),
             parent, cmd.sortOrder(), cmd.updatedBy());

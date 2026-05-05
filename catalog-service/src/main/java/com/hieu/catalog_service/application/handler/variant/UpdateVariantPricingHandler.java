@@ -28,8 +28,8 @@ public class UpdateVariantPricingHandler implements CommandHandler<UpdateVariant
         var product = productRepository.findByIdWithVariants(ProductId.of(cmd.productId()))
             .orElseThrow(() -> new ProductNotFoundException(cmd.productId()));
         var variantId = VariantId.of(cmd.variantId());
-        product.updateVariantPricing(variantId, Money.of(cmd.price()), Money.of(cmd.cost()),
-            Money.of(cmd.salePrice()), cmd.updatedBy());
+        product.updateVariantPricing(variantId, Money.of(cmd.price()), Money.ofNullable(cmd.cost()),
+            Money.ofNullable(cmd.salePrice()), cmd.updatedBy());
         var saved = productRepository.save(product);
         eventPublisher.publishEventsOf(saved);
         return saved.getVariants().stream()

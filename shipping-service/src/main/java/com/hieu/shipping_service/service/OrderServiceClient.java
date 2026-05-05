@@ -30,11 +30,13 @@ public class OrderServiceClient {
     @SuppressWarnings("unchecked")
     public Optional<Map<String, Object>> fetchOrder(String orderId) {
         try {
+            // H1: .timeout(3s) caps block() on Kafka thread — prevents indefinite thread starvation.
+            // KISS choice over RestTemplate migration; upgrade to async if throughput requires it.
             var result = webClient.get()
                     .uri("/api/orders/{id}", orderId)
                     .retrieve()
                     .bodyToMono(Map.class)
-                    .timeout(Duration.ofSeconds(5))
+                    .timeout(Duration.ofSeconds(3))
                     .onErrorResume(e -> {
                         log.warn("order-service unreachable for orderId={}: {}", orderId, e.getMessage());
                         return Mono.empty();

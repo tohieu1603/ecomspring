@@ -8,6 +8,7 @@ import com.hieu.catalog_service.infrastructure.persistence.jpa.entities.Category
 import com.hieu.catalog_service.infrastructure.persistence.jpa.repositories.CategoryJpaRepository;
 import com.hieu.catalog_service.infrastructure.persistence.mapper.CategoryJpaMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
 
 import java.util.ArrayList;
@@ -16,7 +17,11 @@ import java.util.Optional;
 
 @Repository
 @RequiredArgsConstructor
+@Slf4j
 public class CategoryRepositoryImpl implements CategoryRepository {
+
+    /** Guard against accidental cycles in legacy data. */
+    private static final int MAX_DEPTH = 10;
 
     private final CategoryJpaRepository jpa;
     private final CategoryJpaMapper mapper;
@@ -62,12 +67,18 @@ public class CategoryRepositoryImpl implements CategoryRepository {
     @Override
     public List<Category> findAncestors(CategoryId id) {
         // Walk parent chain in-process — adjacency model, tree depth is small.
+        // Guard against accidental cycles in legacy data.
         List<Category> chain = new ArrayList<>();
         Optional<CategoryJpaEntity> cursor = jpa.findById(id.value());
-        while (cursor.isPresent()) {
+        int depth = 0;
+        while (cursor.isPresent() && depth < MAX_DEPTH) {
             CategoryJpaEntity e = cursor.get();
             chain.add(mapper.toDomain(e));
             cursor = e.getParentId() != null ? jpa.findById(e.getParentId()) : Optional.empty();
+            depth++;
+        }
+        if (depth >= MAX_DEPTH) {
+            log.warn("Category ancestor chain hit MAX_DEPTH={} starting from id={}", MAX_DEPTH, id);
         }
         return chain;
     }

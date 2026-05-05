@@ -1,8 +1,5 @@
 package com.hieu.auth_service.domain.models.user.vo;
 
-
-import com.hieu.auth_service.domain.models.refreshtoken.vo.TokenId;
-
 import java.util.UUID;
 
 /**
@@ -16,8 +13,9 @@ public record UserId(String value) {
         if (value == null || value.trim().isEmpty()) {
             throw new IllegalArgumentException("UserId cannot be null or empty");
         }
-        // Chuẩn hóa loại bỏ khoảng trắng thừa
         value = value.trim();
+        // Validate UUID format — chống corrupted strings từ DB/JWT/external lọt vào aggregate
+        UUID.fromString(value);
     }
 
     public static UserId of(String value) {

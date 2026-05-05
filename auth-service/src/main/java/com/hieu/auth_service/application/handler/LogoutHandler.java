@@ -9,6 +9,7 @@ import com.hieu.auth_service.domain.models.refreshtoken.vo.TokenValue;
 import com.hieu.auth_service.domain.repositories.RefreshTokenRepository;
 import com.hieu.auth_service.domain.services.TokenProviderPort;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class LogoutHandler implements CommandHandler<LogoutCommand, Void> {
 
     private final RefreshTokenRepository refreshTokenRepository;
@@ -31,10 +33,16 @@ public class LogoutHandler implements CommandHandler<LogoutCommand, Void> {
         refreshTokenRepository.findByTokenValue(TokenValue.of(command.refreshToken()))
                 .ifPresent(this::revokeRefresh);
 
-        // Step 2: blacklist the access token by its jti until natural expiry.
+        // H5: Blacklist access token in a separate try-catch AFTER refresh revoke has committed.
+        // An expired/malformed access token must NOT roll back the already-committed refresh revoke.
         if (command.accessToken() != null && !command.accessToken().isBlank()) {
-            var claims = tokenProvider.parseAccessToken(command.accessToken());
-            tokenBlacklist.revoke(claims.tokenId(), claims.userId(), claims.expiresAt(), "LOGOUT");
+            try {
+                var claims = tokenProvider.parseAccessToken(command.accessToken());
+                tokenBlacklist.revoke(claims.tokenId(), claims.userId(), claims.expiresAt(), "LOGOUT");
+            } catch (Exception e) {
+                log.warn("Logout: could not blacklist access token (expired or malformed) — refresh already revoked: {}",
+                        e.getMessage());
+            }
         }
         return null;
     }

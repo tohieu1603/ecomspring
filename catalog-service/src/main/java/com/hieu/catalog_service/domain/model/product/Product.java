@@ -176,6 +176,10 @@ public final class Product extends AggregateRoot {
         Objects.requireNonNull(next, "next");
         if (status == next) return;
         if (status.isDeleted()) throw new IllegalStateException("Cannot transition a deleted product to " + next);
+        // Guard: ACTIVE products must have at least one variant — prevents publishing empty SPUs.
+        if (next == ProductStatus.ACTIVE && variants.isEmpty()) {
+            throw new IllegalStateException("Cannot activate a product with no variants");
+        }
         ProductStatus prev = status;
         status = next;
         touch(updatedBy);

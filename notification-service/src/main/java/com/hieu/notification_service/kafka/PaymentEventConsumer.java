@@ -25,55 +25,47 @@ public class PaymentEventConsumer {
 
     @KafkaListener(topics = KafkaTopics.PAYMENT_COMPLETED, groupId = "notification-service")
     public void onPaymentCompleted(Map<String, Object> payload) {
-        try {
-            var userId = str(payload, "userId");
-            var amount = str(payload, "amount");
-            var title = "Thanh toán " + amount + " VND thành công";
-            var content = "Thanh toán " + amount + " VND đã được xử lý thành công.";
-            var paymentId = str(payload, "paymentId");
-            var email = str(payload, "email");
+        var userId = str(payload, "userId");
+        var amount = str(payload, "amount");
+        var title = "Thanh toán " + amount + " VND thành công";
+        var content = "Thanh toán " + amount + " VND đã được xử lý thành công.";
+        var paymentId = str(payload, "paymentId");
+        var email = str(payload, "email");
 
-            // IN_APP
+        // IN_APP
+        notificationService.send(SendNotificationRequest.builder()
+                .userId(userId).type(NotificationType.IN_APP)
+                .title(title).content(content)
+                .referenceType("PAYMENT").referenceId(paymentId)
+                .build());
+
+        // EMAIL: payload first, gRPC fallback
+        String resolvedEmail = !email.isBlank()
+                ? email
+                : emailResolver.lookupEmail(userId).orElse(null);
+        if (resolvedEmail != null) {
             notificationService.send(SendNotificationRequest.builder()
-                    .userId(userId).type(NotificationType.IN_APP)
-                    .title(title).content(content)
+                    .userId(userId).type(NotificationType.EMAIL)
+                    .channel(resolvedEmail).title(title).content(content)
                     .referenceType("PAYMENT").referenceId(paymentId)
                     .build());
-
-            // EMAIL: payload first, gRPC fallback
-            String resolvedEmail = !email.isBlank()
-                    ? email
-                    : emailResolver.lookupEmail(userId).orElse(null);
-            if (resolvedEmail != null) {
-                notificationService.send(SendNotificationRequest.builder()
-                        .userId(userId).type(NotificationType.EMAIL)
-                        .channel(resolvedEmail).title(title).content(content)
-                        .referenceType("PAYMENT").referenceId(paymentId)
-                        .build());
-            } else {
-                log.debug("No email resolved for userId={}, skipping EMAIL notification", userId);
-            }
-        } catch (Exception e) {
-            log.error("payment.completed processing failed: {}", e.getMessage(), e);
+        } else {
+            log.debug("No email resolved for userId={}, skipping EMAIL notification", userId);
         }
     }
 
     @KafkaListener(topics = KafkaTopics.PAYMENT_FAILED, groupId = "notification-service")
     public void onPaymentFailed(Map<String, Object> payload) {
-        try {
-            var userId = str(payload, "userId");
-            var title = "Thanh toán thất bại";
-            var content = "Giao dịch thanh toán của bạn không thành công. Vui lòng thử lại.";
-            var paymentId = str(payload, "paymentId");
+        var userId = str(payload, "userId");
+        var title = "Thanh toán thất bại";
+        var content = "Giao dịch thanh toán của bạn không thành công. Vui lòng thử lại.";
+        var paymentId = str(payload, "paymentId");
 
-            notificationService.send(SendNotificationRequest.builder()
-                    .userId(userId).type(NotificationType.IN_APP)
-                    .title(title).content(content)
-                    .referenceType("PAYMENT").referenceId(paymentId)
-                    .build());
-        } catch (Exception e) {
-            log.error("payment.failed processing failed: {}", e.getMessage(), e);
-        }
+        notificationService.send(SendNotificationRequest.builder()
+                .userId(userId).type(NotificationType.IN_APP)
+                .title(title).content(content)
+                .referenceType("PAYMENT").referenceId(paymentId)
+                .build());
     }
 
     private static String str(Map<String, Object> m, String key) {

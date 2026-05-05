@@ -120,7 +120,9 @@ public final class RefreshToken extends AggregateRoot {
 
     public boolean isValid()          { return !revoked && !expiry.isExpired(); }
     public boolean isRevoked()        { return revoked; }
-    public boolean isReuseAttempt()   { return revoked; }
+    // C4: Normal rotation re-presentation must NOT trigger family revocation — only truly
+    // suspicious reasons (REUSE_DETECTED, FAMILY_REVOKED, etc.) indicate theft.
+    public boolean isReuseAttempt()   { return revoked && reason != RevokedReason.NORMAL; }
     public boolean belongsTo(UserId u){ return userId.equals(u); }
     public boolean willExpireSoon(long seconds) { return expiry.willExpireWithin(seconds); }
 

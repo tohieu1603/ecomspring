@@ -4,6 +4,7 @@ import com.hieu.analytics_service.service.AnalyticsIndexer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Component;
 
@@ -20,12 +21,11 @@ public class PaymentEventConsumer {
             "payment.completed", "payment.failed", "payment.refunded"
     }, groupId = "${spring.kafka.consumer.group-id}")
     public void onPaymentEvent(Map<String, Object> payload,
-                               @Header(name = "kafka_receivedTopic", required = false) String topic) {
-        try {
-            String fallbackType = topic != null ? topic.toUpperCase().replace('.', '_') : "PAYMENT_EVENT";
-            indexer.index(EventPayloadMapper.toDocument(payload, fallbackType, "PAYMENT"));
-        } catch (Exception e) {
-            log.error("Failed indexing payment event: {}", e.getMessage(), e);
-        }
+                               @Header(name = "kafka_receivedTopic", required = false) String topic,
+                               Acknowledgment ack) {
+        String fallbackType = topic != null ? topic.toUpperCase().replace('.', '_') : "PAYMENT_EVENT";
+        // Exception propagates to Kafka error handler for retry/DLT; no ack on failure
+        indexer.index(EventPayloadMapper.toDocument(payload, fallbackType, "PAYMENT"));
+        ack.acknowledge();
     }
 }

@@ -8,12 +8,14 @@ import io.grpc.stub.StreamObserver;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.grpc.server.service.GrpcService;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
 @GrpcService
 @RequiredArgsConstructor
 @Slf4j
+@Transactional(readOnly = true) // all gRPC read methods — avoids dirty reads and enables connection-pool hints
 public class UserProfileGrpcService extends UserProfileServiceGrpc.UserProfileServiceImplBase {
 
     private final UserProfileRepository profileRepo;

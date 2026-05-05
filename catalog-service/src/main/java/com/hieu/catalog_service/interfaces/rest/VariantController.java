@@ -40,7 +40,7 @@ public class VariantController {
     private final CommandHandler<AdjustVariantStockCommand, VariantDTO> adjustStock;
     private final CommandHandler<RemoveVariantCommand, Void> removeVariant;
     private final QueryHandler<GetVariantBySkuQuery, VariantDTO> getBySku;
-    private final QueryHandler<CheckStockQuery, Boolean> checkStock;
+    private final QueryHandler<CheckStockQuery, VariantDTO> checkStock;
 
     @Operation(summary = "Add a variant to a product (admin)")
     @PostMapping("/api/products/{productId}/variants")
@@ -108,6 +108,7 @@ public class VariantController {
     @GetMapping("/api/variants/by-sku/{sku}/has-stock")
     public ResponseEntity<Boolean> hasStock(@PathVariable String sku,
                                               @RequestParam(defaultValue = "1") int requested) {
-        return ResponseEntity.ok(checkStock.handle(new CheckStockQuery(sku, requested)));
+        VariantDTO dto = checkStock.handle(new CheckStockQuery(sku, requested));
+        return ResponseEntity.ok(dto.quantity() >= requested);
     }
 }

@@ -10,6 +10,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 /** Order aggregate root — rich domain model with 18+ fields. */
 @Getter
@@ -167,6 +168,7 @@ public class Order extends AggregateRoot {
     }
 
     public void markInventoryReserved(ReservationId reservationId) {
+        Objects.requireNonNull(reservationId, "reservationId");
         transition(OrderStatus.INVENTORY_RESERVED);
         this.reservationId = reservationId;
         updatedAt = Instant.now();

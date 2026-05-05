@@ -187,21 +187,24 @@ public class FlashSaleApplicationService {
                 .orElseThrow(() -> new FlashSaleNotFoundException(saleId));
         assertSaleActive(locked, saleId, clock.instant()); // re-check after lock
 
+        // Both DB saves in a single try so any failure rolls back Redis slots (C1 slot-leak fix)
+        FlashSaleParticipation savedParticipation;
         try {
             locked.setReservedSlots(locked.getReservedSlots() + quantity);
             repository.save(locked);
+
+            // 5. Insert participation record (inside try to ensure Redis rollback on failure)
+            var participation = new FlashSaleParticipation();
+            participation.setSaleId(saleId);
+            participation.setUserId(userId);
+            participation.setQuantity(quantity);
+            savedParticipation = participationRepo.save(participation);
         } catch (Exception ex) {
-            // 7. Rollback Redis on DB failure
+            // Rollback Redis slots so they are not leaked when either DB write fails
             slotRedisService.incrementBy(saleId, quantity);
+            log.warn("Rollback Redis slots for sale={} qty={}", saleId, quantity);
             throw ex;
         }
-
-        // 5. Insert participation record
-        var participation = new FlashSaleParticipation();
-        participation.setSaleId(saleId);
-        participation.setUserId(userId);
-        participation.setQuantity(quantity);
-        var savedParticipation = participationRepo.save(participation);
 
         // 6. Emit Kafka event AFTER_COMMIT
         int finalRemaining = (int) result;

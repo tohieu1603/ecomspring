@@ -30,9 +30,7 @@ public abstract class BaseManualIdEntity implements Persistable<String> {
     public boolean isNew() {
         return isNew;
     }
-
-    // Khi Hibernate load dữ liệu từ DB lên, hoặc sau khi lưu thành công
-    // chúng ta đánh dấu là "không mới" để lần sau nó chạy lệnh UPDATE thay vì INSERT
+ 
     @PostLoad
     @PostPersist
     protected void markNotNew() {

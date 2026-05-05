@@ -9,8 +9,9 @@ public record TokenValue(String value) {
 
     public TokenValue {
         if (value == null || value.trim().isEmpty()) {
-            throw new IllegalArgumentException("Token Value cannot be null or empty");
+            throw new IllegalArgumentException("TokenValue cannot be null or empty");
         }
+        value = value.trim();
     }
 
     public static TokenValue of(String value) {

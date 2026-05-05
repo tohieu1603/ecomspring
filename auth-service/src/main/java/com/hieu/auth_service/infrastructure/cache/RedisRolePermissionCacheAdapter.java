@@ -80,8 +80,14 @@ public class RedisRolePermissionCacheAdapter implements RolePermissionCachePort 
     @Override
     public void evictAll() {
         try {
-            Set<String> keys = redis.keys(KEY_PREFIX + "*");
-            if (keys != null && !keys.isEmpty()) redis.delete(keys);
+            // H4: Use SCAN instead of KEYS to avoid O(N) blocking on large keyspaces.
+            var keys = new java.util.HashSet<String>();
+            try (var cursor = redis.getConnectionFactory().getConnection().keyCommands()
+                    .scan(org.springframework.data.redis.core.ScanOptions.scanOptions()
+                            .match(KEY_PREFIX + "*").count(100).build())) {
+                cursor.forEachRemaining(b -> keys.add(new String(b)));
+            }
+            if (!keys.isEmpty()) redis.delete(keys);
         } catch (Exception e) {
             log.warn("Redis unavailable for role cache wipe: {}", e.getMessage());
         }

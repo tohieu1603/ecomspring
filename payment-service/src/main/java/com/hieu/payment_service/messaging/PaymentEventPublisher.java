@@ -7,6 +7,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
+import java.util.concurrent.TimeUnit;
+
 /**
  * Bridges in-process spring events to Kafka AFTER_COMMIT.
  * Failures are logged but not retried (upgrade to Transactional Outbox for at-least-once).
@@ -33,11 +35,13 @@ public class PaymentEventPublisher {
     }
 
     private void send(String topic, String key, Object payload) {
+        // C2: Outbox pattern is the proper fix; .get(5s) bounds blast radius until then —
+        // fail-fast surfaces broker issues immediately rather than silently dropping events.
         try {
-            kafkaTemplate.send(topic, key, payload);
+            kafkaTemplate.send(topic, key, payload).get(5, TimeUnit.SECONDS);
             log.debug("Published to {} key={}", topic, key);
         } catch (Exception e) {
-            log.warn("Failed to publish to {} key={}: {}", topic, key, e.getMessage());
+            log.error("Failed to publish to {} key={}: {}", topic, key, e.getMessage());
         }
     }
 }

@@ -24,7 +24,14 @@ public record Money(BigDecimal amount) {
         amount = amount.setScale(SCALE, RoundingMode.HALF_UP);
     }
 
+    /** Strict factory — throws if amount is null. Use for required fields. */
     public static Money of(BigDecimal amount) {
+        Objects.requireNonNull(amount, "Money amount required");
+        return new Money(amount);
+    }
+
+    /** Lenient factory — returns null for null input. Use for nullable fields like salePrice. */
+    public static Money ofNullable(BigDecimal amount) {
         return amount == null ? null : new Money(amount);
     }
 

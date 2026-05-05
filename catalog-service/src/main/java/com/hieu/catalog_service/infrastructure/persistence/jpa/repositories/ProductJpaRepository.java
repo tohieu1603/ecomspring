@@ -33,6 +33,14 @@ public interface ProductJpaRepository extends JpaRepository<ProductJpaEntity, Lo
            """)
     Optional<ProductJpaEntity> findBySku(@Param("sku") String sku);
 
+    /** Single-query variant: fetch product + all its variants when looking up by SKU. */
+    @Query("""
+           SELECT DISTINCT p FROM ProductJpaEntity p
+           LEFT JOIN FETCH p.variants v
+           WHERE v.sku = :sku
+           """)
+    Optional<ProductJpaEntity> findBySkuWithVariants(@Param("sku") String sku);
+
     boolean existsBySlug(String slug);
 
     @Query("SELECT COUNT(v) > 0 FROM VariantJpaEntity v WHERE v.sku = :sku")

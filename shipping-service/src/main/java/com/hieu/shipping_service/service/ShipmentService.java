@@ -67,7 +67,13 @@ public class ShipmentService {
             log.debug("Shipment already exists for orderId={}, skipping", req.orderId());
             return;
         }
-        createShipment(req);
+        // C1: Catch concurrent-insert race (two consumers read "absent" before either commits).
+        try {
+            createShipment(req);
+        } catch (DataIntegrityViolationException dup) {
+            log.info("Shipment for order {} already exists (concurrent insert)", req.orderId());
+            // Idempotent path — existing shipment is the correct result; no further action needed.
+        }
     }
 
     @Transactional(readOnly = true)

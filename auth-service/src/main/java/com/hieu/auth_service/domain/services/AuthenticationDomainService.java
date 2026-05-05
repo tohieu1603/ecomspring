@@ -4,7 +4,6 @@ import com.hieu.auth_service.domain.models.permission.Permission;
 import com.hieu.auth_service.domain.models.permission.vo.PermissionId;
 import com.hieu.auth_service.domain.models.role.Role;
 import com.hieu.auth_service.domain.models.user.User;
-import com.hieu.auth_service.domain.models.user.exceptions.AccountNotUsableException;
 
 import java.util.Collection;
 import java.util.List;
@@ -50,21 +49,6 @@ public class AuthenticationDomainService {
         return allSystemPermissions.stream()
                 .filter(p -> grantedPermissionIds.contains(p.getId().value()))
                 .anyMatch(p -> p.grants(resource, action));
-    }
-
-    /**
-     * Validates account status at authentication time. Throws
-     * {@link AccountNotUsableException} with a specific reason if the account is
-     * disabled/locked/expired/credentials-expired.
-     */
-    public void validateAccountForAuthentication(User user) {
-        if (user.isActive()) return;
-
-        var s = user.getAccountStatus();
-        if (!s.enabled())               throw new AccountNotUsableException(AccountNotUsableException.Reason.DISABLED);
-        if (!s.accountNonLocked())      throw new AccountNotUsableException(AccountNotUsableException.Reason.LOCKED);
-        if (!s.accountNonExpired())     throw new AccountNotUsableException(AccountNotUsableException.Reason.EXPIRED);
-        if (!s.credentialsNonExpired()) throw new AccountNotUsableException(AccountNotUsableException.Reason.CREDENTIALS_EXPIRED);
     }
 
     private Set<String> extractPermissionIds(Collection<Role> roles) {

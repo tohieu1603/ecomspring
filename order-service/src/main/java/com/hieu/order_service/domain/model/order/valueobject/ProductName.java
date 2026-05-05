@@ -7,6 +7,7 @@ public record ProductName(String value) {
     public ProductName {
         Objects.requireNonNull(value, "ProductName value");
         if (value.isBlank()) throw new IllegalArgumentException("ProductName must not be blank");
+        value = value.trim();
     }
 
     public static ProductName of(String value) { return new ProductName(value); }

@@ -24,4 +24,13 @@ public class RedisConfig {
         script.setResultType(Long.class);
         return script;
     }
+
+    /** Lua script for atomic batch stock release — single round-trip prevents partial rollback. */
+    @Bean
+    public DefaultRedisScript<Long> releaseStockBatchScript() {
+        var script = new DefaultRedisScript<Long>();
+        script.setScriptSource(new ResourceScriptSource(new ClassPathResource("scripts/release-stock-batch.lua")));
+        script.setResultType(Long.class);
+        return script;
+    }
 }

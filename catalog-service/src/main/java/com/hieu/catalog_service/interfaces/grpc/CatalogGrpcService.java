@@ -43,7 +43,7 @@ public class CatalogGrpcService extends CatalogServiceGrpc.CatalogServiceImplBas
 
     private final QueryHandler<GetProductByIdQuery, ProductDTO> getProductById;
     private final QueryHandler<GetVariantBySkuQuery, VariantDTO> getVariantBySku;
-    private final QueryHandler<CheckStockQuery, Boolean> checkStock;
+    private final QueryHandler<CheckStockQuery, VariantDTO> checkStock;
 
     @Override
     public void getProduct(GetProductRequest request, StreamObserver<GetProductResponse> observer) {
@@ -81,14 +81,12 @@ public class CatalogGrpcService extends CatalogServiceGrpc.CatalogServiceImplBas
     public void checkStock(CheckStockRequest request, StreamObserver<CheckStockResponse> observer) {
         CheckStockResponse.Builder reply = CheckStockResponse.newBuilder();
         try {
-            boolean ok = checkStock.handle(new CheckStockQuery(request.getSku(), request.getRequested()));
-            VariantDTO dto;
-            try {
-                dto = getVariantBySku.handle(new GetVariantBySkuQuery(request.getSku()));
-                reply.setAvailable(ok).setQuantity(dto.quantity()).setStatus(dto.status());
-            } catch (VariantNotFoundException nf) {
-                reply.setAvailable(false).setQuantity(0).setStatus("");
-            }
+            // Single fetch — CheckStockHandler returns VariantDTO; available derived here
+            VariantDTO dto = checkStock.handle(new CheckStockQuery(request.getSku(), request.getRequested()));
+            boolean available = dto.quantity() >= request.getRequested();
+            reply.setAvailable(available).setQuantity(dto.quantity()).setStatus(dto.status());
+        } catch (VariantNotFoundException nf) {
+            reply.setAvailable(false).setQuantity(0).setStatus("");
         } catch (Exception e) {
             log.warn("gRPC checkStock failed: {}", e.getMessage());
             reply.setAvailable(false).setQuantity(0).setStatus("");

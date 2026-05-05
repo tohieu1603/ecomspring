@@ -47,8 +47,9 @@ public class CustomUserDetailsService implements UserDetailsService {
     @Override
     @Transactional(readOnly = true)
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        // H1: Generic message prevents username enumeration via error responses.
         User user = userRepository.findByUsernameWithRoles(Username.of(username))
-                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
+                .orElseThrow(() -> new UsernameNotFoundException("Authentication failed"));
         return toUserDetails(user);
     }
 
@@ -62,8 +63,9 @@ public class CustomUserDetailsService implements UserDetailsService {
      */
     @Transactional(readOnly = true)
     public UserDetails loadUserById(String userIdRaw) {
+        // H1: Generic message — do not leak internal user IDs in error responses.
         User user = userRepository.findByIdWithRoles(UserId.of(userIdRaw))
-                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + userIdRaw));
+                .orElseThrow(() -> new UsernameNotFoundException("Authentication failed"));
         return toUserDetails(user);
     }
 

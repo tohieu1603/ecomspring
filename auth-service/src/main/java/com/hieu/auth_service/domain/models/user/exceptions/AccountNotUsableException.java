@@ -13,8 +13,8 @@ public final class AccountNotUsableException extends DomainException {
     public enum Reason {
         DISABLED(ErrorCode.ACCOUNT_DISABLED.code(), "Account is disabled"),
         LOCKED(ErrorCode.ACCOUNT_LOCKED.code(), "Account is locked"),
-        EXPIRED(ErrorCode.AUTH_RATE_LIMITED.code(), "Account has expired"),
-        CREDENTIALS_EXPIRED(ErrorCode.AUTH_BLACKLISTED.code(), "Credentials have expired");
+        EXPIRED(ErrorCode.ACCOUNT_EXPIRED.code(), "Account has expired"),
+        CREDENTIALS_EXPIRED(ErrorCode.CREDENTIALS_EXPIRED.code(), "Credentials have expired");
 
         private final String code;
         private final String message;

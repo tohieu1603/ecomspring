@@ -1,4 +1,7 @@
 spring:
+  # Auto-load .env as properties (Spring Boot 3.1+) — file is optional.
+  config:
+    import: optional:file:.env[.properties]
   application:
     name: notification-service
 
@@ -52,6 +55,9 @@ spring:
           auth: false
           starttls:
             enable: false
+          connectiontimeout: 5000
+          timeout: 10000
+          writetimeout: 10000
 
   grpc:
     client:

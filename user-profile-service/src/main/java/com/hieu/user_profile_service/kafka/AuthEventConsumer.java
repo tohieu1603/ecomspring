@@ -1,8 +1,10 @@
 package com.hieu.user_profile_service.kafka;
 
+import com.hieu.user_profile_service.kafka.event.ProfileUpsertedSpringEvent;
 import com.hieu.user_profile_service.repository.UserProfileRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,7 +24,7 @@ import java.util.Map;
 public class AuthEventConsumer {
 
     private final UserProfileRepository profileRepo;
-    private final UserProfileEventPublisher eventPublisher;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     @KafkaListener(topics = "auth.user-registered", groupId = "user-profile-service")
     @Transactional
@@ -39,8 +41,8 @@ public class AuthEventConsumer {
             }
 
             profileRepo.insertIfAbsent(userId, email, firstName, lastName);
-            // Fan-out so downstream caches (notification, etc.) get the email immediately.
-            eventPublisher.publishProfileUpserted(userId, email, firstName, lastName, null);
+            // Publish Spring event — Kafka push deferred to AFTER_COMMIT via ProfileUpsertedListener
+            applicationEventPublisher.publishEvent(new ProfileUpsertedSpringEvent(userId, email, firstName, lastName, null));
             log.info("Seeded user_profile for userId={}", userId);
         } catch (Exception e) {
             log.error("auth.user-registered processing failed: {}", e.getMessage(), e);

@@ -24,6 +24,6 @@ public interface InventoryRepository extends JpaRepository<InventoryEntity, Long
     boolean existsBySku(String sku);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT i FROM InventoryEntity i WHERE i.productId IN :ids")
+    @Query("SELECT i FROM InventoryEntity i WHERE i.productId IN :ids ORDER BY i.productId")
     List<InventoryEntity> findAllByProductIdInWithLock(@Param("ids") List<Long> ids);
 }

@@ -26,8 +26,9 @@ public interface RefreshTokenJpaRepository extends JpaRepository<RefreshTokenJpa
     @Query("DELETE FROM RefreshTokenJpaEntity t WHERE t.expiryDate < :now")
     int deleteExpiredTokens(@Param("now") Instant now);
 
+    // H3: Persist the revocation reason so isReuseAttempt() can distinguish normal vs security revokes.
     @Modifying
-    @Query("UPDATE RefreshTokenJpaEntity t SET t.revoked = true, t.revokedAt = :now WHERE t.user.id = :userId AND t.revoked = false")
+    @Query("UPDATE RefreshTokenJpaEntity t SET t.revoked = true, t.revokedAt = :now, t.revokedReason = 'PASSWORD_CHANGED' WHERE t.user.id = :userId AND t.revoked = false")
     void revokeAllTokensForUser(@Param("userId") String userId, @Param("now") Instant now);
 
     void deleteByUserId(String userId);

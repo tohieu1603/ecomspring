@@ -1,6 +1,14 @@
 spring:
+  # Auto-load .env as properties (Spring Boot 3.1+) — file is optional.
+  config:
+    import: optional:file:.env[.properties]
   application:
     name: auth-service
+
+  # M1: Virtual threads — Tomcat + async tasks use Project Loom threads, no pool sizing needed.
+  threads:
+    virtual:
+      enabled: true
 
   # gRPC server — Netty, dedicated port (separate from Tomcat 8081).
   grpc:
@@ -66,8 +74,8 @@ server:
 
 # ── JWT configuration (bound to JwtProperties record) ──
 jwt:
-  # MUST be >= 32 chars in prod; fallback here is dev-only.
-  secret: ${JWT_SECRET:change-me-change-me-change-me-change-me-please-32chars}
+  # C1: No fallback — app fails fast at startup if JWT_SECRET env is not set.
+  secret: ${JWT_SECRET}
   access-expiration-seconds: ${JWT_ACCESS_TTL:900}       # 15 minutes
   refresh-expiration-days: ${JWT_REFRESH_TTL_DAYS:7}     # 7 days
   issuer: ${JWT_ISSUER:hieu.com}

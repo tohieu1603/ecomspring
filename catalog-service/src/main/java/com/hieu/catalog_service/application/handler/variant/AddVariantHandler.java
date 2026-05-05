@@ -48,7 +48,7 @@ public class AddVariantHandler implements CommandHandler<AddVariantCommand, Vari
         if (productRepository.existsBySku(sku)) throw new VariantSkuAlreadyExistsException(sku.value());
 
         var variant = Variant.create(product.getId(), sku,
-            Money.of(cmd.price()), Money.of(cmd.cost()), Money.of(cmd.salePrice()),
+            Money.of(cmd.price()), Money.ofNullable(cmd.cost()), Money.ofNullable(cmd.salePrice()),
             cmd.image(), cmd.weight(), Quantity.of(cmd.quantity()));
 
         Optional.ofNullable(cmd.attrs()).orElse(List.of())

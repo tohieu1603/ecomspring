@@ -52,6 +52,9 @@ public record Slug(String value) {
         if (normalised.length() > 128) {
             normalised = normalised.substring(0, 128);
             normalised = trimDashes(normalised);
+            if (normalised.isBlank()) {
+                throw new IllegalArgumentException("Name '" + name + "' produced an empty slug after truncation");
+            }
         }
         return new Slug(normalised);
     }

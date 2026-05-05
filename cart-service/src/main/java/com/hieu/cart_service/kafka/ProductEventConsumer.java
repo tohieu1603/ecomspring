@@ -26,42 +26,36 @@ public class ProductEventConsumer {
 
     /**
      * Handles product-deleted events. Expects payload with {@code productId} field.
+     * H1: No blanket catch — exceptions propagate so DefaultErrorHandler retries then DLTs.
      */
     @KafkaListener(topics = "catalog.product-deleted", groupId = "${spring.kafka.consumer.group-id}")
     public void onProductDeleted(Map<String, Object> event) {
-        try {
-            var productId = extractProductId(event);
-            if (productId == null) {
-                log.warn("product-deleted event missing productId: {}", event);
-                return;
-            }
-            log.info("Handling product-deleted: productId={}", productId);
-            cartService.removeItemsByProduct(productId);
-        } catch (Exception e) {
-            log.error("Failed to handle product-deleted event: {}", event, e);
+        var productId = extractProductId(event);
+        if (productId == null) {
+            log.warn("product-deleted event missing productId: {}", event);
+            return;
         }
+        log.info("Handling product-deleted: productId={}", productId);
+        cartService.removeItemsByProduct(productId);
     }
 
     /**
      * Handles product-status-changed events.
      * Removes cart items when status transitions to INACTIVE or DELETED.
+     * H1: No blanket catch — exceptions propagate so DefaultErrorHandler retries then DLTs.
      */
     @KafkaListener(topics = "catalog.product-status-changed", groupId = "${spring.kafka.consumer.group-id}")
     public void onProductStatusChanged(Map<String, Object> event) {
-        try {
-            var productId = extractProductId(event);
-            var status = event.get("status");
-            if (productId == null || status == null) {
-                log.warn("product-status-changed event missing fields: {}", event);
-                return;
-            }
-            var statusStr = status.toString().toUpperCase();
-            if ("INACTIVE".equals(statusStr) || "DELETED".equals(statusStr)) {
-                log.info("Handling product-status-changed: productId={} status={}", productId, statusStr);
-                cartService.removeItemsByProduct(productId);
-            }
-        } catch (Exception e) {
-            log.error("Failed to handle product-status-changed event: {}", event, e);
+        var productId = extractProductId(event);
+        var status = event.get("status");
+        if (productId == null || status == null) {
+            log.warn("product-status-changed event missing fields: {}", event);
+            return;
+        }
+        var statusStr = status.toString().toUpperCase();
+        if ("INACTIVE".equals(statusStr) || "DELETED".equals(statusStr)) {
+            log.info("Handling product-status-changed: productId={} status={}", productId, statusStr);
+            cartService.removeItemsByProduct(productId);
         }
     }
 

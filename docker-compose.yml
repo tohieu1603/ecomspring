@@ -16,15 +16,15 @@ services:
     image: postgres:16-alpine
     container_name: hieu-postgres-auth
     environment:
-      POSTGRES_DB: authdb
-      POSTGRES_USER: authuser
-      POSTGRES_PASSWORD: authpass
+      POSTGRES_DB: ${POSTGRES_AUTH_DB:-authdb}
+      POSTGRES_USER: ${POSTGRES_AUTH_USER:-authuser}
+      POSTGRES_PASSWORD: ${POSTGRES_AUTH_PASSWORD:-authpass}
     ports:
       - "5433:5432"
     volumes:
       - pgdata-auth:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U authuser -d authdb"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_AUTH_USER:-authuser} -d ${POSTGRES_AUTH_DB:-authdb}"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -33,15 +33,15 @@ services:
     image: postgres:16-alpine
     container_name: hieu-postgres-catalog
     environment:
-      POSTGRES_DB: catalogdb
-      POSTGRES_USER: cataloguser
-      POSTGRES_PASSWORD: catalogpass
+      POSTGRES_DB: ${POSTGRES_CATALOG_DB:-catalogdb}
+      POSTGRES_USER: ${POSTGRES_CATALOG_USER:-cataloguser}
+      POSTGRES_PASSWORD: ${POSTGRES_CATALOG_PASSWORD:-catalogpass}
     ports:
       - "5434:5432"
     volumes:
       - pgdata-catalog:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U cataloguser -d catalogdb"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_CATALOG_USER:-cataloguser} -d ${POSTGRES_CATALOG_DB:-catalogdb}"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -50,15 +50,15 @@ services:
     image: postgres:16-alpine
     container_name: hieu-postgres-cart
     environment:
-      POSTGRES_DB: cartdb
-      POSTGRES_USER: cartuser
-      POSTGRES_PASSWORD: cartpass
+      POSTGRES_DB: ${POSTGRES_CART_DB:-cartdb}
+      POSTGRES_USER: ${POSTGRES_CART_USER:-cartuser}
+      POSTGRES_PASSWORD: ${POSTGRES_CART_PASSWORD:-cartpass}
     ports:
       - "5435:5432"
     volumes:
       - pgdata-cart:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U cartuser -d cartdb"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_CART_USER:-cartuser} -d ${POSTGRES_CART_DB:-cartdb}"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -67,15 +67,15 @@ services:
     image: postgres:16-alpine
     container_name: hieu-postgres-order
     environment:
-      POSTGRES_DB: orderdb
-      POSTGRES_USER: orderuser
-      POSTGRES_PASSWORD: orderpass
+      POSTGRES_DB: ${POSTGRES_ORDER_DB:-orderdb}
+      POSTGRES_USER: ${POSTGRES_ORDER_USER:-orderuser}
+      POSTGRES_PASSWORD: ${POSTGRES_ORDER_PASSWORD:-orderpass}
     ports:
       - "5436:5432"
     volumes:
       - pgdata-order:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U orderuser -d orderdb"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_ORDER_USER:-orderuser} -d ${POSTGRES_ORDER_DB:-orderdb}"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -84,15 +84,15 @@ services:
     image: postgres:16-alpine
     container_name: hieu-postgres-payment
     environment:
-      POSTGRES_DB: paymentdb
-      POSTGRES_USER: paymentuser
-      POSTGRES_PASSWORD: paymentpass
+      POSTGRES_DB: ${POSTGRES_PAYMENT_DB:-paymentdb}
+      POSTGRES_USER: ${POSTGRES_PAYMENT_USER:-paymentuser}
+      POSTGRES_PASSWORD: ${POSTGRES_PAYMENT_PASSWORD:-paymentpass}
     ports:
       - "5437:5432"
     volumes:
       - pgdata-payment:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U paymentuser -d paymentdb"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_PAYMENT_USER:-paymentuser} -d ${POSTGRES_PAYMENT_DB:-paymentdb}"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -101,15 +101,15 @@ services:
     image: postgres:16-alpine
     container_name: hieu-postgres-shipping
     environment:
-      POSTGRES_DB: shippingdb
-      POSTGRES_USER: shippinguser
-      POSTGRES_PASSWORD: shippingpass
+      POSTGRES_DB: ${POSTGRES_SHIPPING_DB:-shippingdb}
+      POSTGRES_USER: ${POSTGRES_SHIPPING_USER:-shippinguser}
+      POSTGRES_PASSWORD: ${POSTGRES_SHIPPING_PASSWORD:-shippingpass}
     ports:
       - "5438:5432"
     volumes:
       - pgdata-shipping:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U shippinguser -d shippingdb"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_SHIPPING_USER:-shippinguser} -d ${POSTGRES_SHIPPING_DB:-shippingdb}"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -118,15 +118,15 @@ services:
     image: postgres:16-alpine
     container_name: hieu-postgres-inventory
     environment:
-      POSTGRES_DB: inventorydb
-      POSTGRES_USER: inventoryuser
-      POSTGRES_PASSWORD: inventorypass
+      POSTGRES_DB: ${POSTGRES_INVENTORY_DB:-inventorydb}
+      POSTGRES_USER: ${POSTGRES_INVENTORY_USER:-inventoryuser}
+      POSTGRES_PASSWORD: ${POSTGRES_INVENTORY_PASSWORD:-inventorypass}
     ports:
       - "5439:5432"
     volumes:
       - pgdata-inventory:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U inventoryuser -d inventorydb"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_INVENTORY_USER:-inventoryuser} -d ${POSTGRES_INVENTORY_DB:-inventorydb}"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -135,15 +135,15 @@ services:
     image: postgres:16-alpine
     container_name: hieu-postgres-flashsale
     environment:
-      POSTGRES_DB: flashsaledb
-      POSTGRES_USER: flashsaleuser
-      POSTGRES_PASSWORD: flashsalepass
+      POSTGRES_DB: ${POSTGRES_FLASHSALE_DB:-flashsaledb}
+      POSTGRES_USER: ${POSTGRES_FLASHSALE_USER:-flashsaleuser}
+      POSTGRES_PASSWORD: ${POSTGRES_FLASHSALE_PASSWORD:-flashsalepass}
     ports:
       - "5440:5432"
     volumes:
       - pgdata-flashsale:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U flashsaleuser -d flashsaledb"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_FLASHSALE_USER:-flashsaleuser} -d ${POSTGRES_FLASHSALE_DB:-flashsaledb}"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -152,15 +152,15 @@ services:
     image: postgres:16-alpine
     container_name: hieu-postgres-notification
     environment:
-      POSTGRES_DB: notificationdb
-      POSTGRES_USER: notificationuser
-      POSTGRES_PASSWORD: notificationpass
+      POSTGRES_DB: ${POSTGRES_NOTIFICATION_DB:-notificationdb}
+      POSTGRES_USER: ${POSTGRES_NOTIFICATION_USER:-notificationuser}
+      POSTGRES_PASSWORD: ${POSTGRES_NOTIFICATION_PASSWORD:-notificationpass}
     ports:
       - "5441:5432"
     volumes:
       - pgdata-notification:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U notificationuser -d notificationdb"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_NOTIFICATION_USER:-notificationuser} -d ${POSTGRES_NOTIFICATION_DB:-notificationdb}"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -169,15 +169,15 @@ services:
     image: postgres:16-alpine
     container_name: hieu-postgres-userprofile
     environment:
-      POSTGRES_DB: userprofiledb
-      POSTGRES_USER: userprofileuser
-      POSTGRES_PASSWORD: userprofilepass
+      POSTGRES_DB: ${POSTGRES_USERPROFILE_DB:-userprofiledb}
+      POSTGRES_USER: ${POSTGRES_USERPROFILE_USER:-userprofileuser}
+      POSTGRES_PASSWORD: ${POSTGRES_USERPROFILE_PASSWORD:-userprofilepass}
     ports:
       - "5442:5432"
     volumes:
       - pgdata-userprofile:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U userprofileuser -d userprofiledb"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USERPROFILE_USER:-userprofileuser} -d ${POSTGRES_USERPROFILE_DB:-userprofiledb}"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -186,15 +186,15 @@ services:
     image: postgres:16-alpine
     container_name: hieu-postgres-voucher
     environment:
-      POSTGRES_DB: voucherdb
-      POSTGRES_USER: voucheruser
-      POSTGRES_PASSWORD: voucherpass
+      POSTGRES_DB: ${POSTGRES_VOUCHER_DB:-voucherdb}
+      POSTGRES_USER: ${POSTGRES_VOUCHER_USER:-voucheruser}
+      POSTGRES_PASSWORD: ${POSTGRES_VOUCHER_PASSWORD:-voucherpass}
     ports:
       - "5443:5432"
     volumes:
       - pgdata-voucher:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U voucheruser -d voucherdb"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_VOUCHER_USER:-voucheruser} -d ${POSTGRES_VOUCHER_DB:-voucherdb}"]
       interval: 10s
       timeout: 5s
       retries: 10

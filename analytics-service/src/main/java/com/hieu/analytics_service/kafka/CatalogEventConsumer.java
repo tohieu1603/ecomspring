@@ -4,6 +4,7 @@ import com.hieu.analytics_service.service.AnalyticsIndexer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Component;
 
@@ -22,12 +23,11 @@ public class CatalogEventConsumer {
             "catalog.variant-stock-changed", "catalog.variant-price-changed"
     }, groupId = "${spring.kafka.consumer.group-id}")
     public void onCatalogEvent(Map<String, Object> payload,
-                               @Header(name = "kafka_receivedTopic", required = false) String topic) {
-        try {
-            String fallbackType = topic != null ? topic.toUpperCase().replace('.', '_') : "CATALOG_EVENT";
-            indexer.index(EventPayloadMapper.toDocument(payload, fallbackType, "PRODUCT"));
-        } catch (Exception e) {
-            log.error("Failed indexing catalog event: {}", e.getMessage(), e);
-        }
+                               @Header(name = "kafka_receivedTopic", required = false) String topic,
+                               Acknowledgment ack) {
+        String fallbackType = topic != null ? topic.toUpperCase().replace('.', '_') : "CATALOG_EVENT";
+        // Exception propagates to Kafka error handler for retry/DLT; no ack on failure
+        indexer.index(EventPayloadMapper.toDocument(payload, fallbackType, "PRODUCT"));
+        ack.acknowledge();
     }
 }

@@ -12,6 +12,7 @@ import com.hieu.notification_service.exception.NotificationNotFoundException;
 import com.hieu.notification_service.repository.NotificationRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Async;
@@ -46,7 +47,21 @@ public class NotificationApplicationService {
                 .referenceType(req.getReferenceType())
                 .referenceId(req.getReferenceId())
                 .build();
-        entity = repository.save(entity);
+        try {
+            entity = repository.save(entity);
+        } catch (DataIntegrityViolationException e) {
+            log.info("duplicate notification suppressed for userId={} refType={} refId={} type={}",
+                    req.getUserId(), req.getReferenceType(), req.getReferenceId(), req.getType());
+            return repository.findByUserIdAndReferenceTypeAndReferenceIdAndType(
+                    req.getUserId(), req.getReferenceType(), req.getReferenceId(), req.getType().name())
+                    .map(this::toDTO)
+                    .orElseGet(() -> toDTO(NotificationJpaEntity.builder()
+                            .userId(req.getUserId()).type(req.getType().name())
+                            .title(req.getTitle()).content(req.getContent())
+                            .status(NotificationStatus.SENT.name())
+                            .referenceType(req.getReferenceType()).referenceId(req.getReferenceId())
+                            .build()));
+        }
 
         if (req.getType() == NotificationType.EMAIL) {
             sendEmailAsync(entity, req.getChannel(), req.getTitle(), req.getContent());
@@ -82,7 +97,7 @@ public class NotificationApplicationService {
     }
 
     @Transactional
-    protected void updateEmailStatus(Long id, NotificationStatus status, String errorMsg) {
+    public void updateEmailStatus(Long id, NotificationStatus status, String errorMsg) {
         repository.findById(id).ifPresent(n -> {
             n.setStatus(status.name());
             if (status == NotificationStatus.SENT) n.setSentAt(Instant.now());

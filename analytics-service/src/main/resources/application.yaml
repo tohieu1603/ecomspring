@@ -1,4 +1,7 @@
 spring:
+  # Auto-load .env as properties (Spring Boot 3.1+) — file is optional.
+  config:
+    import: optional:file:.env[.properties]
   application:
     name: analytics-service
 
@@ -12,6 +15,8 @@ spring:
     consumer:
       group-id: analytics-service
       auto-offset-reset: earliest
+      # Disable auto-commit; offset committed only after indexer.index() succeeds
+      enable-auto-commit: false
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
@@ -20,6 +25,8 @@ spring:
         spring.json.trusted.packages: "*"
     listener:
       missing-topics-fatal: false
+      # MANUAL_IMMEDIATE: ack immediately after indexer.index() so no data loss on pod restart
+      ack-mode: MANUAL_IMMEDIATE
 
 server:
   port: ${SERVER_PORT:8095}
@@ -53,6 +60,8 @@ management:
 
 analytics:
   index-prefix: ${ANALYTICS_INDEX_PREFIX:analytics-events}
+  retention-days: 90
+  retention-cron: "0 30 2 * * *"
 
 logging:
   level:

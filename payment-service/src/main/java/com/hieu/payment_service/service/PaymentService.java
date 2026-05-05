@@ -219,7 +219,8 @@ public class PaymentService {
 
     @Transactional
     public void autoConfirmByOrderId(String orderId, String transactionId) {
-        repository.findByOrderId(orderId).ifPresent(entity -> {
+        // C1: pessimistic lock prevents two concurrent webhooks double-confirming the same payment.
+        repository.findByOrderIdWithLock(orderId).ifPresent(entity -> {
             if (PENDING.equals(entity.getStatus())) {
                 entity.setStatus(PAID);
                 entity.setPaidAt(Instant.now());

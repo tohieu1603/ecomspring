@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -49,6 +50,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> dataIntegrity(DataIntegrityViolationException ex, HttpServletRequest req) {
         log.warn("Data integrity violation: {}", ex.getMostSpecificCause().getMessage());
         return body(HttpStatus.CONFLICT, ErrorCode.CART_CONFLICT.code(), "Constraint violation", req, null);
+    }
+
+    // C1: Optimistic lock from @Version — concurrent writers hit this; client must retry.
+    @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
+    public ResponseEntity<ErrorResponse> optimisticLock(ObjectOptimisticLockingFailureException ex, HttpServletRequest req) {
+        return body(HttpStatus.CONFLICT, ErrorCode.CART_CONFLICT.code(), "Concurrent update, please retry", req, null);
     }
 
     @ExceptionHandler(AccessDeniedException.class)

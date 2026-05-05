@@ -66,6 +66,6 @@ public class UserJpaEntity extends BaseManualIdEntity {
         this.roles = roles != null ? roles : new HashSet<>();
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
-        this.isNew = isNew; // Quan trọng để tối ưu save()
+        this.isNew = isNew;
     }
 }

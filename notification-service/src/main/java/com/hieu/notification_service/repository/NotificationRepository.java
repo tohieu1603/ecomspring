@@ -10,6 +10,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 public interface NotificationRepository extends JpaRepository<NotificationJpaEntity, Long> {
 
@@ -23,6 +24,9 @@ public interface NotificationRepository extends JpaRepository<NotificationJpaEnt
             Pageable pageable);
 
     long countByUserIdAndIsRead(String userId, boolean isRead);
+
+    Optional<NotificationJpaEntity> findByUserIdAndReferenceTypeAndReferenceIdAndType(
+            String userId, String referenceType, String referenceId, String type);
 
     @Modifying
     @Query("UPDATE NotificationJpaEntity n SET n.isRead = true, n.readAt = :now, n.status = :status, n.updatedAt = :now " +

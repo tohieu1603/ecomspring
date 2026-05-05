@@ -49,15 +49,15 @@ public class AnalyticsIndexer {
 
     /**
      * Lazily create the daily index with a minimal mapping so Kibana shows fields correctly.
-     * Mapping only set on first creation; subsequent calls are no-ops.
+     * Single atomic create(settings, mapping) call eliminates TOCTOU race between exists()
+     * check and create(); concurrent pods both attempt create — the loser's exception is swallowed.
      */
     private void ensureIndex(String indexName) {
         IndexCoordinates coords = IndexCoordinates.of(indexName);
         IndexOperations ops = esTemplate.indexOps(coords);
         if (ops.exists()) return;
         Document mapping = Document.parse("""
-                {
-                  "properties": {
+                { "properties": {
                     "eventType":     { "type": "keyword" },
                     "userId":        { "type": "keyword" },
                     "referenceId":   { "type": "keyword" },
@@ -67,15 +67,14 @@ public class AnalyticsIndexer {
                     "status":        { "type": "keyword" },
                     "timestamp":     { "type": "date" },
                     "metadata":      { "type": "object", "enabled": true }
-                  }
-                }
-                """);
+                }}""");
         try {
-            ops.create();
-            ops.putMapping(mapping);
+            // Atomic: create + apply mapping in one ES call. Concurrent pods racing here both
+            // throw on the loser; catch swallows since the result is identical.
+            ops.create(java.util.Map.of(), mapping);
             log.info("Created analytics index {}", indexName);
         } catch (Exception e) {
-            log.debug("Index {} likely created concurrently: {}", indexName, e.getMessage());
+            log.debug("Index {} already exists or concurrent create: {}", indexName, e.getMessage());
         }
     }
 }

@@ -12,6 +12,7 @@ import com.hieu.catalog_service.domain.exception.AttrValNotFoundException;
 import com.hieu.catalog_service.domain.exception.CategoryNotFoundException;
 import com.hieu.catalog_service.domain.exception.ProductAlreadyExistsException;
 import com.hieu.catalog_service.domain.exception.VariantSkuAlreadyExistsException;
+import org.springframework.dao.DataIntegrityViolationException;
 import com.hieu.catalog_service.domain.model.attribute.Attr;
 import com.hieu.catalog_service.domain.model.attribute.valueobject.AttrId;
 import com.hieu.catalog_service.domain.model.attribute.valueobject.AttrType;
@@ -56,6 +57,17 @@ public class CreateProductHandler implements CommandHandler<CreateProductCommand
     @Override
     public ProductDTO handle(CreateProductCommand cmd) {
         validate(cmd);
+        try {
+            return doCreate(cmd);
+        } catch (DataIntegrityViolationException e) {
+            if (e.getMessage() != null && e.getMessage().toLowerCase().contains("slug")) {
+                throw new ProductAlreadyExistsException("Slug already exists: " + cmd.name());
+            }
+            throw e;
+        }
+    }
+
+    private ProductDTO doCreate(CreateProductCommand cmd) {
         Optional.ofNullable(cmd.categoryId())
             .map(CategoryId::of)
             .filter(id -> !categoryRepository.existsById(id))
@@ -88,7 +100,7 @@ public class CreateProductHandler implements CommandHandler<CreateProductCommand
         var sku = Sku.of(vc.sku());
         if (productRepository.existsBySku(sku)) throw new VariantSkuAlreadyExistsException(sku.value());
         var variant = Variant.create(sku,
-            Money.of(vc.price()), Money.of(vc.cost()), Money.of(vc.salePrice()),
+            Money.of(vc.price()), Money.ofNullable(vc.cost()), Money.ofNullable(vc.salePrice()),
             vc.image(), vc.weight(), Quantity.of(vc.quantity()));
         Optional.ofNullable(vc.attrs()).orElse(List.of()).stream()
             .map(ac -> buildVariantAttr(attrs.get(AttrId.of(ac.attrId())), ac))

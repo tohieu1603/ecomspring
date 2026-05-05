@@ -3,6 +3,7 @@ package com.hieu.auth_service.domain.models.user;
 import com.hieu.auth_service.domain.models.role.vo.RoleId;
 import com.hieu.auth_service.domain.models.user.events.*;
 import com.hieu.auth_service.domain.models.user.exceptions.AccountNotUsableException;
+import com.hieu.auth_service.domain.models.user.exceptions.InvalidCredentialsException;
 import com.hieu.auth_service.domain.models.user.vo.*;
 import com.hieu.auth_service.domain.services.PasswordEncoderPort;
 import com.hieu.auth_service.domain.shared.AggregateRoot;
@@ -109,7 +110,12 @@ public final class User extends AggregateRoot {
         return matches;
     }
 
-    private void ensureAuthenticatable() {
+    /**
+     * Throws {@link AccountNotUsableException} if any of the four account-status flags
+     * forbids authentication. Public so domain services can run the same check
+     * standalone (e.g. before issuing a token).
+     */
+    public void ensureAuthenticatable() {
         var s = accountStatus;
         if (!s.enabled())               throw new AccountNotUsableException(AccountNotUsableException.Reason.DISABLED);
         if (!s.accountNonLocked())      throw new AccountNotUsableException(AccountNotUsableException.Reason.LOCKED);
@@ -132,7 +138,7 @@ public final class User extends AggregateRoot {
      */
     public void changePassword(Password oldPassword, Password newPassword, PasswordEncoderPort encoder) {
         if (!encoder.matches(oldPassword.value(), password.value())) {
-            throw new IllegalStateException("Old password is incorrect");
+            throw new InvalidCredentialsException();
         }
 
         password = newPassword.needsEncoding()

@@ -20,12 +20,11 @@ public class TokenDomainService {
     /**
      * Issue the very first refresh token of a login session.
      *
-     * @throws IllegalStateException when the user cannot currently authenticate
+     * @throws com.hieu.auth_service.domain.models.user.exceptions.AccountNotUsableException
+     *         when the user cannot currently authenticate (specific reason carried in the exception)
      */
     public RefreshToken issueForUser(User user, int expiryDays) {
-        if (!user.isActive()) {
-            throw new IllegalStateException("User is not active");
-        }
+        user.ensureAuthenticatable();
         return RefreshToken.create(user.getId(), expiryDays);
     }
 

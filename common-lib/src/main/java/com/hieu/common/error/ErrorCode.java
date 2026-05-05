@@ -49,6 +49,8 @@ public enum ErrorCode {
     TOKEN_OWNERSHIP_FAIL   ("AUTH-1013", HttpStatus.FORBIDDEN),
     AUTH_RATE_LIMITED      ("AUTH-1014", HttpStatus.TOO_MANY_REQUESTS),
     AUTH_BLACKLISTED       ("AUTH-1015", HttpStatus.UNAUTHORIZED),
+    ACCOUNT_EXPIRED        ("AUTH-1016", HttpStatus.FORBIDDEN),
+    CREDENTIALS_EXPIRED    ("AUTH-1017", HttpStatus.UNAUTHORIZED),
 
     // ── Catalog domain (CATALOG-2xxx) ──────────────────────────────────
     PRODUCT_NOT_FOUND          ("CATALOG-2001", HttpStatus.NOT_FOUND),

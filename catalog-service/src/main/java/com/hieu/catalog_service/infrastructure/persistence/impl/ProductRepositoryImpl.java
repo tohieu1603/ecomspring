@@ -59,8 +59,7 @@ public class ProductRepositoryImpl implements ProductRepository {
 
     @Override
     public Optional<Product> findBySku(Sku sku) {
-        return jpa.findBySku(sku.value())
-            .flatMap(p -> jpa.findByIdWithVariants(p.getId()))
+        return jpa.findBySkuWithVariants(sku.value())
             .map(mapper::toDomain);
     }
 

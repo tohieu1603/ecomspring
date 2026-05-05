@@ -5,10 +5,11 @@ import com.hieu.user_profile_service.entity.AddressJpaEntity;
 import com.hieu.user_profile_service.entity.UserProfileJpaEntity;
 import com.hieu.user_profile_service.exception.AddressNotFoundException;
 import com.hieu.user_profile_service.exception.UserProfileNotFoundException;
-import com.hieu.user_profile_service.kafka.UserProfileEventPublisher;
+import com.hieu.user_profile_service.kafka.event.ProfileUpsertedSpringEvent;
 import com.hieu.user_profile_service.repository.AddressRepository;
 import com.hieu.user_profile_service.repository.UserProfileRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,7 +21,7 @@ public class UserProfileService {
 
     private final UserProfileRepository profileRepo;
     private final AddressRepository addressRepo;
-    private final UserProfileEventPublisher eventPublisher;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     // ── Profile ──────────────────────────────────────────────────────────────
 
@@ -46,10 +47,9 @@ public class UserProfileService {
         if (req.getDateOfBirth() != null) e.setDateOfBirth(req.getDateOfBirth());
         if (req.getGender() != null)      e.setGender(req.getGender());
         UserProfileJpaEntity saved = profileRepo.save(e);
-        // Notify downstream caches (notification-service, etc.) — at-least-once is fine here:
-        // worst case caches refresh with the same email twice.
-        eventPublisher.publishProfileUpserted(saved.getUserId(), saved.getEmail(),
-                saved.getFirstName(), saved.getLastName(), saved.getPhone());
+        // Deferred to AFTER_COMMIT via ProfileUpsertedListener — ensures DB row visible before Kafka fires.
+        applicationEventPublisher.publishEvent(new ProfileUpsertedSpringEvent(
+                saved.getUserId(), saved.getEmail(), saved.getFirstName(), saved.getLastName(), saved.getPhone()));
         return toDTO(saved);
     }
 

@@ -17,9 +17,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.Map;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequestMapping("/api/notifications")
@@ -29,13 +26,6 @@ public class NotificationController {
 
     private final NotificationApplicationService notificationService;
     private final InAppPushService inAppPushService;
-
-    private static final ScheduledExecutorService keepAliveScheduler =
-            Executors.newSingleThreadScheduledExecutor(r -> {
-                var t = new Thread(r, "notif-sse-keepalive");
-                t.setDaemon(true);
-                return t;
-            });
 
     @PostMapping("/send")
     @PreAuthorize("hasAnyRole('ADMIN', 'SYSTEM') or hasAnyAuthority('ROLE_ADMIN', 'ROLE_SYSTEM')")
@@ -100,14 +90,7 @@ public class NotificationController {
     @GetMapping(value = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     @Operation(summary = "SSE stream of real-time notifications")
     public SseEmitter stream(@AuthenticationPrincipal AuthenticatedUser user) {
-        var emitter = inAppPushService.register(user.userId());
-        // Schedule keep-alive every 30 seconds
-        var future = keepAliveScheduler.scheduleAtFixedRate(
-                () -> inAppPushService.keepAlive(user.userId(), emitter),
-                30, 30, TimeUnit.SECONDS);
-        emitter.onCompletion(() -> future.cancel(true));
-        emitter.onTimeout(() -> future.cancel(true));
-        emitter.onError(e -> future.cancel(true));
-        return emitter;
+        // Keep-alive scheduling and lifecycle callbacks are managed inside register()
+        return inAppPushService.register(user.userId());
     }
 }

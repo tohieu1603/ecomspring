@@ -26,63 +26,43 @@ public class OrderEventConsumer {
 
     @KafkaListener(topics = KafkaTopics.ORDER_PLACED, groupId = "notification-service")
     public void onOrderPlaced(Map<String, Object> payload) {
-        try {
-            var userId = str(payload, "userId");
-            var orderNumber = str(payload, "orderNumber");
-            var title = "Đơn hàng " + orderNumber + " đã được đặt";
-            var content = "Đơn hàng " + orderNumber + " của bạn đã được đặt thành công.";
-            send(userId, title, content, "ORDER", orderNumber, str(payload, "email"), true);
-        } catch (Exception e) {
-            log.error("order.placed processing failed: {}", e.getMessage(), e);
-        }
+        var userId = str(payload, "userId");
+        var orderNumber = str(payload, "orderNumber");
+        var title = "Đơn hàng " + orderNumber + " đã được đặt";
+        var content = "Đơn hàng " + orderNumber + " của bạn đã được đặt thành công.";
+        send(userId, title, content, "ORDER", orderNumber, str(payload, "email"), true);
     }
 
     @KafkaListener(topics = KafkaTopics.ORDER_CONFIRMED, groupId = "notification-service")
     public void onOrderConfirmed(Map<String, Object> payload) {
-        try {
-            var userId = str(payload, "userId");
-            var orderNumber = str(payload, "orderNumber");
-            var title = "Đơn hàng " + orderNumber + " đã được xác nhận";
-            send(userId, title, title, "ORDER", orderNumber, null, false);
-        } catch (Exception e) {
-            log.error("order.confirmed processing failed: {}", e.getMessage(), e);
-        }
+        var userId = str(payload, "userId");
+        var orderNumber = str(payload, "orderNumber");
+        var title = "Đơn hàng " + orderNumber + " đã được xác nhận";
+        send(userId, title, title, "ORDER", orderNumber, null, false);
     }
 
     @KafkaListener(topics = KafkaTopics.ORDER_CANCELLED, groupId = "notification-service")
     public void onOrderCancelled(Map<String, Object> payload) {
-        try {
-            var userId = str(payload, "userId");
-            var orderNumber = str(payload, "orderNumber");
-            var title = "Đơn hàng " + orderNumber + " đã hủy";
-            send(userId, title, title, "ORDER", orderNumber, str(payload, "email"), true);
-        } catch (Exception e) {
-            log.error("order.cancelled processing failed: {}", e.getMessage(), e);
-        }
+        var userId = str(payload, "userId");
+        var orderNumber = str(payload, "orderNumber");
+        var title = "Đơn hàng " + orderNumber + " đã hủy";
+        send(userId, title, title, "ORDER", orderNumber, str(payload, "email"), true);
     }
 
     @KafkaListener(topics = KafkaTopics.ORDER_SHIPPED, groupId = "notification-service")
     public void onOrderShipped(Map<String, Object> payload) {
-        try {
-            var userId = str(payload, "userId");
-            var orderNumber = str(payload, "orderNumber");
-            var title = "Đơn " + orderNumber + " đã được giao cho đơn vị vận chuyển";
-            send(userId, title, title, "ORDER", orderNumber, str(payload, "email"), true);
-        } catch (Exception e) {
-            log.error("order.shipped processing failed: {}", e.getMessage(), e);
-        }
+        var userId = str(payload, "userId");
+        var orderNumber = str(payload, "orderNumber");
+        var title = "Đơn " + orderNumber + " đã được giao cho đơn vị vận chuyển";
+        send(userId, title, title, "ORDER", orderNumber, str(payload, "email"), true);
     }
 
     @KafkaListener(topics = KafkaTopics.ORDER_DELIVERED, groupId = "notification-service")
     public void onOrderDelivered(Map<String, Object> payload) {
-        try {
-            var userId = str(payload, "userId");
-            var orderNumber = str(payload, "orderNumber");
-            var title = "Đơn hàng " + orderNumber + " đã được giao thành công";
-            send(userId, title, title, "ORDER", orderNumber, str(payload, "email"), true);
-        } catch (Exception e) {
-            log.error("order.delivered processing failed: {}", e.getMessage(), e);
-        }
+        var userId = str(payload, "userId");
+        var orderNumber = str(payload, "orderNumber");
+        var title = "Đơn hàng " + orderNumber + " đã được giao thành công";
+        send(userId, title, title, "ORDER", orderNumber, str(payload, "email"), true);
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────

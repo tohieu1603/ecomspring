@@ -9,16 +9,20 @@ import com.hieu.search_service.service.SearchApplicationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/search")
 @RequiredArgsConstructor
+@Validated  // enables @Size on method parameters
 @Tag(name = "Search", description = "Product search & indexing endpoints")
 public class SearchController {
 
@@ -82,13 +86,14 @@ public class SearchController {
         return ResponseEntity.ok(ApiResponse.ok(null, "Product removal scheduled"));
     }
 
-    /** POST /api/search/index/bulk — bulk reindex (admin only) */
-    @PostMapping("/index/bulk")
+    /** POST /api/search/index/reindex — capped bulk reindex (admin only) */
+    @PostMapping("/index/reindex")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Bulk reindex products (admin)")
-    public ResponseEntity<ApiResponse<Void>> reindexAll(
-            @RequestBody List<IndexProductRequest> requests) {
-        searchService.reindexAll(requests);
-        return ResponseEntity.ok(ApiResponse.ok(null, "Bulk reindex complete"));
+    @Operation(summary = "Bulk reindex products, max 1000 per batch (admin)")
+    public ResponseEntity<Map<String, Object>> reindexAll(
+            // Cap batch size to prevent OOM / unbounded ES bulk requests
+            @RequestBody @Size(max = 1000, message = "Max 1000 products per batch") @Valid List<IndexProductRequest> requests) {
+        int n = searchService.reindexAll(requests);
+        return ResponseEntity.ok(Map.of("indexed", n));
     }
 }

@@ -20,11 +20,16 @@ import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class SearchApplicationService {
+
+    // Allowlist prevents sort-field injection into ES field parameter
+    private static final Set<String> ALLOWED_SORT_FIELDS =
+            Set.of("createdAt", "price", "totalStock", "name.keyword", "minPrice", "maxPrice");
 
     private final ProductSearchRepository repository;
     private final ElasticsearchOperations operations;
@@ -111,7 +116,8 @@ public class SearchApplicationService {
             })));
         }
 
-        String sortField = StringUtils.hasText(req.getSortBy()) ? req.getSortBy() : "createdAt";
+        String sortField = (req.getSortBy() != null && ALLOWED_SORT_FIELDS.contains(req.getSortBy()))
+                ? req.getSortBy() : "createdAt";
 
         var nativeQuery = NativeQuery.builder()
                 .withQuery(Query.of(q -> q.bool(boolBuilder.build())))
@@ -154,8 +160,8 @@ public class SearchApplicationService {
                 .toList();
     }
 
-    /** Bulk upsert — used for full reindex. */
-    public void reindexAll(List<IndexProductRequest> requests) {
+    /** Bulk upsert — used for full reindex. Returns count of indexed documents. */
+    public int reindexAll(List<IndexProductRequest> requests) {
         List<ProductDocument> docs = new ArrayList<>(requests.size());
         for (IndexProductRequest req : requests) {
             docs.add(ProductDocument.builder()
@@ -179,5 +185,6 @@ public class SearchApplicationService {
         }
         repository.saveAll(docs);
         log.info("Bulk reindexed {} products", docs.size());
+        return docs.size();
     }
 }

@@ -63,7 +63,8 @@ public class SepayWebhookController {
             }
         }
 
-        log.debug("Sepay webhook received: {}", payload);
+        // C3: Log only non-PII fields — full payload may contain account/amount details.
+        log.debug("Sepay webhook received: id={} description={}", payload.get("id"), payload.get("description"));
 
         Object description = payload.get("description");
         Object transferId = payload.get("id");

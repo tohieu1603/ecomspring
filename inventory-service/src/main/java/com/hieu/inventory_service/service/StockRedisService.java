@@ -27,6 +27,7 @@ public class StockRedisService {
 
     private final StringRedisTemplate redisTemplate;
     private final DefaultRedisScript<Long> reserveStockScript;
+    private final DefaultRedisScript<Long> releaseStockBatchScript;
 
     /**
      * Atomically checks and decrements stock via Lua.
@@ -46,6 +47,21 @@ public class StockRedisService {
     /** Seeds or refreshes a stock counter with a 1-hour TTL. */
     public void setStock(Long productId, int quantity) {
         redisTemplate.opsForValue().set(KEY_PREFIX + productId, String.valueOf(quantity), TTL);
+    }
+
+    /**
+     * Atomically restores stock for multiple products in a single Lua call — avoids
+     * partial-failure inconsistency that per-product loop rollback cannot guarantee.
+     */
+    public void releaseStockBatch(Map<Long, Integer> productToQty) {
+        if (productToQty.isEmpty()) return;
+        List<String> keys = new ArrayList<>();
+        List<String> args = new ArrayList<>();
+        productToQty.forEach((pid, qty) -> {
+            keys.add(KEY_PREFIX + pid);
+            args.add(String.valueOf(qty));
+        });
+        redisTemplate.execute(releaseStockBatchScript, keys, args.toArray(new String[0]));
     }
 
     /**

@@ -68,8 +68,12 @@ public class InventoryGrpcService extends InventoryServiceGrpc.InventoryServiceI
             var result = inventoryService.confirmReservation(req.getReservationId());
             obs.onNext(ConfirmReservationResponse.newBuilder().setSuccess(result.success()).build());
             obs.onCompleted();
+        } catch (InventoryNotFoundException e) {
+            obs.onError(Status.NOT_FOUND.withDescription(e.getMessage()).asRuntimeException());
+        } catch (IllegalStateException e) {
+            obs.onError(Status.FAILED_PRECONDITION.withDescription(e.getMessage()).asRuntimeException());
         } catch (Exception e) {
-            obs.onError(Status.INTERNAL.withDescription(e.getMessage()).asRuntimeException());
+            obs.onError(Status.INTERNAL.asRuntimeException());
         }
     }
 
@@ -79,8 +83,12 @@ public class InventoryGrpcService extends InventoryServiceGrpc.InventoryServiceI
             var result = inventoryService.releaseReservation(req.getReservationId());
             obs.onNext(ReleaseStockResponse.newBuilder().setSuccess(result.success()).build());
             obs.onCompleted();
+        } catch (InventoryNotFoundException e) {
+            obs.onError(Status.NOT_FOUND.withDescription(e.getMessage()).asRuntimeException());
+        } catch (IllegalStateException e) {
+            obs.onError(Status.FAILED_PRECONDITION.withDescription(e.getMessage()).asRuntimeException());
         } catch (Exception e) {
-            obs.onError(Status.INTERNAL.withDescription(e.getMessage()).asRuntimeException());
+            obs.onError(Status.INTERNAL.asRuntimeException());
         }
     }
 }

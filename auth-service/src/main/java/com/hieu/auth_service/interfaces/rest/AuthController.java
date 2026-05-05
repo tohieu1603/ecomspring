@@ -7,6 +7,7 @@ import com.hieu.auth_service.application.command.RefreshTokenCommand;
 import com.hieu.auth_service.application.command.RegisterUserCommand;
 import com.hieu.auth_service.application.common.CommandHandler;
 import com.hieu.auth_service.application.dto.AuthResponseDTO;
+import com.hieu.auth_service.domain.services.TokenProviderPort;
 import com.hieu.auth_service.infrastructure.security.AuthUserDetails;
 import com.hieu.auth_service.interfaces.rest.dto.AuthMeResponse;
 import com.hieu.auth_service.interfaces.rest.dto.ChangePasswordRequest;
@@ -52,6 +53,7 @@ public class AuthController {
     private final CommandHandler<LogoutCommand, Void> logoutHandler;
     private final CommandHandler<ChangePasswordCommand, Void> changePasswordHandler;
     private final AuthCookieWriter cookieWriter;
+    private final TokenProviderPort tokenProvider;
 
     /**
      * "Who am I" endpoint — reads the principal materialised by the JWT filter.
@@ -136,9 +138,24 @@ public class AuthController {
             security = @SecurityRequirement(name = "bearerAuth"))
     @PostMapping("/change-password")
     public ResponseEntity<Void> changePassword(@AuthenticationPrincipal AuthUserDetails principal,
-                                               @Valid @RequestBody ChangePasswordRequest request) {
+                                               @Valid @RequestBody ChangePasswordRequest request,
+                                               HttpServletRequest httpRequest) {
+        // C3: Extract JTI from the current access token so the handler can blacklist it immediately.
+        String jti = null;
+        java.time.Instant exp = null;
+        String rawToken = readAccessToken(httpRequest);
+        if (rawToken != null) {
+            try {
+                var claims = tokenProvider.parseAccessToken(rawToken);
+                jti = claims.tokenId();
+                exp = claims.expiresAt();
+            } catch (Exception ignored) {
+                // Malformed token — handler will log.warn and skip blacklist.
+            }
+        }
+
         changePasswordHandler.handle(new ChangePasswordCommand(
-                principal.userId(), request.oldPassword(), request.newPassword()));
+                principal.userId(), request.oldPassword(), request.newPassword(), jti, exp));
 
         HttpHeaders headers = new HttpHeaders();
         cookieWriter.expire(headers);

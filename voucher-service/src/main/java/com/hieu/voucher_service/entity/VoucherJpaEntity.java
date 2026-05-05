@@ -10,7 +10,6 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
-import jakarta.persistence.Version;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -89,8 +88,7 @@ public class VoucherJpaEntity {
 
     private Instant updatedAt;
 
-    @Version
-    private Long version;
+    // @Version removed — pessimistic lock (PESSIMISTIC_WRITE) is sufficient; @Version causes spurious OptimisticLockException
 
     @PrePersist
     void prePersist() {

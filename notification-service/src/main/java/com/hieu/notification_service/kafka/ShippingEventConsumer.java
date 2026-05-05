@@ -25,35 +25,31 @@ public class ShippingEventConsumer {
 
     @KafkaListener(topics = KafkaTopics.SHIPPING_STATUS_CHANGED, groupId = "notification-service")
     public void onShippingStatusChanged(Map<String, Object> payload) {
-        try {
-            var userId = str(payload, "userId");
-            var orderNumber = str(payload, "orderNumber");
-            var status = str(payload, "status");
-            var title = "Đơn " + orderNumber + " đang ở trạng thái " + status;
+        var userId = str(payload, "userId");
+        var orderNumber = str(payload, "orderNumber");
+        var status = str(payload, "status");
+        var title = "Đơn " + orderNumber + " đang ở trạng thái " + status;
 
-            // IN_APP always
+        // IN_APP always
+        notificationService.send(SendNotificationRequest.builder()
+                .userId(userId).type(NotificationType.IN_APP)
+                .title(title).content(title)
+                .referenceType("SHIPPING").referenceId(orderNumber)
+                .build());
+
+        // EMAIL: payload first, gRPC fallback
+        var email = str(payload, "email");
+        String resolvedEmail = !email.isBlank()
+                ? email
+                : emailResolver.lookupEmail(userId).orElse(null);
+        if (resolvedEmail != null) {
             notificationService.send(SendNotificationRequest.builder()
-                    .userId(userId).type(NotificationType.IN_APP)
-                    .title(title).content(title)
+                    .userId(userId).type(NotificationType.EMAIL)
+                    .channel(resolvedEmail).title(title).content(title)
                     .referenceType("SHIPPING").referenceId(orderNumber)
                     .build());
-
-            // EMAIL: payload first, gRPC fallback
-            var email = str(payload, "email");
-            String resolvedEmail = !email.isBlank()
-                    ? email
-                    : emailResolver.lookupEmail(userId).orElse(null);
-            if (resolvedEmail != null) {
-                notificationService.send(SendNotificationRequest.builder()
-                        .userId(userId).type(NotificationType.EMAIL)
-                        .channel(resolvedEmail).title(title).content(title)
-                        .referenceType("SHIPPING").referenceId(orderNumber)
-                        .build());
-            } else {
-                log.debug("No email resolved for userId={}, skipping EMAIL notification", userId);
-            }
-        } catch (Exception e) {
-            log.error("shipping.status-changed processing failed: {}", e.getMessage(), e);
+        } else {
+            log.debug("No email resolved for userId={}, skipping EMAIL notification", userId);
         }
     }
 

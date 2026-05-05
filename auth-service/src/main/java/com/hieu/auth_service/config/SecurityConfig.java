@@ -3,9 +3,12 @@ package com.hieu.auth_service.config;
 import com.hieu.auth_service.infrastructure.security.CustomUserDetailsService;
 import com.hieu.auth_service.interfaces.rest.filter.JwtAuthenticationEntryPoint;
 import com.hieu.auth_service.interfaces.rest.filter.JwtAuthenticationFilter;
+import com.hieu.auth_service.interfaces.rest.filter.RateLimitFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -47,6 +50,24 @@ public class SecurityConfig {
     private final CustomUserDetailsService userDetailsService;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final JwtAuthenticationEntryPoint authenticationEntryPoint;
+    private final RateLimitFilter rateLimitFilter;
+
+    /**
+     * Dev-only chain (non-prod profiles): permits Swagger UI, OpenAPI docs, and H2 console.
+     * Matched first (@Order(1)) so these paths never reach the main security chain.
+     * WARN: do NOT activate the "prod" profile in development — these endpoints are unprotected.
+     */
+    @Bean
+    @Order(1)
+    @Profile("!prod")
+    public SecurityFilterChain devEndpoints(HttpSecurity http) throws Exception {
+        http
+                .securityMatcher("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**", "/h2-console/**")
+                .csrf(AbstractHttpConfigurer::disable)
+                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
+                .headers(h -> h.frameOptions(f -> f.sameOrigin())); // required for H2 console iframe
+        return http.build();
+    }
 
     /**
      * Builds the stateless security chain.
@@ -55,6 +76,7 @@ public class SecurityConfig {
      * Sessions are disabled — every call must carry credentials or a valid JWT.
      */
     @Bean
+    @Order(2)
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
@@ -66,17 +88,14 @@ public class SecurityConfig {
                                 "/api/auth/login",
                                 "/api/auth/register",
                                 "/api/auth/refresh").permitAll()
-                        // Ops + docs
-                        .requestMatchers(
-                                "/actuator/**",
-                                "/v3/api-docs/**",
-                                "/swagger-ui/**",
-                                "/swagger-ui.html",
-                                "/h2-console/**").permitAll()
+                        // C2: Only health+info are public; all other actuator endpoints require ROLE_ADMIN.
+                        .requestMatchers("/actuator/health", "/actuator/info").permitAll()
+                        .requestMatchers("/actuator/**").hasAuthority("ROLE_ADMIN")
                         .anyRequest().authenticated())
                 .authenticationProvider(authenticationProvider())
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-                .headers(h -> h.frameOptions(f -> f.sameOrigin())); // H2 console
+                // C5: Rate limiter runs before JWT filter so throttled requests never reach auth logic.
+                .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
@@ -101,6 +120,7 @@ public class SecurityConfig {
     /** Single source of truth for password hashing; {@code BCryptPasswordEncoderAdapter} delegates here. */
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
+        // M2: Bump cost from default 10 to 12 — OWASP minimum for BCrypt.
+        return new BCryptPasswordEncoder(12);
     }
 }

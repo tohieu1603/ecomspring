@@ -95,13 +95,14 @@ public class CartService {
         });
 
         cartItemRepository.save(item);
+        // C2: evict only — next getCart rebuilds from DB avoiding a stale-read race on putCart.
         cacheService.evictCart(userId);
 
         var cart = buildCartDTO(userId, cartItemRepository.findAllByUserId(userId), false);
         if (req.idempotencyKey() != null && !req.idempotencyKey().isBlank()) {
             cacheService.putIdempotentResult(req.idempotencyKey(), cart);
         }
-        cacheService.putCart(userId, cart);
+        // Intentionally NOT calling putCart here — evict-then-read is the safe path.
         return cart;
     }
 

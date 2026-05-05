@@ -91,15 +91,4 @@ public class Permission {
     public boolean grants(String resource, String action) {
         return name.isForResource(resource) && name.allowsAction(action);
     }
-
-    /**
-     * Package private setter for ID
-     * @param id
-     */
-    public void setId(PermissionId id) {
-        if(this.id != null) {
-            throw new IllegalStateException("Permission already set");
-        }
-        this.id = id;
-    }
 }

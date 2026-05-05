@@ -24,6 +24,11 @@ public class StartupSyncListener {
     @EventListener(ApplicationReadyEvent.class)
     @Transactional(readOnly = true)
     public void syncRedisCounters() {
+        // Stagger multi-pod startup to avoid Redis SETNX stampede
+        try {
+            Thread.sleep(java.util.concurrent.ThreadLocalRandom.current().nextInt(0, 3000));
+        } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
+
         var activeSales = repository.findAllByStatus(FlashSaleStatus.ACTIVE);
         log.info("Syncing Redis counters for {} ACTIVE sale(s) on startup", activeSales.size());
         for (var sale : activeSales) {

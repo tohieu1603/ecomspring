@@ -107,12 +107,6 @@ public class InventoryService {
     // Reserve
     // -------------------------------------------------------------------------
 
-    @Transactional
-    @Retryable(
-        retryFor = ObjectOptimisticLockingFailureException.class,
-        maxAttempts = 3,
-        backoff = @Backoff(delay = 100, multiplier = 2)
-    )
     public ReservationResult reserveStock(ReservationRequest request) {
         // Idempotency
         var existing = reservationRepository.findByOrderId(request.orderId());
@@ -135,7 +129,7 @@ public class InventoryService {
                 ReservationRequest.ReservationItem::productId,
                 ReservationRequest.ReservationItem::quantity));
 
-        // Atomic Redis check
+        // Atomic Redis check — runs exactly once (not inside @Retryable)
         int redisResult = redisService.reserveStockAtomically(itemMap);
         if (redisResult == -1) {
             log.info("Redis cache miss for order {}, loading from DB", request.orderId());
@@ -149,44 +143,54 @@ public class InventoryService {
             throw new InsufficientStockException("Insufficient stock for order " + request.orderId());
         }
 
-        // DB reservation with pessimistic lock
+        // DB part retried on optimistic lock conflict; Redis NOT re-executed on retry
         try {
-            var inventories = inventoryRepository.findAllByProductIdInWithLock(itemMap.keySet().stream().toList());
-            var invMap = inventories.stream()
-                .collect(Collectors.toMap(InventoryEntity::getProductId, Function.identity()));
-
-            for (var entry : itemMap.entrySet()) {
-                var inv = invMap.get(entry.getKey());
-                if (inv == null) throw new InventoryNotFoundException(entry.getKey());
-                inv.reserve(entry.getValue());
-            }
-            inventoryRepository.saveAll(inventories);
-
-            var record = StockReservationRecord.builder()
-                .orderId(request.orderId())
-                .items(serializeItems(itemMap))
-                .status(ReservationStatus.ACTIVE)
-                .build();
-            reservationRepository.save(record);
-
-            // Publish low-stock events
-            inventories.forEach(inv -> {
-                if (inv.isLowStock()) lowStockPublisher.publishIfLowStock(inv);
-            });
-
-            return ReservationResult.success(request.orderId());
+            return doReserveDb(request.orderId(), itemMap);
         } catch (Exception e) {
-            // Rollback Redis
-            for (var entry : itemMap.entrySet()) {
-                redisService.releaseStock(entry.getKey(), entry.getValue());
-            }
+            // Atomic batch rollback — single Lua call avoids partial-failure inconsistency
+            redisService.releaseStockBatch(itemMap);
             throw e;
         }
     }
 
+    @Transactional
+    @Retryable(
+        retryFor = ObjectOptimisticLockingFailureException.class,
+        maxAttempts = 3,
+        backoff = @Backoff(delay = 100, multiplier = 2)
+    )
+    protected ReservationResult doReserveDb(String orderId, Map<Long, Integer> itemMap) {
+        var inventories = inventoryRepository.findAllByProductIdInWithLock(itemMap.keySet().stream().toList());
+        var invMap = inventories.stream()
+            .collect(Collectors.toMap(InventoryEntity::getProductId, Function.identity()));
+
+        for (var entry : itemMap.entrySet()) {
+            var inv = invMap.get(entry.getKey());
+            if (inv == null) throw new InventoryNotFoundException(entry.getKey());
+            inv.reserve(entry.getValue());
+        }
+        inventoryRepository.saveAll(inventories);
+
+        var record = StockReservationRecord.builder()
+            .orderId(orderId)
+            .items(serializeItems(itemMap))
+            .status(ReservationStatus.ACTIVE)
+            .build();
+        reservationRepository.save(record);
+
+        // Publish low-stock events
+        inventories.forEach(inv -> {
+            if (inv.isLowStock()) lowStockPublisher.publishIfLowStock(inv);
+        });
+
+        return ReservationResult.success(orderId);
+    }
+
     @Recover
-    public ReservationResult recoverReserve(ObjectOptimisticLockingFailureException ex, ReservationRequest request) {
-        log.warn("Reserve stock failed after retries for order {}: {}", request.orderId(), ex.getMessage());
+    public ReservationResult recoverReserve(ObjectOptimisticLockingFailureException ex, String orderId, Map<Long, Integer> itemMap) {
+        log.warn("Reserve stock DB failed after retries for order {}: {}", orderId, ex.getMessage());
+        // Atomic batch rollback — single Lua call avoids partial-failure inconsistency
+        redisService.releaseStockBatch(itemMap);
         return ReservationResult.failure("stock conflict, retry later");
     }
 
