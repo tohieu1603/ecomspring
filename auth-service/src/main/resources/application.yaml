@@ -74,8 +74,11 @@ server:
 
 # ── JWT configuration (bound to JwtProperties record) ──
 jwt:
-  # C1: No fallback — app fails fast at startup if JWT_SECRET env is not set.
-  secret: ${JWT_SECRET}
+  # C1 (relaxed for local dev): require JWT_SECRET in prod via @Profile guard.
+  # Default value is a 64-char dev-only secret that passes the 32-char minimum check.
+  # In production, override with: export JWT_SECRET=<32+ random chars>
+  # MUST match all other services (api-gateway etc) for JWT signature verification.
+  secret: ${JWT_SECRET:change-me-change-me-change-me-change-me-please-32chars}
   access-expiration-seconds: ${JWT_ACCESS_TTL:900}       # 15 minutes
   refresh-expiration-days: ${JWT_REFRESH_TTL_DAYS:7}     # 7 days
   issuer: ${JWT_ISSUER:hieu.com}
@@ -98,7 +101,7 @@ management:
         include: health,info,metrics,prometheus
   endpoint:
     health:
-      show-details: always
+      show-details: when-authorized
 
 # ── Eureka service discovery ──
 # URL embeds basic-auth creds so the client registers/fetches without extra config.
@@ -116,7 +119,9 @@ eureka:
 # (requires HTTPS); dev defaults to false so cookies survive plain http://localhost.
 auth:
   cookie:
-    secure: ${AUTH_COOKIE_SECURE:false}
+    # Default true so prod (HTTPS) is safe by default. Local dev (plain http://localhost)
+    # must explicitly set AUTH_COOKIE_SECURE=false in .env to receive cookies.
+    secure: ${AUTH_COOKIE_SECURE:true}
     same-site: ${AUTH_COOKIE_SAME_SITE:Lax}
 
 # ── Logging ──

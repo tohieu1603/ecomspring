@@ -61,9 +61,10 @@ sepay:
   account-name: TO TRONG HIEU
   webhook:
     api-key: ${SEPAY_WEBHOOK_API_KEY:}
-    # Dev-only escape hatch: bypass Apikey verification on the Sepay webhook. MUST stay
-    # false in prod — service fails startup if api-key is blank AND this is false.
-    allow-insecure: ${SEPAY_WEBHOOK_ALLOW_INSECURE:true}
+    # Dev-only escape hatch: bypass Apikey verification on the Sepay webhook. Default
+    # false — set SEPAY_WEBHOOK_ALLOW_INSECURE=true explicitly for local dev only.
+    # Production NEVER accepts unauthenticated webhooks.
+    allow-insecure: ${SEPAY_WEBHOOK_ALLOW_INSECURE:false}
 
 # MoMo
 momo:
@@ -91,7 +92,7 @@ management:
         include: health,info,metrics,prometheus
   endpoint:
     health:
-      show-details: always
+      show-details: when-authorized
 
 logging:
   level:

@@ -54,7 +54,9 @@ public class ProductRepositoryImpl implements ProductRepository {
 
     @Override
     public Optional<Product> findBySlug(Slug slug) {
-        return jpa.findBySlug(slug.value()).map(mapper::toDomain);
+        // Hydrate variants in the same query — callers (detail page handler) need
+        // them and previously had to fire a second findByIdWithVariants round-trip.
+        return jpa.findBySlugWithVariants(slug.value()).map(mapper::toDomain);
     }
 
     @Override

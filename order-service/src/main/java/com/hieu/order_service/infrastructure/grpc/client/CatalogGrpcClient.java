@@ -15,6 +15,7 @@ import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 /**
  * gRPC client for catalog-service — powers the saga's price-verification step.
@@ -28,11 +29,20 @@ import java.util.Optional;
 @Slf4j
 public class CatalogGrpcClient {
 
+    /** Per-call deadline — without this, a hung catalog-service blocks the caller's
+     *  thread (Tomcat / Kafka consumer / sagaExecutor) indefinitely. 2s covers the
+     *  p99 latency of the saga's price-verification fan-out. */
+    private static final long DEADLINE_MS = 2000;
+
     private final CatalogServiceGrpc.CatalogServiceBlockingStub stub;
+
+    private CatalogServiceGrpc.CatalogServiceBlockingStub deadlined() {
+        return stub.withDeadlineAfter(DEADLINE_MS, TimeUnit.MILLISECONDS);
+    }
 
     public Optional<ProductSnapshot> getProduct(Long productId) {
         try {
-            var resp = stub.getProduct(GetProductRequest.newBuilder().setProductId(productId).build());
+            var resp = deadlined().getProduct(GetProductRequest.newBuilder().setProductId(productId).build());
             if (!resp.getFound()) return Optional.empty();
             var p = resp.getProduct();
             var variants = p.getVariantsList().stream()
@@ -48,7 +58,7 @@ public class CatalogGrpcClient {
 
     public Optional<VariantSnapshot> getVariantBySku(String sku) {
         try {
-            var resp = stub.getVariantBySku(GetVariantBySkuRequest.newBuilder().setSku(sku).build());
+            var resp = deadlined().getVariantBySku(GetVariantBySkuRequest.newBuilder().setSku(sku).build());
             if (!resp.getFound()) return Optional.empty();
             var v = resp.getVariant();
             return Optional.of(new VariantSnapshot(v.getId(), v.getSku(),
@@ -62,7 +72,7 @@ public class CatalogGrpcClient {
     /** Catalog-side stock is an advisory snapshot; inventory-service remains authoritative. */
     public boolean checkStock(String sku, int requested) {
         try {
-            CheckStockResponse resp = stub.checkStock(CheckStockRequest.newBuilder()
+            CheckStockResponse resp = deadlined().checkStock(CheckStockRequest.newBuilder()
                     .setSku(sku).setRequested(requested).build());
             return resp.getAvailable();
         } catch (StatusRuntimeException e) {

@@ -26,6 +26,14 @@ public interface ProductJpaRepository extends JpaRepository<ProductJpaEntity, Lo
     @Query("SELECT p FROM ProductJpaEntity p WHERE p.slug = :slug")
     Optional<ProductJpaEntity> findBySlug(@Param("slug") String slug);
 
+    /** Single-query variant: fetch product + all its variants when looking up by slug. */
+    @Query("""
+           SELECT DISTINCT p FROM ProductJpaEntity p
+           LEFT JOIN FETCH p.variants v
+           WHERE p.slug = :slug
+           """)
+    Optional<ProductJpaEntity> findBySlugWithVariants(@Param("slug") String slug);
+
     @Query("""
            SELECT DISTINCT p FROM ProductJpaEntity p
            JOIN p.variants v

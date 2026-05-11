@@ -35,8 +35,11 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/vouchers/active").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/vouchers/{id}").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/vouchers/code/**").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/vouchers/validate").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/vouchers/release").permitAll()
+                // validate + release are internal saga calls — require authenticated JWT
+                // so external clients can't forge release(code, orderId) to abuse vouchers
+                // by un-spending them. Order-service forwards the user's JWT.
+                .requestMatchers(HttpMethod.POST, "/api/vouchers/validate").authenticated()
+                .requestMatchers(HttpMethod.POST, "/api/vouchers/release").authenticated()
                 .requestMatchers(
                     "/v3/api-docs/**",
                     "/swagger-ui/**",

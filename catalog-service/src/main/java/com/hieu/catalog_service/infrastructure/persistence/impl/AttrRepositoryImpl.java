@@ -60,6 +60,12 @@ public class AttrRepositoryImpl implements AttrRepository {
     }
 
     @Override
+    public List<Attr> findAllByIdsWithValues(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) return List.of();
+        return jpa.findAllByIdsWithValues(ids).stream().map(mapper::toDomain).toList();
+    }
+
+    @Override
     public void delete(Attr attr) {
         if (attr.getId() != null) jpa.deleteById(attr.getId().value());
     }

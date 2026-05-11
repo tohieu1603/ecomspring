@@ -82,6 +82,15 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error(ErrorCode.VALIDATION_FAILED.code(), message));
     }
 
+    /** Malformed JSON body, missing required fields, primitive coercion failures → 400 not 500. */
+    @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiResponse<Void>> notReadable(org.springframework.http.converter.HttpMessageNotReadableException ex) {
+        var cause = ex.getMostSpecificCause();
+        log.warn("Malformed JSON: {}", cause != null ? cause.getMessage() : ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(ErrorCode.APP_BAD_REQUEST.code(), "Malformed JSON"));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleGeneric(Exception ex) {
         log.error("Unexpected error", ex);

@@ -58,8 +58,10 @@ public class SearchApplicationService {
         log.debug("Indexed product id={}", req.getId());
     }
 
-    /** Remove a product from the index. Runs asynchronously. */
-    @Async
+    /** Remove a product from the index. Runs asynchronously on the named pool — without
+     *  the qualifier Spring falls back to SimpleAsyncTaskExecutor (unbounded thread
+     *  creation, no monitoring) instead of the configured taskExecutor bean. */
+    @Async("taskExecutor")
     public void removeProduct(String id) {
         repository.deleteById(id);
         log.debug("Removed product id={} from index", id);

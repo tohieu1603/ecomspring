@@ -48,7 +48,13 @@ public class CreateOrderHandler implements CommandHandler<CreateOrderCommand, Or
         }
 
         var order = buildAndSave(cmd);
-        return saga.executeCreateOrderSaga(order.getId().value(), cmd.authToken());
+        var dto = saga.executeCreateOrderSaga(order.getId().value(), cmd.authToken());
+        // Persist final DTO so retries within TTL return the cached response instead
+        // of being rejected as "PROCESSING" forever.
+        if (cmd.idempotencyKey() != null) {
+            idempotencyService.markCompleted(cmd.idempotencyKey(), order.getId().value(), dto);
+        }
+        return dto;
     }
 
     @Transactional

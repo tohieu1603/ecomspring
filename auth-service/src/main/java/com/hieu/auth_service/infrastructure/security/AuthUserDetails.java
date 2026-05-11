@@ -1,18 +1,19 @@
 package com.hieu.auth_service.infrastructure.security;
 
-import com.hieu.auth_service.domain.models.user.User;
-import com.hieu.auth_service.domain.models.user.vo.AccountStatus;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
-
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
 
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+
+import com.hieu.auth_service.domain.models.user.User;
+import com.hieu.auth_service.domain.models.user.vo.AccountStatus;
+
 /**
- * Custom {@link UserDetails} returned by {@link UserDetailsServiceImpl}.
+ * Custom {@link UserDetails} returned by {@link   }.
  *
  * <p>Carries fields that Spring's default {@code User} builder can't model:
  * <ul>
@@ -79,9 +80,9 @@ public final class AuthUserDetails implements UserDetails {
 
     // ── Domain-side accessors (used by filters + controllers) ──
 
-    public String userId()      { return userId; }
-    public String email()       { return email; }
-    public int tokenVersion()   { return tokenVersion; }
+    public String userId() { return userId; }
+    public int tokenVersion() { return tokenVersion; }
+    public String email() { return email; }
 
     // ── UserDetails contract ──
 
@@ -98,6 +99,6 @@ public final class AuthUserDetails implements UserDetails {
         return o instanceof AuthUserDetails other && userId.equals(other.userId);
     }
 
-    @Override
+    @Override 
     public int hashCode() { return userId.hashCode(); }
 }

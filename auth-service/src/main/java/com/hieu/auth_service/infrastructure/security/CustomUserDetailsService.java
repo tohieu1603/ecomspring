@@ -1,5 +1,15 @@
 package com.hieu.auth_service.infrastructure.security;
 
+import java.util.LinkedHashSet;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.hieu.auth_service.application.port.RolePermissionCachePort;
 import com.hieu.auth_service.domain.models.role.Role;
 import com.hieu.auth_service.domain.models.user.User;
@@ -8,17 +18,9 @@ import com.hieu.auth_service.domain.models.user.vo.Username;
 import com.hieu.auth_service.domain.repositories.PermissionRepository;
 import com.hieu.auth_service.domain.repositories.RoleRepository;
 import com.hieu.auth_service.domain.repositories.UserRepository;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.util.LinkedHashSet;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * Spring Security {@link UserDetailsService} wired to the domain.
@@ -104,7 +106,7 @@ public class CustomUserDetailsService implements UserDetailsService {
                 ? Set.of()
                 : permissionRepository.findByIdIn(role.getPermissions()).stream()
                         .map(p -> p.getName().value())
-                        .collect(Collectors.toSet());
+                        .collect(Collectors.toSet()); 
 
         rolePermissionCache.put(roleName, resolved);
         return resolved;

@@ -24,7 +24,16 @@ public interface VoucherJpaRepository extends JpaRepository<VoucherJpaEntity, Lo
     @Query("SELECT v FROM VoucherJpaEntity v WHERE v.code = :code")
     Optional<VoucherJpaEntity> findByCodeForUpdate(@Param("code") String code);
 
-    /** Returns only vouchers whose time window contains :now (active=true AND startDate<=now AND endDate>now). */
-    @Query("SELECT v FROM VoucherJpaEntity v WHERE v.active = true AND v.startDate <= :now AND v.endDate > :now")
+    /**
+     * Active vouchers whose time window contains :now. Treats null startDate as "no
+     * lower bound" and null endDate as "no expiry" — otherwise permanent vouchers
+     * (no expiry) silently disappear from the listing.
+     */
+    @Query("""
+        SELECT v FROM VoucherJpaEntity v
+        WHERE v.active = true
+          AND (v.startDate IS NULL OR v.startDate <= :now)
+          AND (v.endDate   IS NULL OR v.endDate   >  :now)
+        """)
     Page<VoucherJpaEntity> findActiveAtTime(@Param("now") Instant now, Pageable pageable);
 }

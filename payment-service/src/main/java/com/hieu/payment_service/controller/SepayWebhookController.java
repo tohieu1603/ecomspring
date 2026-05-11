@@ -9,6 +9,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.Map;
 import java.util.regex.Pattern;
 
@@ -57,7 +59,11 @@ public class SepayWebhookController {
             String provided = authHeader != null && authHeader.startsWith("Apikey ")
                     ? authHeader.substring("Apikey ".length()).trim()
                     : "";
-            if (!expectedApiKey.equals(provided)) {
+            // Constant-time compare — String.equals short-circuits on the first differing
+            // byte, leaking the matching prefix length through response timing.
+            byte[] expected = expectedApiKey.getBytes(StandardCharsets.UTF_8);
+            byte[] actual = provided.getBytes(StandardCharsets.UTF_8);
+            if (!MessageDigest.isEqual(expected, actual)) {
                 log.warn("Sepay webhook rejected — invalid Apikey");
                 return ResponseEntity.status(401).body(Map.of("status", "unauthorized"));
             }

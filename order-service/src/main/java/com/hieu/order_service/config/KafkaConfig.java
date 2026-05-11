@@ -69,7 +69,7 @@ public class KafkaConfig {
     @Bean public NewTopic consumerDlt()           { return TopicBuilder.name("order-service.DLT").partitions(1).replicas(1).build(); }
 
     @Bean
-    public DefaultErrorHandler kafkaErrorHandler(KafkaOperations<Object, Object> kafkaOps) {
+    public DefaultErrorHandler kafkaErrorHandler(KafkaTemplate<String, String> kafkaOps) {
         var recoverer = new DeadLetterPublishingRecoverer(kafkaOps,
                 (rec, ex) -> new org.apache.kafka.common.TopicPartition(rec.topic() + ".DLT", rec.partition()));
         return new DefaultErrorHandler(recoverer, new FixedBackOff(1000L, 3L));

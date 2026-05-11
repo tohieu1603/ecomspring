@@ -136,6 +136,24 @@ public class VoucherApplicationService {
         VoucherJpaEntity entity = voucherRepository.findByCodeForUpdate(code)
                 .orElseThrow(() -> new VoucherNotFoundException(code));
 
+        // Idempotency: saga retry with same orderId must return the previously-applied
+        // discount, not increment usedCount again (would hit DB unique constraint and 500).
+        // Check INSIDE the pessimistic-lock scope so concurrent first-time apply on the
+        // same orderId is still serialized.
+        var existing = usageRecordRepository.findByOrderId(orderId);
+        if (existing.isPresent()) {
+            if (!existing.get().getVoucherId().equals(entity.getId())) {
+                throw new IllegalArgumentException(
+                    "orderId " + orderId + " already used with a different voucher");
+            }
+            BigDecimal cachedDiscount = calculateDiscount(entity, orderAmount);
+            BigDecimal cachedFinal = orderAmount.subtract(cachedDiscount).max(BigDecimal.ZERO);
+            log.debug("Idempotent validateAndApply for orderId={}, returning cached discount", orderId);
+            return ApplyVoucherResponse.builder()
+                    .code(code).discountAmount(cachedDiscount).finalAmount(cachedFinal)
+                    .message("Voucher already applied (idempotent)").build();
+        }
+
         if (!entity.isActive()) {
             throw new VoucherInactiveException(code);
         }
@@ -218,6 +236,13 @@ public class VoucherApplicationService {
                 // Use pessimistic write lock to prevent race with concurrent validateAndApply
                 VoucherJpaEntity entity = voucherRepository.findByCodeForUpdate(code)
                         .orElseThrow(() -> new VoucherNotFoundException(code));
+                // Verify the caller-supplied code actually matches the voucher recorded for
+                // this orderId — without this check, a caller can release some OTHER voucher
+                // (decrement its usedCount + delete this orderId's record).
+                if (!entity.getId().equals(record.getVoucherId())) {
+                    throw new IllegalArgumentException(
+                        "Code " + code + " does not match the voucher used by orderId " + orderId);
+                }
                 if (entity.getUsedCount() > 0) {
                     entity.setUsedCount(entity.getUsedCount() - 1);
                     voucherRepository.save(entity);

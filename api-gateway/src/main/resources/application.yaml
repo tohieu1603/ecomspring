@@ -188,6 +188,15 @@ spring:
                 - name: JwtAuthenticationFilter
 
           default-filters:
+            # Strip any caller-supplied X-User-* / X-Token-* before routing — the gateway
+            # owns these headers and injects them after JWT verification. Without this,
+            # routes that skip JwtAuthenticationFilter (auth-public, catalog-public-reads,
+            # inventory-service-internal, shipping-tracking) would trust whatever the
+            # client put there, letting any unauthenticated request impersonate any user.
+            - RemoveRequestHeader=X-User-Id
+            - RemoveRequestHeader=X-User-Name
+            - RemoveRequestHeader=X-Token-Id
+            - RemoveRequestHeader=X-Token-Version
             - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
 
 eureka:
@@ -229,7 +238,7 @@ management:
     gateway:
       enabled: true
     health:
-      show-details: always
+      show-details: when-authorized
 
 # ── OpenAPI aggregation ──
 springdoc:

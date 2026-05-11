@@ -83,6 +83,9 @@ public class SecurityConfig {
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(eh -> eh.authenticationEntryPoint(authenticationEntryPoint))
                 .authorizeHttpRequests(auth -> auth
+                        // Spring Security 7: ERROR dispatch must be explicitly permitted, otherwise
+                        // any forwarded /error path falls back to anyRequest().authenticated() → 401.
+                        .dispatcherTypeMatchers(jakarta.servlet.DispatcherType.ERROR).permitAll()
                         // Public auth endpoints
                         .requestMatchers(HttpMethod.POST,
                                 "/api/auth/login",

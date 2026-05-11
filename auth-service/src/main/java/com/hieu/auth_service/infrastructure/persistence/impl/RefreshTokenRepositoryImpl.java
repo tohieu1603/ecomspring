@@ -67,6 +67,12 @@ public class RefreshTokenRepositoryImpl implements RefreshTokenRepository {
     }
 
     @Override
+    @Transactional
+    public Optional<RefreshToken> findByTokenValueForUpdate(TokenValue tokenValue) {
+        return jpaRepository.findByTokenForUpdate(tokenValue.value()).map(mapper::toDomain);
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public List<RefreshToken> findByUserId(UserId userId) {
         return jpaRepository.findByUserId(userId.value()).stream().map(mapper::toDomain).toList();

@@ -19,5 +19,8 @@ public interface AttrRepository {
     /** All attributes (with their predefined values via JOIN FETCH). */
     List<Attr> findAllWithValues();
 
+    /** Batch fetch — replaces N round-trips through {@link #findById} during variant ingestion. */
+    List<Attr> findAllByIdsWithValues(List<Long> ids);
+
     void delete(Attr attr);
 }

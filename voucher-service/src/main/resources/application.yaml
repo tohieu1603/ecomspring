@@ -32,7 +32,7 @@ spring:
       properties:
         spring.json.use.type.headers: false
         spring.json.value.default.type: java.util.HashMap
-        spring.json.trusted.packages: "*"
+        spring.json.trusted.packages: "com.hieu.*"
     listener:
       missing-topics-fatal: false
 
@@ -64,7 +64,7 @@ management:
         include: health,info,metrics
   endpoint:
     health:
-      show-details: always
+      show-details: when-authorized
 
 logging:
   level:

@@ -25,6 +25,17 @@ public record JwtProperties(
         if (secret == null || secret.length() < 32) {
             throw new IllegalStateException("jwt.secret must be at least 32 characters (HS256 requirement)");
         }
+        // The yaml ships a 55-char placeholder secret (`change-me-...`) that passes the
+        // length check. Prod must reject it — otherwise a forgotten JWT_SECRET env var
+        // means every prod deploy signs tokens with a publicly-known key.
+        if (secret.startsWith("change-me")) {
+            String profiles = System.getProperty("spring.profiles.active", "")
+                    + "," + System.getenv().getOrDefault("SPRING_PROFILES_ACTIVE", "");
+            if (profiles.contains("prod")) {
+                throw new IllegalStateException(
+                        "Default placeholder jwt.secret detected with prod profile active — set JWT_SECRET env var");
+            }
+        }
         if (accessExpirationSeconds <= 0) accessExpirationSeconds = 900L;    // 15 min
         if (refreshExpirationDays    <= 0) refreshExpirationDays    = 7;     // 7 days
         if (issuer == null || issuer.isBlank()) issuer = "hieu.com";

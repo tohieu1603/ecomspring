@@ -48,6 +48,14 @@ public class GlobalExceptionHandler {
         return body(HttpStatus.BAD_REQUEST, ErrorCode.APP_BAD_REQUEST.code(), ex.getMessage(), req, null);
     }
 
+    /** Malformed JSON body, missing required fields, primitive coercion failures → 400 not 500. */
+    @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponse> notReadable(org.springframework.http.converter.HttpMessageNotReadableException ex, HttpServletRequest req) {
+        var cause = ex.getMostSpecificCause();
+        var msg = cause != null ? cause.getMessage() : ex.getMessage();
+        return body(HttpStatus.BAD_REQUEST, ErrorCode.APP_BAD_REQUEST.code(), "Malformed JSON: " + msg, req, null);
+    }
+
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ErrorResponse> dataIntegrity(DataIntegrityViolationException ex, HttpServletRequest req) {
         log.warn("Data integrity violation: {}", ex.getMostSpecificCause().getMessage());

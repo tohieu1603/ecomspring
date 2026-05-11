@@ -60,7 +60,14 @@ public class CreateProductHandler implements CommandHandler<CreateProductCommand
         try {
             return doCreate(cmd);
         } catch (DataIntegrityViolationException e) {
-            if (e.getMessage() != null && e.getMessage().toLowerCase().contains("slug")) {
+            // existsBySku + save is not atomic — two concurrent creates with the same SKU
+            // both pass the check, then DB unique constraint catches the loser. Translate
+            // that into a clean domain exception instead of leaking the raw JPA error.
+            String msg = e.getMessage() != null ? e.getMessage().toLowerCase() : "";
+            if (msg.contains("sku")) {
+                throw new VariantSkuAlreadyExistsException("SKU already exists in product '" + cmd.name() + "'");
+            }
+            if (msg.contains("slug")) {
                 throw new ProductAlreadyExistsException("Slug already exists: " + cmd.name());
             }
             throw e;
@@ -86,9 +93,9 @@ public class CreateProductHandler implements CommandHandler<CreateProductCommand
         if (cmd.metaTitle() != null || cmd.metaDescription() != null || cmd.metaKeywords() != null) {
             product.updateSeo(cmd.metaTitle(), cmd.metaDescription(), cmd.metaKeywords(), cmd.createdBy());
         }
-        if (cmd.activate()) product.activate(cmd.createdBy());
-
+        // Variants MUST be added before activation — Product.activate() rejects empty variants.
         cmd.variants().forEach(vc -> product.addVariant(buildVariant(vc, attrs)));
+        if (cmd.activate()) product.activate(cmd.createdBy());
 
         var saved = productRepository.save(product);
         saved.raiseCreatedEvent();
@@ -128,21 +135,30 @@ public class CreateProductHandler implements CommandHandler<CreateProductCommand
     }
 
     private Map<AttrId, Attr> loadAttrs(List<CreateProductCommand.VariantCmd> variants) {
-        return variants.stream()
+        // Batch fetch — previous version did N round-trips through findById for each
+        // distinct attrId. With 3 variants × 4 attrs = 12 SELECTs collapsed to one.
+        var ids = variants.stream()
             .flatMap(v -> Optional.ofNullable(v.attrs()).orElse(List.of()).stream())
             .map(AttrCmd::attrId)
             .distinct()
-            .collect(Collectors.toMap(
-                AttrId::of,
-                id -> attrRepository.findById(AttrId.of(id))
-                    .orElseThrow(() -> new AttrNotFoundException(id)),
-                (a, b) -> a
-            ));
+            .toList();
+        if (ids.isEmpty()) return Map.of();
+        var loaded = attrRepository.findAllByIdsWithValues(ids).stream()
+            .collect(Collectors.toMap(Attr::getId, Function.identity()));
+        // Catch unknown ids — pinpoint the missing one in the error.
+        ids.stream()
+            .filter(id -> !loaded.containsKey(AttrId.of(id)))
+            .findFirst()
+            .ifPresent(id -> { throw new AttrNotFoundException(id); });
+        return loaded;
     }
 
     private Slug ensureUniqueSlug(Slug base) {
         if (!productRepository.existsBySlug(base)) return base;
-        String suffix = Long.toString(System.currentTimeMillis() % 100_000);
+        // currentTimeMillis collides under burst — UUID suffix has near-zero collision
+        // probability and still leaves the slug readable. The outer handle() also catches
+        // the residual DB-unique race and maps it to ProductAlreadyExistsException.
+        String suffix = java.util.UUID.randomUUID().toString().substring(0, 8);
         String candidate = base.value() + "-" + suffix;
         var next = Slug.of(candidate.length() > 128 ? candidate.substring(0, 128) : candidate);
         if (productRepository.existsBySlug(next)) throw new ProductAlreadyExistsException(base.value());

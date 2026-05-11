@@ -58,7 +58,15 @@ public class CartService {
 
     /**
      * Adds or updates a cart item, with idempotency check via Redis.
+     * Two concurrent addItem() for the same (userId, variantId) collide on @Version
+     * (OptimisticLockingFailureException). Retry up to 3 times so the loser doesn't
+     * surface as a 500 to the user — they just see their item added.
      */
+    @org.springframework.retry.annotation.Retryable(
+        retryFor = org.springframework.orm.ObjectOptimisticLockingFailureException.class,
+        maxAttempts = 3,
+        backoff = @org.springframework.retry.annotation.Backoff(delay = 50, multiplier = 2)
+    )
     @Transactional
     public CartDTO addItem(String userId, AddToCartRequest req) {
         // Idempotency guard

@@ -2,17 +2,6 @@ package com.hieu.auth_service.application.port;
 
 import java.util.Set;
 
-/**
- * Outbound port: role→permission names cache.
- *
- * <p>Populated on startup from the role registry; used by
- * {@code CustomUserDetailsService} to resolve effective permissions during JWT
- * authentication without hitting Postgres every request. Cache is invalidated
- * whenever a Kafka {@code PermissionGranted/Revoked} event fires.
- *
- * <p>Infrastructure supplies a Redis adapter; the interface stays framework-free so
- * tests can swap in an in-memory stub.
- */
 public interface RolePermissionCachePort {
 
     /**

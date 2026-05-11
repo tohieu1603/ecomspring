@@ -142,11 +142,21 @@ public class OrderSagaOrchestrator {
 
         } catch (Exception e) {
             log.error("Saga failed for order {} ({}): {}", orderId, orderNumber, e.getMessage());
-            // Compensation order: stock first (cheap), voucher second (best-effort REST;
-            // voucher-service also listens to order.cancelled via Kafka as backup).
-            stateTransitioner.markFailedAndReleaseStock(orderId, e.getMessage());
+            // Each compensation step is isolated — a failure in one MUST NOT skip the
+            // others. Voucher release is best-effort REST; voucher-service also listens
+            // to order.cancelled via Kafka as backup.
+            try {
+                stateTransitioner.markFailedAndReleaseStock(orderId, e.getMessage());
+            } catch (Exception ce) {
+                log.error("Compensation: markFailedAndReleaseStock failed for order {}: {}", orderId, ce.getMessage(), ce);
+            }
             if (voucherApplied) {
-                voucherServiceClient.release(order.getVoucherCode(), orderId);
+                try {
+                    voucherServiceClient.release(order.getVoucherCode(), orderId);
+                } catch (Exception ve) {
+                    log.warn("Compensation: voucher release failed for order {} (Kafka backup will handle): {}",
+                            orderId, ve.getMessage());
+                }
             }
             throw e;
         }

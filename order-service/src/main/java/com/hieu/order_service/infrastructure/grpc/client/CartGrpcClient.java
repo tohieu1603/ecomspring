@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * gRPC client for cart-service. Used by the "create order from cart" flow + the post-order
@@ -24,13 +25,19 @@ import java.util.List;
 @Slf4j
 public class CartGrpcClient {
 
+    private static final long DEADLINE_MS = 2000;
+
     private final CartServiceGrpc.CartServiceBlockingStub stub;
+
+    private CartServiceGrpc.CartServiceBlockingStub deadlined() {
+        return stub.withDeadlineAfter(DEADLINE_MS, TimeUnit.MILLISECONDS);
+    }
 
     /** Fetch the user's cart items. Empty cart raises a business exception. */
     public List<CartItemSnapshot> getCartItems(String userId) {
         log.debug("gRPC getCart: userId={}", userId);
         try {
-            var resp = stub.getCart(GetCartRequest.newBuilder().setUserId(userId).build());
+            var resp = deadlined().getCart(GetCartRequest.newBuilder().setUserId(userId).build());
             if (resp.getItemsCount() == 0) throw new EmptyCartException("Cart is empty for user " + userId);
             return resp.getItemsList().stream()
                     .map(i -> new CartItemSnapshot(
@@ -49,7 +56,7 @@ public class CartGrpcClient {
     public void clearCart(String userId) {
         log.debug("gRPC clearCart: userId={}", userId);
         try {
-            stub.clearCart(ClearCartRequest.newBuilder().setUserId(userId).build());
+            deadlined().clearCart(ClearCartRequest.newBuilder().setUserId(userId).build());
         } catch (StatusRuntimeException e) {
             log.warn("gRPC clearCart({}) failed: {} - {}", userId,
                     e.getStatus().getCode(), e.getMessage());

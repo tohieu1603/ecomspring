@@ -47,7 +47,10 @@ public class RefreshTokenHandler implements CommandHandler<RefreshTokenCommand, 
     @Override
     @Transactional
     public AuthResponseDTO handle(RefreshTokenCommand command) {
-        RefreshToken presented = refreshTokenRepository.findByTokenValue(TokenValue.of(command.refreshToken()))
+        // Pessimistic lock on the token row: two concurrent refreshes of the same
+        // token serialize so the second one sees a now-revoked token and triggers
+        // family revocation rather than both issuing fresh access tokens.
+        RefreshToken presented = refreshTokenRepository.findByTokenValueForUpdate(TokenValue.of(command.refreshToken()))
                 .orElseThrow(() -> new TokenRevokedException(null, null));
 
         // Rotate may throw TokenReuseDetectedException; family revocation already happened inside.

@@ -5,7 +5,9 @@ import java.util.List;
 import java.util.Optional;
 
 import com.hieu.auth_service.infrastructure.persistence.jpa.entities.RefreshTokenJpaEntity;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -16,6 +18,15 @@ import org.springframework.stereotype.Repository;
 public interface RefreshTokenJpaRepository extends JpaRepository<RefreshTokenJpaEntity, String> {
 
     Optional<RefreshTokenJpaEntity> findByToken(String token);
+
+    /**
+     * Locks the token row so two concurrent refreshes of the same token serialize —
+     * the second one sees the now-revoked token and triggers family-revocation reuse
+     * detection instead of both successfully issuing access tokens.
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT t FROM RefreshTokenJpaEntity t WHERE t.token = :token")
+    Optional<RefreshTokenJpaEntity> findByTokenForUpdate(@Param("token") String token);
 
     List<RefreshTokenJpaEntity> findByUserId(String userId);
 

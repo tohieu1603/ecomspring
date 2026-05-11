@@ -108,6 +108,15 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.UNAUTHORIZED, ErrorCode.TOKEN_INVALID.code(), "Invalid JWT token", request);
     }
 
+    /** Malformed JSON body, missing required fields, primitive coercion failures → 400 not 500. */
+    @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponse> handleNotReadable(org.springframework.http.converter.HttpMessageNotReadableException ex, WebRequest request) {
+        var cause = ex.getMostSpecificCause();
+        var msg = cause != null ? cause.getMessage() : ex.getMessage();
+        log.warn("Malformed JSON: {}", msg);
+        return buildResponse(HttpStatus.BAD_REQUEST, ErrorCode.APP_BAD_REQUEST.code(), "Malformed JSON: " + msg, request);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleAll(Exception ex, WebRequest request) {
         log.error("Unexpected error", ex);

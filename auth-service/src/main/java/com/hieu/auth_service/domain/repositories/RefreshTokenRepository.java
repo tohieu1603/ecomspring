@@ -20,6 +20,14 @@ public interface RefreshTokenRepository {
 
     Optional<RefreshToken> findByTokenValue(TokenValue tokenValue);
 
+    /**
+     * Same as {@link #findByTokenValue} but acquires a pessimistic write lock on the
+     * row. Use this in the refresh-token rotation flow to serialize concurrent
+     * refreshes of the same token — without locking, two parallel requests both read
+     * a still-valid token and each issue a new access token (double session).
+     */
+    Optional<RefreshToken> findByTokenValueForUpdate(TokenValue tokenValue);
+
     List<RefreshToken> findByUserId(UserId userId);
 
     List<RefreshToken> findValidTokensByUserId(UserId userId);

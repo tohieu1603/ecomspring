@@ -3,12 +3,13 @@ package com.hieu.auth_service.infrastructure.persistence.jpa.repositories;
 import java.util.List;
 import java.util.Optional;
 
-import com.hieu.auth_service.infrastructure.persistence.jpa.entities.UserJpaEntity;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+
+import com.hieu.auth_service.infrastructure.persistence.jpa.entities.UserJpaEntity;
 
 
 /**
@@ -37,8 +38,7 @@ public interface UserJpaRepository extends JpaRepository<UserJpaEntity, String> 
     /**
      * Cursor pagination step 1: fetch user ids with id > cursor, ordered by id ASC.
      * Pass {@code Pageable.ofSize(n)} to limit rows.
-     */
-    /**
+     */     /**
      * Keyset pagination — first page (no cursor).
      * Split from the with-cursor variant because Postgres can't infer the type of
      * a null parameter in a {@code :p IS NULL OR u.col < :p} predicate.

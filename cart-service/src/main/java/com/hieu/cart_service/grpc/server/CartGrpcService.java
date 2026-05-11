@@ -47,8 +47,15 @@ public class CartGrpcService extends CartServiceGrpc.CartServiceImplBase {
                 .build();
             observer.onNext(reply);
         } catch (Exception e) {
+            // Propagate as gRPC INTERNAL so callers (order-service saga) don't mistake
+            // an empty response for an empty cart and silently create an order with no
+            // items. Returning empty here masked real failures (Redis/DB errors).
             log.error("gRPC getCart failed for user {}: {}", request.getUserId(), e.getMessage(), e);
-            observer.onNext(GetCartResponse.newBuilder().setUserId(request.getUserId()).build());
+            observer.onError(io.grpc.Status.INTERNAL
+                    .withDescription("getCart failed: " + e.getMessage())
+                    .withCause(e)
+                    .asRuntimeException());
+            return;
         }
         observer.onCompleted();
     }
@@ -60,7 +67,11 @@ public class CartGrpcService extends CartServiceGrpc.CartServiceImplBase {
             observer.onNext(ClearCartResponse.newBuilder().setSuccess(true).build());
         } catch (Exception e) {
             log.error("gRPC clearCart failed for user {}: {}", request.getUserId(), e.getMessage(), e);
-            observer.onNext(ClearCartResponse.newBuilder().setSuccess(false).build());
+            observer.onError(io.grpc.Status.INTERNAL
+                    .withDescription("clearCart failed: " + e.getMessage())
+                    .withCause(e)
+                    .asRuntimeException());
+            return;
         }
         observer.onCompleted();
     }

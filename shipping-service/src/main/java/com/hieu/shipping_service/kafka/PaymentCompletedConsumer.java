@@ -39,25 +39,25 @@ public class PaymentCompletedConsumer {
             return;
         }
 
-        try {
-            var req = new CreateShipmentRequest(
-                    event.orderId(),
-                    event.userId(),
-                    null,
-                    str(shippingAddress, "recipientName"),
-                    str(shippingAddress, "recipientPhone"),
-                    str(shippingAddress, "addressLine"),
-                    str(shippingAddress, "ward"),
-                    str(shippingAddress, "district"),
-                    strOrDefault(shippingAddress, "city", "Unknown"),
-                    strOrDefault(shippingAddress, "country", "Vietnam"),
-                    null
-            );
-            shipmentService.createShipmentIfAbsent(req);
-            log.info("Auto-created shipment for orderId={}", event.orderId());
-        } catch (Exception e) {
-            log.warn("Failed to auto-create shipment for orderId={}: {}", event.orderId(), e.getMessage());
-        }
+        // Let exceptions propagate so DefaultErrorHandler retries + routes to .DLT.
+        // Previously catch-all silently dropped failed shipments — order paid but
+        // never fulfilled. createShipmentIfAbsent handles the legitimate "already
+        // exists" case via DataIntegrityViolationException internally.
+        var req = new CreateShipmentRequest(
+                event.orderId(),
+                event.userId(),
+                null,
+                str(shippingAddress, "recipientName"),
+                str(shippingAddress, "recipientPhone"),
+                str(shippingAddress, "addressLine"),
+                str(shippingAddress, "ward"),
+                str(shippingAddress, "district"),
+                strOrDefault(shippingAddress, "city", "Unknown"),
+                strOrDefault(shippingAddress, "country", "Vietnam"),
+                null
+        );
+        shipmentService.createShipmentIfAbsent(req);
+        log.info("Auto-created shipment for orderId={}", event.orderId());
     }
 
     @SuppressWarnings("unchecked")

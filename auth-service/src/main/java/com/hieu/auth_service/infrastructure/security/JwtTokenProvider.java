@@ -1,14 +1,5 @@
 package com.hieu.auth_service.infrastructure.security;
 
-import com.hieu.auth_service.domain.models.user.User;
-import com.hieu.auth_service.domain.services.TokenProviderPort;
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
-import io.jsonwebtoken.security.MacAlgorithm;
-import org.springframework.stereotype.Component;
-
-import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Collection;
@@ -17,6 +8,18 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+
+import javax.crypto.SecretKey;
+
+import org.springframework.stereotype.Component;
+
+import com.hieu.auth_service.domain.models.user.User;
+import com.hieu.auth_service.domain.services.TokenProviderPort;
+
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
+import io.jsonwebtoken.security.MacAlgorithm;
 
 /**
  * JWT (HS256) implementation of {@link TokenProviderPort}.
@@ -113,6 +116,15 @@ public class JwtTokenProvider implements TokenProviderPort {
     }
 
     private Claims parseClaims(String token) {
-        return Jwts.parser().verifyWith(key).build().parseSignedClaims(token).getPayload();
+        // requireIssuer guards against tokens minted by another service that shares the
+        // same secret (e.g. payment-service signs internal-only tokens with the same
+        // HS256 key). Without this enforcement, those tokens would be accepted as
+        // user-auth tokens here.
+        return Jwts.parser()
+                .verifyWith(key)
+                .requireIssuer(props.issuer())
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
     }
 }

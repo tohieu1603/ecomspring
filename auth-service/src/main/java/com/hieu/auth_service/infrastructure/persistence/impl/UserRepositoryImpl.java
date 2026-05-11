@@ -1,5 +1,15 @@
 package com.hieu.auth_service.infrastructure.persistence.impl;
 
+import java.time.Instant;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.hieu.auth_service.domain.events.DomainEventPublisher;
 import com.hieu.auth_service.domain.models.role.vo.RoleId;
 import com.hieu.auth_service.domain.models.user.User;
@@ -12,16 +22,8 @@ import com.hieu.auth_service.infrastructure.persistence.jpa.entities.UserJpaEnti
 import com.hieu.auth_service.infrastructure.persistence.jpa.repositories.RoleJpaRepository;
 import com.hieu.auth_service.infrastructure.persistence.jpa.repositories.UserJpaRepository;
 import com.hieu.auth_service.infrastructure.persistence.mapper.UserJpaMapper;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 
 /**
  * Spring Data JPA adapter for {@link UserRepository}.

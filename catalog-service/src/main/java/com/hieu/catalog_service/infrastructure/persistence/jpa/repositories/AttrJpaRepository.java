@@ -20,4 +20,7 @@ public interface AttrJpaRepository extends JpaRepository<AttrJpaEntity, Long> {
 
     @Query("SELECT DISTINCT a FROM AttrJpaEntity a LEFT JOIN FETCH a.values ORDER BY a.sortOrder, a.id")
     List<AttrJpaEntity> findAllWithValues();
+
+    @Query("SELECT DISTINCT a FROM AttrJpaEntity a LEFT JOIN FETCH a.values WHERE a.id IN :ids")
+    List<AttrJpaEntity> findAllByIdsWithValues(@Param("ids") List<Long> ids);
 }

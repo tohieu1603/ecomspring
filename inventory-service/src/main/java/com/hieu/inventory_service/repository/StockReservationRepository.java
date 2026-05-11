@@ -1,7 +1,11 @@
 package com.hieu.inventory_service.repository;
 
 import com.hieu.inventory_service.entity.StockReservationRecord;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
@@ -11,4 +15,12 @@ import java.util.Optional;
 public interface StockReservationRepository extends JpaRepository<StockReservationRecord, Long> {
 
     Optional<StockReservationRecord> findByOrderId(String orderId);
+
+    /**
+     * Locks the reservation row to serialize concurrent confirm/release on the same
+     * orderId — without this, both threads see ACTIVE and double-apply the side effect.
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT r FROM StockReservationRecord r WHERE r.orderId = :orderId")
+    Optional<StockReservationRecord> findByOrderIdForUpdate(@Param("orderId") String orderId);
 }

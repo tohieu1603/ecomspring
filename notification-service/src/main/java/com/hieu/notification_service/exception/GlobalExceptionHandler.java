@@ -38,6 +38,15 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.BAD_REQUEST, message);
     }
 
+    /** Malformed JSON body, missing required fields, primitive coercion failures → 400 not 500. */
+    @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
+    public ResponseEntity<Map<String, Object>> handleNotReadable(org.springframework.http.converter.HttpMessageNotReadableException ex) {
+        var cause = ex.getMostSpecificCause();
+        var msg = cause != null ? cause.getMessage() : ex.getMessage();
+        log.warn("Malformed JSON: {}", msg);
+        return buildResponse(HttpStatus.BAD_REQUEST, "Malformed JSON: " + msg);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGeneral(Exception ex) {
         log.error("Unexpected error: {}", ex.getMessage(), ex);

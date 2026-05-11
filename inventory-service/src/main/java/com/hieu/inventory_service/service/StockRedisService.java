@@ -50,6 +50,20 @@ public class StockRedisService {
     }
 
     /**
+     * Seeds the counter only if absent — avoids overwriting concurrent in-flight
+     * deductions when seeding from DB after a cache miss. If the key already exists,
+     * another thread has already (re)seeded it; we trust the live value.
+     */
+    public void setStockIfAbsent(Long productId, int quantity) {
+        redisTemplate.opsForValue().setIfAbsent(KEY_PREFIX + productId, String.valueOf(quantity), TTL);
+    }
+
+    /** Drops the cached counter so the next reserve re-seeds from DB under lock. */
+    public void invalidate(Long productId) {
+        redisTemplate.delete(KEY_PREFIX + productId);
+    }
+
+    /**
      * Atomically restores stock for multiple products in a single Lua call — avoids
      * partial-failure inconsistency that per-product loop rollback cannot guarantee.
      */

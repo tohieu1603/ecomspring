@@ -16,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * gRPC client for inventory-service. Matches the real {@code inventory.proto} contract:
@@ -34,7 +35,15 @@ import java.util.List;
 @Slf4j
 public class InventoryGrpcClient {
 
+    /** Bounded deadline so a hung inventory-service can't pin the saga thread. Reserve
+     *  is interactive (user is waiting), 3s is generous given the typical sub-100ms p99. */
+    private static final long DEADLINE_MS = 3000;
+
     private final InventoryServiceGrpc.InventoryServiceBlockingStub stub;
+
+    private InventoryServiceGrpc.InventoryServiceBlockingStub deadlined() {
+        return stub.withDeadlineAfter(DEADLINE_MS, TimeUnit.MILLISECONDS);
+    }
 
     public String reserveStock(String orderId, List<ReserveItemInput> items) {
         log.debug("gRPC reserveStock: orderId={}, items={}", orderId, items.size());
@@ -44,7 +53,7 @@ public class InventoryGrpcClient {
                 .setQuantity(i.quantity())
                 .build()));
         try {
-            ReserveStockResponse resp = stub.reserveStock(builder.build());
+            ReserveStockResponse resp = deadlined().reserveStock(builder.build());
             if (!resp.getSuccess()) {
                 throw new InsufficientStockException(
                         "Insufficient stock for order " + orderId + ": " + resp.getErrorMessage());
@@ -59,7 +68,7 @@ public class InventoryGrpcClient {
     public void confirmReservation(String reservationId) {
         log.debug("gRPC confirmReservation: {}", reservationId);
         try {
-            stub.confirmReservation(ConfirmReservationRequest.newBuilder()
+            deadlined().confirmReservation(ConfirmReservationRequest.newBuilder()
                     .setReservationId(reservationId).build());
         } catch (StatusRuntimeException e) {
             log.error("gRPC confirmReservation failed ({}): {}", reservationId, e.getMessage());
@@ -71,7 +80,7 @@ public class InventoryGrpcClient {
     public void releaseStock(String reservationId) {
         log.debug("gRPC releaseStock: {}", reservationId);
         try {
-            stub.releaseStock(ReleaseStockRequest.newBuilder()
+            deadlined().releaseStock(ReleaseStockRequest.newBuilder()
                     .setReservationId(reservationId).build());
         } catch (StatusRuntimeException e) {
             log.warn("gRPC releaseStock({}) failed: {} - {}",
@@ -81,7 +90,7 @@ public class InventoryGrpcClient {
 
     public boolean checkStock(Long productId, int quantity) {
         try {
-            CheckStockResponse resp = stub.checkStock(CheckStockRequest.newBuilder()
+            CheckStockResponse resp = deadlined().checkStock(CheckStockRequest.newBuilder()
                     .setProductId(productId).setQuantity(quantity).build());
             return resp.getAvailable();
         } catch (StatusRuntimeException e) {

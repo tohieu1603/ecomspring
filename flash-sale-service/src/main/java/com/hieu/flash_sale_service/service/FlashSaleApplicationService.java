@@ -190,6 +190,15 @@ public class FlashSaleApplicationService {
         // Both DB saves in a single try so any failure rolls back Redis slots (C1 slot-leak fix)
         FlashSaleParticipation savedParticipation;
         try {
+            // Re-check per-user quota INSIDE the lock — without this, two concurrent
+            // requests from the same user both read alreadyClaimed=0 above and both
+            // bypass maxPerUser. Holding the flash_sales row lock serializes all
+            // participate() calls for this saleId, so this second sum is authoritative.
+            int claimedNow = participationRepo.sumQuantityBySaleIdAndUserId(saleId, userId);
+            if (claimedNow + quantity > locked.getMaxPerUser()) {
+                throw new UserQuotaExceededException(userId, saleId, locked.getMaxPerUser());
+            }
+
             locked.setReservedSlots(locked.getReservedSlots() + quantity);
             repository.save(locked);
 

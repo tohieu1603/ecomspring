@@ -59,12 +59,16 @@ public class VoucherServiceClient {
      */
     public BigDecimal validateAndApply(String code, BigDecimal orderAmount, String userId,
                                        Long orderId, List<Long> productIds, String authToken) {
+        // voucher-service DTO declares orderId:String + productIds:List<String> — encode
+        // here so Jackson coercion config on the server side doesn't matter.
         var body = new java.util.LinkedHashMap<String, Object>();
         body.put("code", code);
         body.put("orderAmount", orderAmount);
         body.put("userId", userId);
-        body.put("orderId", orderId);
-        if (productIds != null && !productIds.isEmpty()) body.put("productIds", productIds);
+        body.put("orderId", String.valueOf(orderId));
+        if (productIds != null && !productIds.isEmpty()) {
+            body.put("productIds", productIds.stream().map(String::valueOf).toList());
+        }
 
         try {
             var spec = restClient.post()
@@ -110,7 +114,7 @@ public class VoucherServiceClient {
             restClient.post()
                     .uri(voucherServiceUrl + "/api/vouchers/release")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .body(Map.of("code", code, "orderId", orderId))
+                    .body(Map.of("code", code, "orderId", String.valueOf(orderId)))
                     .retrieve()
                     .toBodilessEntity();
             log.info("Released voucher {} for order {}", code, orderId);

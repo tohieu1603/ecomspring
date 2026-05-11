@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Resolves a user's email by reading the local Redis cache populated by the
@@ -45,10 +46,12 @@ public class UserProfileEmailResolver {
         if (cached != null && !cached.isBlank()) return Optional.of(cached);
 
         // Cache miss → gRPC fallback. Worth the extra hop only the first time
-        // we hear about a user.
+        // we hear about a user. Bounded deadline so a hung user-profile-service
+        // can't pin mailExecutor threads indefinitely.
         try {
-            GetEmailResponse response = stub.getEmail(
-                    GetEmailRequest.newBuilder().setUserId(userId).build());
+            GetEmailResponse response = stub
+                    .withDeadlineAfter(1500, TimeUnit.MILLISECONDS)
+                    .getEmail(GetEmailRequest.newBuilder().setUserId(userId).build());
             if (response.getFound() && !response.getEmail().isBlank()) {
                 cache(userId, response.getEmail());
                 return Optional.of(response.getEmail());
