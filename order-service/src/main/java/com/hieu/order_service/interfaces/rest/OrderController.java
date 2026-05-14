@@ -40,6 +40,7 @@ public class OrderController {
     private final ListOrdersByStatusHandler listOrdersByStatusHandler;
     private final ListOrdersCursorHandler listOrdersCursorHandler;
     private final HasUserPurchasedProductHandler hasUserPurchasedProductHandler;
+    private final com.hieu.order_service.infrastructure.persistence.jpa.repositories.OrderJpaRepository orderRepo;
 
     /** Shared secret for service-to-service /internal calls. Configure per environment. */
     @Value("${security.internal-token:}")
@@ -171,6 +172,28 @@ public class OrderController {
             @RequestParam(defaultValue = "20") int limit,
             @RequestParam(required = false) String status) {
         return listOrdersCursorHandler.handle(new ListOrdersCursorQuery(cursor, limit, status));
+    }
+
+    /**
+     * Per-user aggregates for the admin customers list. Optional `userIds`
+     * filters to a known page so the admin UI can hit /api/users first and
+     * then ask order-service to enrich the row stats — without scanning the
+     * whole orders table when only a slice is needed.
+     */
+    @GetMapping("/customers/stats")
+    @PreAuthorize("hasRole('ADMIN')")
+    public List<Map<String, Object>> customerStats(
+            @RequestParam(required = false) java.util.List<String> userIds) {
+        var rows = orderRepo.aggregateByUser(
+                userIds == null || userIds.isEmpty() ? null : userIds);
+        return rows.stream().map(r -> {
+            Map<String, Object> m = new java.util.LinkedHashMap<>();
+            m.put("userId", r.getUserId());
+            m.put("orderCount", r.getOrderCount());
+            m.put("lifetimeValue", r.getLifetimeValue());
+            m.put("lastOrderAt", r.getLastOrderAt());
+            return m;
+        }).toList();
     }
 
     @GetMapping("/user/{userId}/purchased/{productId}")

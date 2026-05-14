@@ -10,12 +10,15 @@ import com.hieu.cart_service.grpc.client.CatalogGrpcClient;
 import com.hieu.cart_service.redis.CartCacheService;
 import com.hieu.cart_service.repository.CartItemRepository;
 import com.hieu.catalog_service.interfaces.grpc.proto.GetProductResponse;
+import com.hieu.catalog_service.interfaces.grpc.proto.Product;
 import com.hieu.catalog_service.interfaces.grpc.proto.Variant;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -57,10 +60,14 @@ public class CartService {
     // ── WRITE ────────────────────────────────────────────────────────────────
 
     /**
-     * Adds or updates a cart item, with idempotency check via Redis.
-     * Two concurrent addItem() for the same (userId, variantId) collide on @Version
-     * (OptimisticLockingFailureException). Retry up to 3 times so the loser doesn't
-     * surface as a 500 to the user — they just see their item added.
+     * Adds or updates a cart item with strict validation.
+     *
+     * Rejects with 404 if product/variant is gone, 409 if inactive or stock
+     * insufficient. Idempotency via Redis-cached response.
+     *
+     * Two concurrent addItem() for the same (userId, variantId) collide on
+     * @Version and Spring Retry replays the transaction up to 3 times so the
+     * loser doesn't surface as a 500 to the user.
      */
     @org.springframework.retry.annotation.Retryable(
         retryFor = org.springframework.orm.ObjectOptimisticLockingFailureException.class,
@@ -69,53 +76,70 @@ public class CartService {
     )
     @Transactional
     public CartDTO addItem(String userId, AddToCartRequest req) {
-        // Idempotency guard
+        // Idempotency guard — if same key already produced a result, return it.
         if (req.idempotencyKey() != null && !req.idempotencyKey().isBlank()) {
             var idem = cacheService.getIdempotentResult(req.idempotencyKey());
             if (idem != null) return idem;
         }
 
-        // Resolve variant from catalog (caller passes productId to avoid an extra round-trip).
-        var variantOpt = catalogClient.flatMap(c -> c.getVariantById(req.productId(), req.variantId()));
+        // 1) Verify product + variant exist, ACTIVE, fetch authoritative metadata.
+        ValidatedVariant valid = loadAndValidate(req.productId(), req.variantId());
 
-        CartItem item;
+        // 2) Stock check — incremental add must fit within remaining inventory.
         var existing = cartItemRepository.findByUserIdAndVariantId(userId, req.variantId());
+        int currentQty = existing.map(CartItem::getQuantity).orElse(0);
+        int targetQty = currentQty + req.quantity();
+        if (targetQty > valid.variant.getQuantity()) {
+            int remaining = Math.max(0, valid.variant.getQuantity() - currentQty);
+            String msg = remaining == 0
+                ? "Đã đạt giới hạn tồn kho. Trong giỏ hiện có " + currentQty + "/" + valid.variant.getQuantity() + " sản phẩm."
+                : "Chỉ có thể thêm tối đa " + remaining + " sản phẩm (tồn kho " + valid.variant.getQuantity() + ").";
+            throw new ResponseStatusException(HttpStatus.CONFLICT, msg);
+        }
+        if (targetQty > 999) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Mỗi loại sản phẩm tối đa 999 trong giỏ.");
+        }
+
+        // 3) Upsert.
+        CartItem item;
         if (existing.isPresent()) {
             item = existing.get();
-            item.setQuantity(item.getQuantity() + req.quantity());
-            if (item.getQuantity() > 999) item.setQuantity(999);
+            item.setQuantity(targetQty);
         } else {
             item = CartItem.builder()
                 .userId(userId)
                 .variantId(req.variantId())
-                .productId(variantOpt.map(v -> v.getProductId()).orElse(0L))
-                .productName(resolveProductName(req.variantId(), variantOpt))
-                .variantSku(variantOpt.map(Variant::getSku).orElse("unknown"))
-                .variantImage(null)
-                .unitPrice(variantOpt.map(v -> parseBD(v.getPrice())).orElse(BigDecimal.ZERO))
+                .productId(valid.product.getId())
+                .productName(valid.product.getName())
+                .variantSku(valid.variant.getSku())
+                .variantImage(valid.product.getThumbnail().isEmpty() ? null : valid.product.getThumbnail())
+                .unitPrice(parseBD(valid.variant.getPrice()))
                 .quantity(req.quantity())
                 .build();
         }
-        // Refresh denormalised fields from catalog if available
-        variantOpt.ifPresent(v -> {
-            item.setUnitPrice(parseBD(v.getPrice()));
-            item.setVariantSku(v.getSku());
-        });
+        // Always refresh denormalised fields so cart reflects latest catalog state.
+        item.setUnitPrice(parseBD(valid.variant.getPrice()));
+        item.setVariantSku(valid.variant.getSku());
+        item.setProductName(valid.product.getName());
+        if (!valid.product.getThumbnail().isEmpty()) {
+            item.setVariantImage(valid.product.getThumbnail());
+        }
 
         cartItemRepository.save(item);
-        // C2: evict only — next getCart rebuilds from DB avoiding a stale-read race on putCart.
+        // C2: evict only — next getCart rebuilds from DB avoiding a stale-read race.
         cacheService.evictCart(userId);
 
         var cart = buildCartDTO(userId, cartItemRepository.findAllByUserId(userId), false);
         if (req.idempotencyKey() != null && !req.idempotencyKey().isBlank()) {
             cacheService.putIdempotentResult(req.idempotencyKey(), cart);
         }
-        // Intentionally NOT calling putCart here — evict-then-read is the safe path.
         return cart;
     }
 
     /**
      * Updates quantity of an existing cart item. quantity=0 means delete.
+     * Re-validates stock + ACTIVE status against catalog so a stale tab can't
+     * push the cart past current inventory.
      */
     @Transactional
     public CartDTO updateItem(String userId, Long variantId, UpdateCartItemRequest req) {
@@ -124,7 +148,19 @@ public class CartService {
         }
         var item = cartItemRepository.findByUserIdAndVariantId(userId, variantId)
             .orElseThrow(() -> new CartItemNotFoundException(userId, variantId));
+
+        // Re-check catalog — the user may have left the tab open for hours.
+        ValidatedVariant valid = loadAndValidate(item.getProductId(), variantId);
+        if (req.quantity() > valid.variant.getQuantity()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                "Chỉ còn " + valid.variant.getQuantity() + " sản phẩm trong kho.");
+        }
+        if (req.quantity() > 999) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Tối đa 999 sản phẩm cho mỗi loại.");
+        }
+
         item.setQuantity(req.quantity());
+        item.setUnitPrice(parseBD(valid.variant.getPrice()));
         cartItemRepository.save(item);
         cacheService.evictCart(userId);
         return refreshAndCache(userId);
@@ -157,6 +193,45 @@ public class CartService {
     }
 
     // ── PRIVATE HELPERS ──────────────────────────────────────────────────────
+
+    private record ValidatedVariant(Product product, Variant variant) {}
+
+    /**
+     * Round-trip to catalog for the freshest product + variant; reject with
+     * the right HTTP code if anything has changed since the user's page loaded.
+     */
+    private ValidatedVariant loadAndValidate(Long productId, Long variantId) {
+        if (catalogClient.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
+                "Không thể kiểm tra tồn kho lúc này. Vui lòng thử lại.");
+        }
+        GetProductResponse resp = catalogClient.get().getProduct(productId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_GATEWAY,
+                "Catalog hiện không phản hồi. Vui lòng thử lại."));
+        if (!resp.getFound()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                "Sản phẩm không còn tồn tại hoặc đã bị xoá.");
+        }
+        Product product = resp.getProduct();
+        if (!"ACTIVE".equalsIgnoreCase(product.getStatus())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                "Sản phẩm hiện không còn được bán.");
+        }
+        Variant variant = product.getVariantsList().stream()
+            .filter(v -> v.getId() == variantId)
+            .findFirst()
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                "Phân loại sản phẩm không còn tồn tại."));
+        if (!"ACTIVE".equalsIgnoreCase(variant.getStatus())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                "Phân loại sản phẩm đã ngưng kinh doanh.");
+        }
+        if (variant.getQuantity() <= 0) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                "Phân loại sản phẩm đã hết hàng.");
+        }
+        return new ValidatedVariant(product, variant);
+    }
 
     private CartDTO refreshAndCache(String userId) {
         var items = cartItemRepository.findAllByUserId(userId);
@@ -192,26 +267,19 @@ public class CartService {
     private String revalidateItem(CartItem item) {
         if (catalogClient.isEmpty()) return null;
         var respOpt = catalogClient.get().getVariantBySku(item.getVariantSku());
-        if (respOpt.isEmpty()) return "unavailable: catalog unreachable for sku=" + item.getVariantSku();
+        if (respOpt.isEmpty()) return "Không kết nối được catalog (" + item.getVariantSku() + ")";
         var resp = respOpt.get();
-        if (!resp.getFound()) return "unavailable: sku=" + item.getVariantSku() + " not found";
+        if (!resp.getFound()) return "Phân loại đã bị xoá (" + item.getVariantSku() + ")";
         var v = resp.getVariant();
-        if (!"ACTIVE".equalsIgnoreCase(v.getStatus())) return "inactive: sku=" + item.getVariantSku();
+        if (!"ACTIVE".equalsIgnoreCase(v.getStatus())) return "Phân loại đã ngưng bán (" + item.getVariantSku() + ")";
+        if (v.getQuantity() < item.getQuantity()) {
+            return "Tồn kho giảm còn " + v.getQuantity() + " (" + item.getVariantSku() + ")";
+        }
         var catalogPrice = parseBD(v.getPrice());
         if (catalogPrice.compareTo(item.getUnitPrice()) != 0) {
-            return "price changed: sku=%s was=%s now=%s".formatted(item.getVariantSku(), item.getUnitPrice(), catalogPrice);
+            return "Giá đã thay đổi (" + item.getVariantSku() + "): " + item.getUnitPrice() + " → " + catalogPrice;
         }
         return null;
-    }
-
-    /**
-     * Resolves productId for a variant — attempts catalog lookup by scanning the variant.
-     * Falls back to 0L if catalog is unavailable.
-     */
-
-    private String resolveProductName(Long variantId, Optional<Variant> variantOpt) {
-        // product name not on Variant proto — requires GetProduct; skip for simplicity
-        return variantOpt.map(v -> "Product-" + v.getProductId()).orElse("Unknown");
     }
 
     private static BigDecimal parseBD(String s) {

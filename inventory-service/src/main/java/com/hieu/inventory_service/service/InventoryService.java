@@ -2,12 +2,14 @@ package com.hieu.inventory_service.service;
 
 import com.hieu.inventory_service.dto.*;
 import com.hieu.inventory_service.entity.InventoryEntity;
+import com.hieu.inventory_service.entity.StockMovement;
 import com.hieu.inventory_service.entity.StockReservationRecord;
 import com.hieu.inventory_service.entity.StockReservationRecord.ReservationStatus;
 import com.hieu.inventory_service.exception.InsufficientStockException;
 import com.hieu.inventory_service.exception.InventoryNotFoundException;
 import com.hieu.inventory_service.kafka.LowStockEventPublisher;
 import com.hieu.inventory_service.repository.InventoryRepository;
+import com.hieu.inventory_service.repository.StockMovementRepository;
 import com.hieu.inventory_service.repository.StockReservationRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,6 +39,7 @@ public class InventoryService {
 
     private final InventoryRepository inventoryRepository;
     private final StockReservationRepository reservationRepository;
+    private final StockMovementRepository movementRepository;
     private final StockRedisService redisService;
     private final LowStockEventPublisher lowStockPublisher;
     private final ObjectMapper objectMapper;
@@ -91,9 +94,22 @@ public class InventoryService {
 
     @Transactional
     public InventoryDTO adjustStock(Long productId, int delta) {
+        return adjustStock(productId, delta, null, null);
+    }
+
+    /**
+     * Adjust stock and write an audit row to {@code stock_movements}. Reasons:
+     *  - positive delta → admin restocked (or initial seed)
+     *  - negative delta → admin removed (shrinkage, return-to-vendor, etc.)
+     * Caller may supply an actor (admin userId) and free-text note that show up
+     * in the history view.
+     */
+    @Transactional
+    public InventoryDTO adjustStock(Long productId, int delta, String actor, String note) {
         var inventories = inventoryRepository.findAllByProductIdInWithLock(List.of(productId));
         var entity = inventories.stream().findFirst()
             .orElseThrow(() -> new InventoryNotFoundException(productId));
+        int before = entity.getQuantity();
         if (delta > 0) {
             entity.addStock(delta);
         } else if (delta < 0) {
@@ -110,7 +126,40 @@ public class InventoryService {
         // Invalidate (don't SET) — concurrent reserves may have already deducted Redis;
         // next reserve will cache-miss and seed from DB under lock.
         redisService.invalidate(productId);
+
+        movementRepository.save(StockMovement.builder()
+                .productId(saved.getProductId())
+                .sku(saved.getSku())
+                .delta(delta)
+                .quantityBefore(before)
+                .quantityAfter(saved.getQuantity())
+                .reservedAfter(saved.getReservedQuantity())
+                .reason(StockMovement.Reason.ADJUST)
+                .actor(actor != null ? actor : "ADMIN")
+                .note(note)
+                .build());
+
         return toDTO(saved);
+    }
+
+    /**
+     * History query for the admin UI. Cursor-less — page+size only; consumers
+     * paginate via `?page=&size=`. Optional filter by SKU narrows to a single
+     * inventory row.
+     */
+    @Transactional(readOnly = true)
+    public org.springframework.data.domain.Page<StockMovementDTO> history(
+            Long productId, String sku, int page, int size) {
+        var pageReq = org.springframework.data.domain.PageRequest.of(page, Math.min(size, 200));
+        org.springframework.data.domain.Page<StockMovement> p;
+        if (sku != null && !sku.isBlank()) {
+            p = movementRepository.findBySkuOrderByCreatedAtDesc(sku, pageReq);
+        } else if (productId != null) {
+            p = movementRepository.findByProductIdOrderByCreatedAtDesc(productId, pageReq);
+        } else {
+            p = movementRepository.findAllByOrderByCreatedAtDesc(pageReq);
+        }
+        return p.map(StockMovementDTO::from);
     }
 
     // -------------------------------------------------------------------------

@@ -14,12 +14,14 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 
-/** Thin admin endpoints — Kibana is the primary UI; these are for sanity-check / scripts. */
+/** Admin endpoints over the ES analytics index. Kibana is the primary UI; these
+ *  are the lightweight surfaces used by the Next admin dashboard. */
 @RestController
 @RequestMapping("/api/analytics")
-@Tag(name = "Analytics", description = "Sanity-check queries — Kibana is the main dashboard UI")
+@Tag(name = "Analytics", description = "Admin queries over the analytics-events index")
 @RequiredArgsConstructor
 public class AnalyticsController {
 
@@ -32,5 +34,25 @@ public class AnalyticsController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to) {
         return ResponseEntity.ok(ApiResponse.ok(queryService.summary(from, to)));
+    }
+
+    @GetMapping("/logs")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Recent analytics events (lightweight log feed)")
+    public ResponseEntity<Map<String, Object>> logs(
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) String level,
+            @RequestParam(required = false) String service,
+            @RequestParam(defaultValue = "100") int size) {
+        return ResponseEntity.ok(queryService.searchLogs(q, level, service, size));
+    }
+
+    @GetMapping("/revenue")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Daily revenue series between [from, to)")
+    public ResponseEntity<List<Map<String, Object>>> revenue(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to) {
+        return ResponseEntity.ok(queryService.revenueByDay(from, to));
     }
 }

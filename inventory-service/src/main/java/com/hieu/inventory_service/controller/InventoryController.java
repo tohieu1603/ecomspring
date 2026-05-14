@@ -12,6 +12,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
+import org.springframework.data.domain.Page;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
 /** REST API for inventory management. */
 @RestController
@@ -76,7 +78,37 @@ public class InventoryController {
     @Operation(summary = "Adjust stock delta")
     public ResponseEntity<InventoryDTO> adjustStock(
         @PathVariable Long productId,
-        @RequestBody Map<String, Integer> body) {
-        return ResponseEntity.ok(inventoryService.adjustStock(productId, body.get("delta")));
+        @RequestBody Map<String, Object> body,
+        @AuthenticationPrincipal Object principal) {
+        Integer delta = body.get("delta") instanceof Number n ? n.intValue() : Integer.parseInt(String.valueOf(body.get("delta")));
+        String note = body.get("note") instanceof String s ? s : null;
+        String actor = principal != null ? principal.toString() : "ADMIN";
+        return ResponseEntity.ok(inventoryService.adjustStock(productId, delta, actor, note));
+    }
+
+    /**
+     * Stock movement history. Filter by productId OR sku — both optional. When
+     * neither is provided returns the global feed (admin only). Page-based to
+     * match the FE table component.
+     */
+    @GetMapping("/movements")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Stock movement history (audit trail)")
+    public ResponseEntity<Page<StockMovementDTO>> movements(
+        @RequestParam(required = false) Long productId,
+        @RequestParam(required = false) String sku,
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "50") int size) {
+        return ResponseEntity.ok(inventoryService.history(productId, sku, page, size));
+    }
+
+    @GetMapping("/{productId}/history")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Stock movement history for a productId")
+    public ResponseEntity<Page<StockMovementDTO>> historyByProduct(
+        @PathVariable Long productId,
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "50") int size) {
+        return ResponseEntity.ok(inventoryService.history(productId, null, page, size));
     }
 }

@@ -53,4 +53,29 @@ public interface OrderJpaRepository extends JpaRepository<OrderJpaEntity, Long> 
 
     @Query("SELECT COUNT(o) > 0 FROM OrderJpaEntity o JOIN o.items i WHERE o.userId = :userId AND i.productId = :productId AND o.status IN ('DELIVERED', 'RETURNED')")
     boolean existsByUserIdAndProductId(@Param("userId") String userId, @Param("productId") Long productId);
+
+    /**
+     * Per-user aggregation for the admin customers list. Counts only
+     * "money-realising" statuses so CANCELLED/FAILED don't pad LTV. Pass null
+     * to aggregate the whole table; pass a userIds collection to limit to a
+     * known set (e.g. a single auth-service page).
+     */
+    interface CustomerStatsView {
+        String getUserId();
+        Long getOrderCount();
+        java.math.BigDecimal getLifetimeValue();
+        Instant getLastOrderAt();
+    }
+
+    @Query("""
+        SELECT o.userId                AS userId,
+               COUNT(o)                AS orderCount,
+               SUM(o.totalAmount)      AS lifetimeValue,
+               MAX(o.createdAt)        AS lastOrderAt
+          FROM OrderJpaEntity o
+         WHERE o.status IN ('PAID','CONFIRMED','SHIPPED','DELIVERED')
+           AND (:userIds IS NULL OR o.userId IN :userIds)
+         GROUP BY o.userId
+        """)
+    List<CustomerStatsView> aggregateByUser(@Param("userIds") java.util.Collection<String> userIds);
 }

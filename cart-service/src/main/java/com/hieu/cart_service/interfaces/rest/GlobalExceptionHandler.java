@@ -81,6 +81,24 @@ public class GlobalExceptionHandler {
         return body(HttpStatus.BAD_REQUEST, ErrorCode.CART_VALIDATION.code(), ex.getMessage(), req, null);
     }
 
+    /**
+     * Re-export ResponseStatusException with its declared status + reason. The
+     * cart service uses this for "out of stock", "product deleted", etc. — the
+     * FE relies on these status codes to choose the right toast.
+     */
+    @ExceptionHandler(org.springframework.web.server.ResponseStatusException.class)
+    public ResponseEntity<ErrorResponse> responseStatus(
+            org.springframework.web.server.ResponseStatusException ex, HttpServletRequest req) {
+        var status = HttpStatus.valueOf(ex.getStatusCode().value());
+        String reason = ex.getReason() != null ? ex.getReason() : status.getReasonPhrase();
+        String code = switch (status) {
+            case NOT_FOUND -> ErrorCode.CART_NOT_FOUND.code();
+            case CONFLICT -> ErrorCode.CART_VALIDATION.code();
+            default -> ErrorCode.CART_VALIDATION.code();
+        };
+        return body(status, code, reason, req, null);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> unknown(Exception ex, HttpServletRequest req) {
         log.error("Unhandled exception", ex);

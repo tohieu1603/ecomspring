@@ -182,38 +182,45 @@ public class FlashSaleApplicationService {
             throw new InsufficientSlotsException(saleId);
         }
 
+        // Register a transaction-tied rollback for the Redis deduction. Any subsequent
+        // exception that causes this @Transactional method to roll back (write-lock
+        // acquisition failure, assertSaleActive throw, save failure, per-user re-check)
+        // will fire afterCompletion(ROLLED_BACK) and restore Redis. Without this, a
+        // throw between the Redis decrement and the try block on line 192 leaks slots.
+        final int rollbackQty = quantity;
+        org.springframework.transaction.support.TransactionSynchronizationManager
+            .registerSynchronization(new org.springframework.transaction.support.TransactionSynchronization() {
+                @Override public void afterCompletion(int status) {
+                    if (status == STATUS_ROLLED_BACK) {
+                        slotRedisService.incrementBy(saleId, rollbackQty);
+                        log.warn("Tx rolled back — restored {} Redis slots for sale={}", rollbackQty, saleId);
+                    }
+                }
+            });
+
         // 4. Acquire write lock, re-check window, increment DB counter
         var locked = repository.findByIdWithWriteLock(saleId)
                 .orElseThrow(() -> new FlashSaleNotFoundException(saleId));
         assertSaleActive(locked, saleId, clock.instant()); // re-check after lock
 
-        // Both DB saves in a single try so any failure rolls back Redis slots (C1 slot-leak fix)
-        FlashSaleParticipation savedParticipation;
-        try {
-            // Re-check per-user quota INSIDE the lock — without this, two concurrent
-            // requests from the same user both read alreadyClaimed=0 above and both
-            // bypass maxPerUser. Holding the flash_sales row lock serializes all
-            // participate() calls for this saleId, so this second sum is authoritative.
-            int claimedNow = participationRepo.sumQuantityBySaleIdAndUserId(saleId, userId);
-            if (claimedNow + quantity > locked.getMaxPerUser()) {
-                throw new UserQuotaExceededException(userId, saleId, locked.getMaxPerUser());
-            }
-
-            locked.setReservedSlots(locked.getReservedSlots() + quantity);
-            repository.save(locked);
-
-            // 5. Insert participation record (inside try to ensure Redis rollback on failure)
-            var participation = new FlashSaleParticipation();
-            participation.setSaleId(saleId);
-            participation.setUserId(userId);
-            participation.setQuantity(quantity);
-            savedParticipation = participationRepo.save(participation);
-        } catch (Exception ex) {
-            // Rollback Redis slots so they are not leaked when either DB write fails
-            slotRedisService.incrementBy(saleId, quantity);
-            log.warn("Rollback Redis slots for sale={} qty={}", saleId, quantity);
-            throw ex;
+        // Re-check per-user quota INSIDE the lock — without this, two concurrent
+        // requests from the same user both read alreadyClaimed=0 above and both
+        // bypass maxPerUser. Holding the flash_sales row lock serializes all
+        // participate() calls for this saleId, so this second sum is authoritative.
+        int claimedNow = participationRepo.sumQuantityBySaleIdAndUserId(saleId, userId);
+        if (claimedNow + quantity > locked.getMaxPerUser()) {
+            throw new UserQuotaExceededException(userId, saleId, locked.getMaxPerUser());
         }
+
+        locked.setReservedSlots(locked.getReservedSlots() + quantity);
+        repository.save(locked);
+
+        // 5. Insert participation record
+        var participation = new FlashSaleParticipation();
+        participation.setSaleId(saleId);
+        participation.setUserId(userId);
+        participation.setQuantity(quantity);
+        FlashSaleParticipation savedParticipation = participationRepo.save(participation);
 
         // 6. Emit Kafka event AFTER_COMMIT
         int finalRemaining = (int) result;

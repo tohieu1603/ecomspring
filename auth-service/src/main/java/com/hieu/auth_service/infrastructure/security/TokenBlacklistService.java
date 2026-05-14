@@ -1,10 +1,9 @@
 package com.hieu.auth_service.infrastructure.security;
 
-import com.hieu.auth_service.application.port.TokenBlacklistPort;
-import com.hieu.auth_service.infrastructure.persistence.jpa.entities.TokenRevocationJpaEntity;
-import com.hieu.auth_service.infrastructure.persistence.jpa.repositories.TokenRevocationJpaRepository;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.List;
+
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -12,9 +11,12 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Duration;
-import java.time.Instant;
-import java.util.List;
+import com.hieu.auth_service.application.port.TokenBlacklistPort;
+import com.hieu.auth_service.infrastructure.persistence.jpa.entities.TokenRevocationJpaEntity;
+import com.hieu.auth_service.infrastructure.persistence.jpa.repositories.TokenRevocationJpaRepository;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Hybrid Redis + DB blacklist for access tokens — implements {@link TokenBlacklistPort}.
