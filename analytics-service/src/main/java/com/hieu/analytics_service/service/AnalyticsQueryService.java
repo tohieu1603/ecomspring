@@ -31,6 +31,10 @@ import java.util.Map;
 @Slf4j
 public class AnalyticsQueryService {
 
+    private static final String FIELD_TIMESTAMP = "timestamp";
+    private static final String FIELD_EVENT_TYPE = "eventType";
+
+
     private final ElasticsearchTemplate esTemplate;
 
     @Value("${analytics.index-prefix:analytics-events}")
@@ -68,11 +72,11 @@ public class AnalyticsQueryService {
     private Query buildRangeAndType(Instant from, Instant to, String eventType) {
         return Query.of(qb -> qb.bool(b -> {
             b.must(m -> m.range(r -> r.date(d -> d
-                    .field("timestamp")
+                    .field(FIELD_TIMESTAMP)
                     .gte(from.toString())
                     .lt(to.toString()))));
             if (eventType != null) {
-                b.must(m -> m.term(t -> t.field("eventType").value(eventType)));
+                b.must(m -> m.term(t -> t.field(FIELD_EVENT_TYPE).value(eventType)));
             }
             return b;
         }));
@@ -91,7 +95,7 @@ public class AnalyticsQueryService {
         Query query = Query.of(qb -> qb.bool(b -> {
             if (q != null && !q.isBlank()) {
                 b.must(m -> m.multiMatch(mm -> mm
-                        .fields("eventType", "status", "referenceType", "referenceId")
+                        .fields(FIELD_EVENT_TYPE, "status", "referenceType", "referenceId")
                         .query(q)));
             }
             if (level != null && !level.isBlank()) {
@@ -106,7 +110,7 @@ public class AnalyticsQueryService {
         var nativeQuery = NativeQuery.builder()
                 .withQuery(query)
                 .withMaxResults(limit)
-                .withSort(s -> s.field(f -> f.field("timestamp").order(SortOrder.Desc)))
+                .withSort(s -> s.field(f -> f.field(FIELD_TIMESTAMP).order(SortOrder.Desc)))
                 .build();
         SearchHits<AnalyticsEventDocument> hits = esTemplate.search(nativeQuery, AnalyticsEventDocument.class, indices);
 
@@ -115,7 +119,7 @@ public class AnalyticsQueryService {
             var d = h.getContent();
             Map<String, Object> row = new LinkedHashMap<>();
             row.put("id", h.getId());
-            row.put("timestamp", d.getTimestamp());
+            row.put(FIELD_TIMESTAMP, d.getTimestamp());
             row.put("level", d.getStatus() != null ? d.getStatus() : "INFO");
             row.put("service", d.getReferenceType());
             row.put("message", d.getEventType());
@@ -136,10 +140,10 @@ public class AnalyticsQueryService {
         IndexCoordinates indices = IndexCoordinates.of(indexPrefix + "-*");
         Query query = Query.of(qb -> qb.bool(b -> {
             b.must(m -> m.range(r -> r.date(d -> d
-                    .field("timestamp")
+                    .field(FIELD_TIMESTAMP)
                     .gte(from.toString())
                     .lt(to.toString()))));
-            b.must(m -> m.term(t -> t.field("eventType").value("PAYMENT_COMPLETED")));
+            b.must(m -> m.term(t -> t.field(FIELD_EVENT_TYPE).value("PAYMENT_COMPLETED")));
             return b;
         }));
 

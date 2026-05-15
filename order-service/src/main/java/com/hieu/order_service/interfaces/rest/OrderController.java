@@ -30,6 +30,9 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class OrderController {
 
+    private static final String ROLE_ADMIN = "ROLE_ADMIN";
+
+
     private final CreateOrderHandler createOrderHandler;
     private final CreateOrderFromCartHandler createOrderFromCartHandler;
     private final CancelOrderHandler cancelOrderHandler;
@@ -122,13 +125,13 @@ public class OrderController {
 
     @GetMapping("/{id}")
     public OrderDTO getById(@PathVariable Long id, @AuthenticationPrincipal AuthenticatedUser user) {
-        var isAdmin = user.roles().contains("ROLE_ADMIN");
+        var isAdmin = user.roles().contains(ROLE_ADMIN);
         return getOrderByIdHandler.handle(new GetOrderByIdQuery(id, user.userId(), isAdmin));
     }
 
     @GetMapping("/by-number/{orderNumber}")
     public OrderDTO getByNumber(@PathVariable String orderNumber, @AuthenticationPrincipal AuthenticatedUser user) {
-        var isAdmin = user.roles().contains("ROLE_ADMIN");
+        var isAdmin = user.roles().contains(ROLE_ADMIN);
         return getOrderByNumberHandler.handle(new GetOrderByNumberQuery(orderNumber, user.userId(), isAdmin));
     }
 
@@ -144,7 +147,7 @@ public class OrderController {
     @DeleteMapping("/{id}")
     public OrderDTO cancelOrder(@PathVariable Long id, @RequestBody Map<String, String> body,
                                 @AuthenticationPrincipal AuthenticatedUser user) {
-        var isAdmin = user.roles().contains("ROLE_ADMIN");
+        var isAdmin = user.roles().contains(ROLE_ADMIN);
         return cancelOrderHandler.handle(new CancelOrderCommand(id, body.get("reason"), user.userId(), isAdmin));
     }
 

@@ -85,41 +85,8 @@ public class SearchApplicationService {
 
     /** Full-text + filtered search with pagination. */
     public PageResponse<ProductDocument> searchProducts(SearchRequest req) {
-        var boolBuilder = new BoolQuery.Builder();
-
-        // Full-text: multi_match across name^3, description, brand, categoryName
-        if (StringUtils.hasText(req.getQ())) {
-            boolBuilder.must(Query.of(q -> q.multiMatch(mm -> mm
-                    .fields("name^3", "description", "brand", "categoryName")
-                    .query(req.getQ()))));
-        }
-
-        // Term filters
-        if (StringUtils.hasText(req.getStatus())) {
-            boolBuilder.filter(Query.of(q -> q.term(t -> t.field("status").value(req.getStatus()))));
-        }
-        if (StringUtils.hasText(req.getCategoryId())) {
-            boolBuilder.filter(Query.of(q -> q.term(t -> t.field("categoryId").value(req.getCategoryId()))));
-        }
-        if (StringUtils.hasText(req.getBrand())) {
-            boolBuilder.filter(Query.of(q -> q.term(t -> t.field("brand").value(req.getBrand()))));
-        }
-
-        // Price range filter
-        if (req.getMinPrice() != null || req.getMaxPrice() != null) {
-            boolBuilder.filter(Query.of(q -> q.range(r -> {
-                var rb = r.number(nr -> {
-                    var nb = nr.field("minPrice");
-                    if (req.getMinPrice() != null) nb.gte(req.getMinPrice());
-                    if (req.getMaxPrice() != null) nb.lte(req.getMaxPrice());
-                    return nb;
-                });
-                return rb;
-            })));
-        }
-
-        String sortField = (req.getSortBy() != null && ALLOWED_SORT_FIELDS.contains(req.getSortBy()))
-                ? req.getSortBy() : "createdAt";
+        BoolQuery.Builder boolBuilder = buildBoolQuery(req);
+        String sortField = resolveSortField(req.getSortBy());
 
         var nativeQuery = NativeQuery.builder()
                 .withQuery(Query.of(q -> q.bool(boolBuilder.build())))
@@ -143,6 +110,44 @@ public class SearchApplicationService {
                 .page(req.getPage())
                 .size(size)
                 .build();
+    }
+
+    /** Compose bool query — gom các filter rời rạc thành một block để giảm CC. */
+    private BoolQuery.Builder buildBoolQuery(SearchRequest req) {
+        var b = new BoolQuery.Builder();
+        addFullText(b, req.getQ());
+        addTermFilter(b, "status",     req.getStatus());
+        addTermFilter(b, "categoryId", req.getCategoryId());
+        addTermFilter(b, "brand",      req.getBrand());
+        addPriceRange(b, req.getMinPrice(), req.getMaxPrice());
+        return b;
+    }
+
+    private static void addFullText(BoolQuery.Builder b, String q) {
+        if (!StringUtils.hasText(q)) return;
+        b.must(Query.of(query -> query.multiMatch(mm -> mm
+                .fields("name^3", "description", "brand", "categoryName")
+                .query(q))));
+    }
+
+    private static void addTermFilter(BoolQuery.Builder b, String field, String value) {
+        if (!StringUtils.hasText(value)) return;
+        b.filter(Query.of(q -> q.term(t -> t.field(field).value(value))));
+    }
+
+    private static void addPriceRange(BoolQuery.Builder b, Double min, Double max) {
+        if (min == null && max == null) return;
+        b.filter(Query.of(q -> q.range(r -> r.number(nr -> {
+            nr.field("minPrice");
+            if (min != null) nr.gte(min);
+            if (max != null) nr.lte(max);
+            return nr;
+        }))));
+    }
+
+    private static String resolveSortField(String requested) {
+        return (requested != null && ALLOWED_SORT_FIELDS.contains(requested))
+                ? requested : "createdAt";
     }
 
     /** Prefix-based suggestions on product name. */

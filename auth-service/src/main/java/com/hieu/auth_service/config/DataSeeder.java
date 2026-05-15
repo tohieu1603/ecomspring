@@ -57,15 +57,19 @@ public class DataSeeder {
      */
     @Transactional
     protected void seed(PermissionRepository permissionRepository, RoleRepository roleRepository) {
-        // 1. Permissions
+        // 1. Permissions — chỉ INSERT khi chưa tồn tại; return value của orElseGet
+        // không dùng đến nhưng vẫn cần `ifPresentOrElse` hoặc tương đương để Sonar
+        // (rule S2201) không phàn nàn. Đổi sang ifPresentOrElse cho rõ ý.
         for (PermissionSeed seed : DEFAULT_PERMISSIONS) {
             PermissionName name = PermissionName.of(seed.resource(), seed.action());
-            permissionRepository.findByName(name).orElseGet(() -> {
-                Permission created = permissionRepository.save(
-                        Permission.create(seed.resource(), seed.action(), seed.description()));
-                log.info("[seed] Inserted permission {}", created.getName().value());
-                return created;
-            });
+            permissionRepository.findByName(name).ifPresentOrElse(
+                existing -> { /* đã có — không làm gì */ },
+                () -> {
+                    Permission created = permissionRepository.save(
+                            Permission.create(seed.resource(), seed.action(), seed.description()));
+                    log.info("[seed] Inserted permission {}", created.getName().value());
+                }
+            );
         }
 
         // 2. ROLE_USER — baseline read-only authority for every registered user

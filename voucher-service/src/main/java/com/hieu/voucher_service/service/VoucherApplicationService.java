@@ -154,54 +154,9 @@ public class VoucherApplicationService {
                     .message("Voucher already applied (idempotent)").build();
         }
 
-        if (!entity.isActive()) {
-            throw new VoucherInactiveException(code);
-        }
-
-        Instant now = Instant.now();
-        if (entity.getStartDate() != null && now.isBefore(entity.getStartDate())) {
-            throw new VoucherExpiredException(code);
-        }
-        if (entity.getEndDate() != null && now.isAfter(entity.getEndDate())) {
-            throw new VoucherExpiredException(code);
-        }
-
-        // Global usage limit
-        if (entity.getUsageLimit() != null && entity.getUsedCount() >= entity.getUsageLimit()) {
-            throw new VoucherUsageLimitException(code);
-        }
-
-        // targetUserIds restriction
-        if (entity.getTargetUserIds() != null && !entity.getTargetUserIds().isBlank()) {
-            List<String> allowedUsers = parseCsvStrings(entity.getTargetUserIds());
-            if (!allowedUsers.contains(userId)) {
-                throw new IllegalArgumentException("Voucher '" + code + "' is not applicable for this user");
-            }
-        }
-
-        // applicableProductIds restriction
-        if (entity.getApplicableProductIds() != null && !entity.getApplicableProductIds().isBlank()) {
-            List<String> allowedProducts = parseCsvStrings(entity.getApplicableProductIds());
-            boolean hasOverlap = productIds != null
-                    && productIds.stream().anyMatch(allowedProducts::contains);
-            if (!hasOverlap) {
-                throw new IllegalArgumentException("Voucher '" + code + "' is not applicable for any product in this order");
-            }
-        }
-
-        // Per-user usage limit
-        if (entity.getUsageLimitPerUser() != null) {
-            long userUsageCount = usageRecordRepository.countByVoucherIdAndUserId(entity.getId(), userId);
-            if (userUsageCount >= entity.getUsageLimitPerUser()) {
-                throw new VoucherUsageLimitException("Voucher usage limit per user exceeded for '" + code + "'");
-            }
-        }
-
-        // Min order amount
-        if (entity.getMinOrderAmount() != null
-                && orderAmount.compareTo(entity.getMinOrderAmount()) < 0) {
-            throw new VoucherMinOrderException(code, entity.getMinOrderAmount());
-        }
+        // Tất cả guard kiểm tra hợp lệ được gom vào helper để giữ cognitive
+        // complexity của method chính ở mức dễ đọc.
+        assertVoucherApplicable(entity, code, orderAmount, userId, productIds);
 
         BigDecimal discountAmount = calculateDiscount(entity, orderAmount);
 
@@ -266,6 +221,66 @@ public class VoucherApplicationService {
     private VoucherJpaEntity findByCode(String code) {
         return voucherRepository.findByCode(code)
                 .orElseThrow(() -> new VoucherNotFoundException(code));
+    }
+
+    /**
+     * Tổng hợp toàn bộ guard kiểm tra hợp lệ (active, window, usage limit,
+     * targetUserIds, applicableProductIds, per-user limit, minOrderAmount).
+     * Tách khỏi {@link #validateAndApply} để giảm cognitive complexity.
+     */
+    private void assertVoucherApplicable(
+            VoucherJpaEntity entity, String code, BigDecimal orderAmount,
+            String userId, List<String> productIds) {
+
+        if (!entity.isActive()) throw new VoucherInactiveException(code);
+
+        Instant now = Instant.now();
+        boolean notStarted = entity.getStartDate() != null && now.isBefore(entity.getStartDate());
+        boolean ended     = entity.getEndDate()   != null && now.isAfter(entity.getEndDate());
+        if (notStarted || ended) throw new VoucherExpiredException(code);
+
+        if (entity.getUsageLimit() != null && entity.getUsedCount() >= entity.getUsageLimit()) {
+            throw new VoucherUsageLimitException(code);
+        }
+
+        assertUserAllowed(entity, code, userId);
+        assertProductsAllowed(entity, code, productIds);
+        assertPerUserLimitOk(entity, code, userId);
+
+        if (entity.getMinOrderAmount() != null
+                && orderAmount.compareTo(entity.getMinOrderAmount()) < 0) {
+            throw new VoucherMinOrderException(code, entity.getMinOrderAmount());
+        }
+    }
+
+    private void assertUserAllowed(VoucherJpaEntity entity, String code, String userId) {
+        String csv = entity.getTargetUserIds();
+        if (csv == null || csv.isBlank()) return;
+        if (!parseCsvStrings(csv).contains(userId)) {
+            throw new IllegalArgumentException(
+                "Voucher '" + code + "' is not applicable for this user");
+        }
+    }
+
+    private void assertProductsAllowed(VoucherJpaEntity entity, String code, List<String> productIds) {
+        String csv = entity.getApplicableProductIds();
+        if (csv == null || csv.isBlank()) return;
+        List<String> allowed = parseCsvStrings(csv);
+        boolean hasOverlap = productIds != null && productIds.stream().anyMatch(allowed::contains);
+        if (!hasOverlap) {
+            throw new IllegalArgumentException(
+                "Voucher '" + code + "' is not applicable for any product in this order");
+        }
+    }
+
+    private void assertPerUserLimitOk(VoucherJpaEntity entity, String code, String userId) {
+        Integer limit = entity.getUsageLimitPerUser();
+        if (limit == null) return;
+        long used = usageRecordRepository.countByVoucherIdAndUserId(entity.getId(), userId);
+        if (used >= limit) {
+            throw new VoucherUsageLimitException(
+                "Voucher usage limit per user exceeded for '" + code + "'");
+        }
     }
 
     private List<String> parseCsvStrings(String csv) {

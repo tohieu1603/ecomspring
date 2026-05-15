@@ -33,6 +33,11 @@ import java.util.Map;
 @Component
 public class DomainEventToIntegrationEventMapper {
 
+    private static final String FIELD_USERNAME = "username";
+    private static final String FIELD_FAMILY = "family";
+    private static final String FIELD_USER_ID = "userId";
+
+
     private static final int SCHEMA_V1 = 1;
 
     /** Routed payload ready for Kafka: {@code topic} + {@code key} + {@code value}. */
@@ -50,7 +55,7 @@ public class DomainEventToIntegrationEventMapper {
             // ── User lifecycle → auth.user.events.v1 ───────────────────────────
             case UserCreatedEvent e -> lifecycle(
                     e, "auth.user.created.v1",
-                    Map.of("username", e.username(), "email", e.email()));
+                    Map.of(FIELD_USERNAME, e.username(), "email", e.email()));
 
             case EmailChangedEvent e -> lifecycle(
                     e, "auth.user.email_changed.v1",
@@ -58,11 +63,11 @@ public class DomainEventToIntegrationEventMapper {
 
             case PasswordChangedEvent e -> lifecycle(
                     e, "auth.user.password_changed.v1",
-                    Map.of("username", e.username()));
+                    Map.of(FIELD_USERNAME, e.username()));
 
             case AccountStatusChangedEvent e -> lifecycle(
                     e, "auth.user.status_changed.v1",
-                    Map.of("username", e.username(), "transition", e.transition().name()));
+                    Map.of(FIELD_USERNAME, e.username(), "transition", e.transition().name()));
 
             case RoleAssignedEvent e -> lifecycle(
                     e, "auth.user.role_assigned.v1",
@@ -75,20 +80,20 @@ public class DomainEventToIntegrationEventMapper {
             // ── Session + tokens → auth.session.events.v1 ──────────────────────
             case UserLoggedInEvent e -> session(
                     e, "auth.user.logged_in.v1",
-                    Map.of("username", e.username()));
+                    Map.of(FIELD_USERNAME, e.username()));
 
             case TokenCreatedEvent e -> session(
                     e, "auth.token.created.v1",
-                    fields("userId", e.userId(), "family", e.family(), "generation", e.generation()));
+                    fields(FIELD_USER_ID, e.userId(), FIELD_FAMILY, e.family(), "generation", e.generation()));
 
             case TokenRotatedEvent e -> session(
                     e, "auth.token.rotated.v1",
-                    fields("userId", e.userId(), "family", e.family(),
+                    fields(FIELD_USER_ID, e.userId(), FIELD_FAMILY, e.family(),
                             "oldTokenId", e.oldTokenId(), "newGeneration", e.newGeneration()));
 
             case TokenRevokedEvent e -> session(
                     e, "auth.token.revoked.v1",
-                    fields("userId", e.userId(), "family", e.family(), "reason", e.reason()));
+                    fields(FIELD_USER_ID, e.userId(), FIELD_FAMILY, e.family(), "reason", e.reason()));
 
             // ── Role aggregate events — propagated for cache invalidation downstream ──
             case PermissionGrantedEvent e -> lifecycle(

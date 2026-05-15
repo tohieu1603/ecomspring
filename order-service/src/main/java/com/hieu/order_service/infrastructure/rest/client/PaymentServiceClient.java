@@ -26,6 +26,10 @@ import java.util.Map;
 @Slf4j
 public class PaymentServiceClient {
 
+    private static final String AUTH_BEARER_PREFIX = "Bearer ";
+    private static final String SERVICE_NAME = "payment-service";
+
+
     private static final ParameterizedTypeReference<Map<String, Object>> MAP_TYPE =
             new ParameterizedTypeReference<>() {};
 
@@ -62,18 +66,18 @@ public class PaymentServiceClient {
             // payment-service's /api/payments is JWT-protected — propagate the end-user's
             // token from the saga so the auth context flows downstream.
             if (authToken != null && !authToken.isBlank()) {
-                String bearer = authToken.startsWith("Bearer ") ? authToken : "Bearer " + authToken;
+                String bearer = authToken.startsWith(AUTH_BEARER_PREFIX) ? authToken : AUTH_BEARER_PREFIX + authToken;
                 spec = spec.header(HttpHeaders.AUTHORIZATION, bearer);
             }
 
             Map<String, Object> payload = spec.retrieve()
                     .onStatus(HttpStatusCode::isError, (req, resp) -> {
-                        throw new ServiceUnavailableException("payment-service");
+                        throw new ServiceUnavailableException(SERVICE_NAME);
                     })
                     .body(MAP_TYPE);
 
             payload = unwrap(payload);
-            if (payload == null) throw new ServiceUnavailableException("payment-service");
+            if (payload == null) throw new ServiceUnavailableException(SERVICE_NAME);
 
             Long paymentId = payload.get("paymentId") != null
                     ? Long.parseLong(payload.get("paymentId").toString()) : null;
@@ -83,7 +87,7 @@ public class PaymentServiceClient {
             throw e;
         } catch (RestClientException e) {
             log.error("REST payment.initiate({}) failed: {}", orderId, e.getMessage());
-            throw new ServiceUnavailableException("payment-service");
+            throw new ServiceUnavailableException(SERVICE_NAME);
         }
     }
 
@@ -102,7 +106,7 @@ public class PaymentServiceClient {
 
             Map<String, Object> payment = lookupSpec.retrieve()
                     .onStatus(HttpStatusCode::isError, (req, resp) -> {
-                        throw new ServiceUnavailableException("payment-service");
+                        throw new ServiceUnavailableException(SERVICE_NAME);
                     })
                     .body(MAP_TYPE);
 
@@ -126,7 +130,7 @@ public class PaymentServiceClient {
 
             refundSpec.retrieve()
                     .onStatus(HttpStatusCode::isError, (req, resp) -> {
-                        throw new ServiceUnavailableException("payment-service");
+                        throw new ServiceUnavailableException(SERVICE_NAME);
                     })
                     .toBodilessEntity();
 
@@ -135,7 +139,7 @@ public class PaymentServiceClient {
             throw e;
         } catch (RestClientException e) {
             log.error("REST payment.processRefund({}) failed: {}", orderId, e.getMessage());
-            throw new ServiceUnavailableException("payment-service");
+            throw new ServiceUnavailableException(SERVICE_NAME);
         }
     }
 
@@ -153,7 +157,7 @@ public class PaymentServiceClient {
 
     private static String resolveBearerHeader(String token) {
         if (token == null || token.isBlank()) return null;
-        return token.startsWith("Bearer ") ? token : "Bearer " + token;
+        return token.startsWith(AUTH_BEARER_PREFIX) ? token : AUTH_BEARER_PREFIX + token;
     }
 
     public record PaymentInitiated(Long paymentId, String qrCodeUrl, String payUrl) {}

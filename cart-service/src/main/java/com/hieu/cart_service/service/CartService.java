@@ -34,6 +34,7 @@ import java.util.Optional;
 public class CartService {
 
     private static final Logger log = LoggerFactory.getLogger(CartService.class);
+    private static final String STATUS_ACTIVE = "ACTIVE";
 
     private final CartItemRepository cartItemRepository;
     private final CartCacheService cacheService;
@@ -213,7 +214,7 @@ public class CartService {
                 "Sản phẩm không còn tồn tại hoặc đã bị xoá.");
         }
         Product product = resp.getProduct();
-        if (!"ACTIVE".equalsIgnoreCase(product.getStatus())) {
+        if (!STATUS_ACTIVE.equalsIgnoreCase(product.getStatus())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                 "Sản phẩm hiện không còn được bán.");
         }
@@ -222,7 +223,7 @@ public class CartService {
             .findFirst()
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                 "Phân loại sản phẩm không còn tồn tại."));
-        if (!"ACTIVE".equalsIgnoreCase(variant.getStatus())) {
+        if (!STATUS_ACTIVE.equalsIgnoreCase(variant.getStatus())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                 "Phân loại sản phẩm đã ngưng kinh doanh.");
         }
@@ -271,7 +272,7 @@ public class CartService {
         var resp = respOpt.get();
         if (!resp.getFound()) return "Phân loại đã bị xoá (" + item.getVariantSku() + ")";
         var v = resp.getVariant();
-        if (!"ACTIVE".equalsIgnoreCase(v.getStatus())) return "Phân loại đã ngưng bán (" + item.getVariantSku() + ")";
+        if (!STATUS_ACTIVE.equalsIgnoreCase(v.getStatus())) return "Phân loại đã ngưng bán (" + item.getVariantSku() + ")";
         if (v.getQuantity() < item.getQuantity()) {
             return "Tồn kho giảm còn " + v.getQuantity() + " (" + item.getVariantSku() + ")";
         }

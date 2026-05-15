@@ -47,7 +47,12 @@ public class InventoryService {
      * Self-injection (lazy to break circular ref). Calling `this.doReserveDb()` bypasses
      * Spring's @Transactional/@Retryable proxy because internal calls don't go through it;
      * routing via the proxy bean re-enables the transactional advice.
+     *
+     * Constructor injection không khả thi vì gây vòng phụ thuộc tự thân.
+     * @Lazy giải quyết được — đây là pattern chính thức được Spring documentation
+     * khuyến nghị cho trường hợp gọi proxied-method nội bộ.
      */
+    @SuppressWarnings("java:S6813")
     @org.springframework.beans.factory.annotation.Autowired
     @org.springframework.context.annotation.Lazy
     private InventoryService self;

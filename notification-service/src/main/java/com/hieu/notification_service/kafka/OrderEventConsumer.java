@@ -21,48 +21,55 @@ import java.util.Map;
 @Slf4j
 public class OrderEventConsumer {
 
+    private static final String FIELD_USER_ID = "userId";
+    private static final String FIELD_ORDER_NUMBER = "orderNumber";
+    private static final String MSG_ORDER_PREFIX = "Đơn hàng ";
+    private static final String REF_TYPE_ORDER = "ORDER";
+    private static final String CHANNEL_EMAIL = "email";
+
+
     private final NotificationApplicationService notificationService;
     private final UserProfileEmailResolver emailResolver;
 
     @KafkaListener(topics = KafkaTopics.ORDER_PLACED, groupId = "notification-service")
     public void onOrderPlaced(Map<String, Object> payload) {
-        var userId = str(payload, "userId");
-        var orderNumber = str(payload, "orderNumber");
-        var title = "Đơn hàng " + orderNumber + " đã được đặt";
-        var content = "Đơn hàng " + orderNumber + " của bạn đã được đặt thành công.";
-        send(userId, title, content, "ORDER", orderNumber, str(payload, "email"), true);
+        var userId = str(payload, FIELD_USER_ID);
+        var orderNumber = str(payload, FIELD_ORDER_NUMBER);
+        var title = MSG_ORDER_PREFIX + orderNumber + " đã được đặt";
+        var content = MSG_ORDER_PREFIX + orderNumber + " của bạn đã được đặt thành công.";
+        send(userId, title, content, REF_TYPE_ORDER, orderNumber, str(payload, CHANNEL_EMAIL), true);
     }
 
     @KafkaListener(topics = KafkaTopics.ORDER_CONFIRMED, groupId = "notification-service")
     public void onOrderConfirmed(Map<String, Object> payload) {
-        var userId = str(payload, "userId");
-        var orderNumber = str(payload, "orderNumber");
-        var title = "Đơn hàng " + orderNumber + " đã được xác nhận";
-        send(userId, title, title, "ORDER", orderNumber, null, false);
+        var userId = str(payload, FIELD_USER_ID);
+        var orderNumber = str(payload, FIELD_ORDER_NUMBER);
+        var title = MSG_ORDER_PREFIX + orderNumber + " đã được xác nhận";
+        send(userId, title, title, REF_TYPE_ORDER, orderNumber, null, false);
     }
 
     @KafkaListener(topics = KafkaTopics.ORDER_CANCELLED, groupId = "notification-service")
     public void onOrderCancelled(Map<String, Object> payload) {
-        var userId = str(payload, "userId");
-        var orderNumber = str(payload, "orderNumber");
-        var title = "Đơn hàng " + orderNumber + " đã hủy";
-        send(userId, title, title, "ORDER", orderNumber, str(payload, "email"), true);
+        var userId = str(payload, FIELD_USER_ID);
+        var orderNumber = str(payload, FIELD_ORDER_NUMBER);
+        var title = MSG_ORDER_PREFIX + orderNumber + " đã hủy";
+        send(userId, title, title, REF_TYPE_ORDER, orderNumber, str(payload, CHANNEL_EMAIL), true);
     }
 
     @KafkaListener(topics = KafkaTopics.ORDER_SHIPPED, groupId = "notification-service")
     public void onOrderShipped(Map<String, Object> payload) {
-        var userId = str(payload, "userId");
-        var orderNumber = str(payload, "orderNumber");
+        var userId = str(payload, FIELD_USER_ID);
+        var orderNumber = str(payload, FIELD_ORDER_NUMBER);
         var title = "Đơn " + orderNumber + " đã được giao cho đơn vị vận chuyển";
-        send(userId, title, title, "ORDER", orderNumber, str(payload, "email"), true);
+        send(userId, title, title, REF_TYPE_ORDER, orderNumber, str(payload, CHANNEL_EMAIL), true);
     }
 
     @KafkaListener(topics = KafkaTopics.ORDER_DELIVERED, groupId = "notification-service")
     public void onOrderDelivered(Map<String, Object> payload) {
-        var userId = str(payload, "userId");
-        var orderNumber = str(payload, "orderNumber");
-        var title = "Đơn hàng " + orderNumber + " đã được giao thành công";
-        send(userId, title, title, "ORDER", orderNumber, str(payload, "email"), true);
+        var userId = str(payload, FIELD_USER_ID);
+        var orderNumber = str(payload, FIELD_ORDER_NUMBER);
+        var title = MSG_ORDER_PREFIX + orderNumber + " đã được giao thành công";
+        send(userId, title, title, REF_TYPE_ORDER, orderNumber, str(payload, CHANNEL_EMAIL), true);
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────

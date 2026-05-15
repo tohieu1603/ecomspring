@@ -6,7 +6,9 @@ import com.hieu.common.error.ErrorCode;
 
 public final class TokenRevokedException extends DomainException {
     private final String tokenId;
-    private final RevokedReason reason;
+    // RevokedReason không serializable — đánh transient để class hợp lệ Serializable
+    // (DomainException kế thừa RuntimeException implements Serializable).
+    private final transient RevokedReason reason;
 
     public TokenRevokedException(String tokenId, RevokedReason reason) {
         super(ErrorCode.TOKEN_REVOKED.code(),

@@ -22,6 +22,9 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class ReturnRequestController {
 
+    private static final String FIELD_REFUND_AMOUNT = "refundAmount";
+
+
     private final RequestReturnHandler requestReturnHandler;
     private final ApproveReturnHandler approveReturnHandler;
     private final RejectReturnHandler rejectReturnHandler;
@@ -59,7 +62,7 @@ public class ReturnRequestController {
     @PreAuthorize("hasRole('ADMIN')")
     public ReturnRequestDTO approve(@PathVariable Long returnRequestId,
                                     @RequestBody Map<String, Object> body) {
-        var refund = body.get("refundAmount") != null ? new BigDecimal(body.get("refundAmount").toString()) : null;
+        var refund = body.get(FIELD_REFUND_AMOUNT) != null ? new BigDecimal(body.get(FIELD_REFUND_AMOUNT).toString()) : null;
         return approveReturnHandler.handle(new ApproveReturnCommand(
                 returnRequestId, (String) body.get("adminNote"), refund));
     }
@@ -75,8 +78,8 @@ public class ReturnRequestController {
     @PreAuthorize("hasRole('ADMIN')")
     public ReturnRequestDTO complete(@PathVariable Long returnRequestId,
                                      @RequestBody(required = false) Map<String, Object> body) {
-        var refund = body != null && body.get("refundAmount") != null
-                ? new BigDecimal(body.get("refundAmount").toString()) : null;
+        var refund = body != null && body.get(FIELD_REFUND_AMOUNT) != null
+                ? new BigDecimal(body.get(FIELD_REFUND_AMOUNT).toString()) : null;
         return completeReturnHandler.handle(new CompleteReturnCommand(returnRequestId, refund));
     }
 }

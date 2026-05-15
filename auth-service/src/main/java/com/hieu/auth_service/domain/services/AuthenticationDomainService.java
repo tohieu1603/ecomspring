@@ -24,11 +24,13 @@ public class AuthenticationDomainService {
         Set<String> grantedPermissionIds = extractPermissionIds(userRoles);
         return allSystemPermissions.stream()
                 .filter(p -> grantedPermissionIds.contains(p.getId().value()))
-                .anyMatch(p -> p.getName().equals(permissionName));
+                // PermissionName là VO — unwrap về String để so sánh kiểu giống nhau.
+                .anyMatch(p -> p.getName().value().equals(permissionName));
     }
 
     public boolean hasRole(User user, List<Role> userRoles, String roleName) {
-        return userRoles.stream().anyMatch(r -> r.getName().equals(roleName));
+        // RoleName là VO — unwrap về String để so sánh kiểu giống nhau.
+        return userRoles.stream().anyMatch(r -> r.getName().value().equals(roleName));
     }
 
     /** Every permission name currently granted to the user. */

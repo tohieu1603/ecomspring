@@ -20,6 +20,9 @@ import java.util.Map;
 @Slf4j
 public class PaymentEventConsumer {
 
+    private static final String REF_TYPE_PAYMENT = "PAYMENT";
+
+
     private final NotificationApplicationService notificationService;
     private final UserProfileEmailResolver emailResolver;
 
@@ -36,7 +39,7 @@ public class PaymentEventConsumer {
         notificationService.send(SendNotificationRequest.builder()
                 .userId(userId).type(NotificationType.IN_APP)
                 .title(title).content(content)
-                .referenceType("PAYMENT").referenceId(paymentId)
+                .referenceType(REF_TYPE_PAYMENT).referenceId(paymentId)
                 .build());
 
         // EMAIL: payload first, gRPC fallback
@@ -47,7 +50,7 @@ public class PaymentEventConsumer {
             notificationService.send(SendNotificationRequest.builder()
                     .userId(userId).type(NotificationType.EMAIL)
                     .channel(resolvedEmail).title(title).content(content)
-                    .referenceType("PAYMENT").referenceId(paymentId)
+                    .referenceType(REF_TYPE_PAYMENT).referenceId(paymentId)
                     .build());
         } else {
             log.debug("No email resolved for userId={}, skipping EMAIL notification", userId);
@@ -64,7 +67,7 @@ public class PaymentEventConsumer {
         notificationService.send(SendNotificationRequest.builder()
                 .userId(userId).type(NotificationType.IN_APP)
                 .title(title).content(content)
-                .referenceType("PAYMENT").referenceId(paymentId)
+                .referenceType(REF_TYPE_PAYMENT).referenceId(paymentId)
                 .build());
     }
 

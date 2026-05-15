@@ -1,13 +1,15 @@
 package com.hieu.auth_service.infrastructure.messaging;
 
-import com.hieu.auth_service.domain.events.DomainEvent;
-import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
+
+import com.hieu.auth_service.domain.events.DomainEvent;
+
+import lombok.RequiredArgsConstructor;
 
 /**
  * Bridges in-process {@link DomainEvent}s onto Kafka integration events.

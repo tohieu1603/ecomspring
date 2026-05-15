@@ -67,34 +67,11 @@ public class CatalogEventConsumer {
      * {@code price, quantity}. We aggregate min/max price + total stock here so the
      * search-service doesn't need to call back to catalog.
      */
-    @SuppressWarnings("unchecked")
     private static IndexProductRequest toRequest(Map<String, Object> p) {
         // Catalog event field is "productId", not "id". Search index id is its String form.
-        String id = getString(p, "id");
-        if (id == null) id = getString(p, "productId");
+        String id = firstNonNull(getString(p, "id"), getString(p, "productId"));
 
-        // Aggregate price/stock from variants[] if present.
-        Double minPrice = null, maxPrice = null;
-        Integer totalStock = null;
-        Object varsRaw = p.get("variants");
-        if (varsRaw instanceof List<?> vars && !vars.isEmpty()) {
-            int sumStock = 0;
-            double minP = Double.MAX_VALUE, maxP = Double.MIN_VALUE;
-            for (Object v : vars) {
-                if (!(v instanceof Map)) continue;
-                Map<String, Object> vm = (Map<String, Object>) v;
-                Double price = getDouble(vm, "price");
-                Integer qty = getInt(vm, "quantity");
-                if (price != null) {
-                    if (price < minP) minP = price;
-                    if (price > maxP) maxP = price;
-                }
-                if (qty != null) sumStock += qty;
-            }
-            if (minP != Double.MAX_VALUE) minPrice = minP;
-            if (maxP != Double.MIN_VALUE) maxPrice = maxP;
-            totalStock = sumStock;
-        }
+        VariantAggregates agg = aggregateVariants(p.get("variants"));
 
         return IndexProductRequest.builder()
                 .id(id)
@@ -105,15 +82,51 @@ public class CatalogEventConsumer {
                 .categoryName(getString(p, "categoryName"))
                 .brand(getString(p, "brand"))
                 .price(getDouble(p, "price"))
-                .minPrice(minPrice != null ? minPrice : getDouble(p, "minPrice"))
-                .maxPrice(maxPrice != null ? maxPrice : getDouble(p, "maxPrice"))
-                .totalStock(totalStock != null ? totalStock : getInt(p, "totalStock"))
+                .minPrice(firstNonNull(agg.minPrice(), getDouble(p, "minPrice")))
+                .maxPrice(firstNonNull(agg.maxPrice(), getDouble(p, "maxPrice")))
+                .totalStock(firstNonNull(agg.totalStock(), getInt(p, "totalStock")))
                 .status(getString(p, "status"))
-                .imageUrl(getString(p, "thumbnail") != null ? getString(p, "thumbnail") : getString(p, "imageUrl"))
+                .imageUrl(firstNonNull(getString(p, "thumbnail"), getString(p, "imageUrl")))
                 .tags(getList(p, "tags"))
                 .createdAt(getInstant(p, "createdAt"))
                 .updatedAt(getInstant(p, "updatedAt"))
                 .build();
+    }
+
+    /** Aggregated variant stats — null fields mean "not present in payload". */
+    private record VariantAggregates(Double minPrice, Double maxPrice, Integer totalStock) {
+        static final VariantAggregates EMPTY = new VariantAggregates(null, null, null);
+    }
+
+    /** Reduce variants[] → min/max price + total stock. Pure, easy to unit-test. */
+    @SuppressWarnings("unchecked")
+    private static VariantAggregates aggregateVariants(Object varsRaw) {
+        if (!(varsRaw instanceof List<?> vars) || vars.isEmpty()) {
+            return VariantAggregates.EMPTY;
+        }
+        int sumStock = 0;
+        double minP = Double.MAX_VALUE;
+        double maxP = -Double.MAX_VALUE;
+        for (Object v : vars) {
+            if (!(v instanceof Map)) continue;
+            Map<String, Object> vm = (Map<String, Object>) v;
+            Double price = getDouble(vm, "price");
+            Integer qty = getInt(vm, "quantity");
+            if (price != null) {
+                minP = Math.min(minP, price);
+                maxP = Math.max(maxP, price);
+            }
+            if (qty != null) sumStock += qty;
+        }
+        Double min = minP == Double.MAX_VALUE ? null : minP;
+        Double max = maxP == -Double.MAX_VALUE ? null : maxP;
+        return new VariantAggregates(min, max, sumStock);
+    }
+
+    @SafeVarargs
+    private static <T> T firstNonNull(T... values) {
+        for (T v : values) if (v != null) return v;
+        return null;
     }
 
     private static String getString(Map<String, Object> m, String key) {

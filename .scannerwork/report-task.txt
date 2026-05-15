@@ -1,0 +1,6 @@
+projectKey=hieu-backend
+serverUrl=http://host.docker.internal:9000
+serverVersion=10.6.0.92116
+dashboardUrl=http://host.docker.internal:9000/dashboard?id=hieu-backend
+ceTaskId=024cbec2-3412-4266-ad2e-a2f89b02ae06
+ceTaskUrl=http://host.docker.internal:9000/api/ce/task?id=024cbec2-3412-4266-ad2e-a2f89b02ae06

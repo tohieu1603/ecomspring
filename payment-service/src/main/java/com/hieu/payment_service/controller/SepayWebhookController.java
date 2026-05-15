@@ -25,6 +25,9 @@ import java.util.regex.Pattern;
 @Tag(name = "Sepay Webhook", description = "Public Sepay payment webhook")
 public class SepayWebhookController {
 
+    private static final String FIELD_STATUS = "status";
+
+
     private static final Logger log = LoggerFactory.getLogger(SepayWebhookController.class);
     /** Order number pattern — Sepay puts it in `description`. Keep strict to prevent
      *  arbitrary string passing downstream. */
@@ -65,7 +68,7 @@ public class SepayWebhookController {
             byte[] actual = provided.getBytes(StandardCharsets.UTF_8);
             if (!MessageDigest.isEqual(expected, actual)) {
                 log.warn("Sepay webhook rejected — invalid Apikey");
-                return ResponseEntity.status(401).body(Map.of("status", "unauthorized"));
+                return ResponseEntity.status(401).body(Map.of(FIELD_STATUS, "unauthorized"));
             }
         }
 
@@ -76,7 +79,7 @@ public class SepayWebhookController {
         Object transferId = payload.get("id");
         if (description == null) {
             log.warn("Sepay webhook payload missing 'description' field");
-            return ResponseEntity.ok(Map.of("status", "skipped", "reason", "missing description"));
+            return ResponseEntity.ok(Map.of(FIELD_STATUS, "skipped", "reason", "missing description"));
         }
 
         String orderId = description.toString().trim();
@@ -84,7 +87,7 @@ public class SepayWebhookController {
             // Don't propagate arbitrary strings — protects downstream lookups from
             // injection via malformed webhook payloads.
             log.warn("Sepay webhook orderId does not match expected format: {}", orderId);
-            return ResponseEntity.ok(Map.of("status", "skipped", "reason", "invalid orderId format"));
+            return ResponseEntity.ok(Map.of(FIELD_STATUS, "skipped", "reason", "invalid orderId format"));
         }
 
         String transactionId = transferId != null
@@ -95,6 +98,6 @@ public class SepayWebhookController {
         } catch (Exception e) {
             log.warn("Sepay webhook auto-confirm failed for orderId={}: {}", orderId, e.getMessage());
         }
-        return ResponseEntity.ok(Map.of("status", "received"));
+        return ResponseEntity.ok(Map.of(FIELD_STATUS, "received"));
     }
 }

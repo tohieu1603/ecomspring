@@ -45,82 +45,88 @@ public class IdempotencyService {
     /** Returns Optional.empty() → proceed; Optional.of(dto) → short-circuit. */
     @Transactional
     public Optional<OrderDTO> checkOrCreate(String userId, String key) {
-        var redisKey = REDIS_PREFIX + userId + ":" + key;
+        String redisKey = REDIS_PREFIX + userId + ":" + key;
+        String luaResult = claimRedisSlot(redisKey);
 
-        // Step 1: Atomic Redis Lua claim
-        String luaResult = redis.execute(
+        // Step 1 — Redis claim trống → bản ghi này là lần đầu, persist DB audit.
+        if (luaResult == null || "new".equals(luaResult)) {
+            return persistNewIdempotency(key);
+        }
+        // Step 2 — JSON cached → trả ngay short-circuit.
+        if (luaResult.startsWith("{")) {
+            Optional<OrderDTO> cached = parseDto(luaResult, "Redis cache", redisKey);
+            if (cached.isPresent()) return cached;
+        }
+        // Step 3 — PROCESSING → kiểm DB xem có phải stale từ node crash không.
+        if (PROCESSING_TOKEN.equals(luaResult)) {
+            return resolveProcessingState(key);
+        }
+        // Fallback — đọc DB record cuối cùng.
+        return fallbackToDb(key);
+    }
+
+    private String claimRedisSlot(String redisKey) {
+        return redis.execute(
                 claimIdempotencyScript,
                 List.of(redisKey),
                 PROCESSING_TOKEN,
-                String.valueOf(REDIS_TTL_SECONDS)
-        );
+                String.valueOf(REDIS_TTL_SECONDS));
+    }
 
-        if (luaResult == null || "new".equals(luaResult)) {
-            // Redis claimed; persist for durable audit. The DB has a UNIQUE(key) constraint —
-            // a concurrent request that also passed the Lua claim (rare cross-region or after
-            // Redis flush) will collide here. Treat that collision as the canonical "duplicate"
-            // signal instead of leaking DataIntegrityViolationException.
-            try {
-                idempotencyRepository.save(IdempotencyRecord.create(key));
-                return Optional.empty();
-            } catch (DataIntegrityViolationException dup) {
-                log.warn("Idempotency DB UNIQUE collided after Redis claim for key {} — treating as duplicate", key);
-                throw new DuplicateOrderException(key);
-            }
-        }
-
-        // Step 2: If result starts with '{' it's a cached DTO JSON
-        if (luaResult.startsWith("{")) {
-            try {
-                return Optional.of(objectMapper.readValue(luaResult, OrderDTO.class));
-            } catch (Exception e) {
-                log.warn("Redis idempotency cache corrupt for key {}, falling back to DB", redisKey);
-            }
-        }
-
-        // Step 3: "PROCESSING" or unknown — check DB as fallback
-        if (PROCESSING_TOKEN.equals(luaResult)) {
-            // Check DB to see if it might be a stale PROCESSING from a crashed node
-            var dbRecord = idempotencyRepository.findByKey(key);
-            if (dbRecord.isPresent()) {
-                var record = dbRecord.get();
-                if (record.getStatus() == IdempotencyRecord.Status.COMPLETED
-                        && record.getResponseBody() != null) {
-                    try {
-                        return Optional.of(objectMapper.readValue(record.getResponseBody(), OrderDTO.class));
-                    } catch (Exception e) {
-                        log.warn("DB idempotency body corrupt for key {}", key);
-                    }
-                }
-                throw new DuplicateOrderException(key);
-            }
-            throw new DuplicateOrderException(key);
-        }
-
-        // Fallback: DB secondary durable store
-        return idempotencyRepository.findByKey(key).map(record -> {
-            if (record.getStatus() == IdempotencyRecord.Status.COMPLETED
-                    && record.getResponseBody() != null) {
-                try {
-                    return objectMapper.readValue(record.getResponseBody(), OrderDTO.class);
-                } catch (Exception e) {
-                    log.warn("DB idempotency body corrupt for key {}", key);
-                }
-            }
-            return (OrderDTO) null;
-        }).map(Optional::ofNullable).orElseGet(() -> {
+    private Optional<OrderDTO> persistNewIdempotency(String key) {
+        try {
             idempotencyRepository.save(IdempotencyRecord.create(key));
             return Optional.empty();
-        });
+        } catch (DataIntegrityViolationException dup) {
+            log.warn("Idempotency DB UNIQUE collided after Redis claim for key {} — treating as duplicate", key);
+            throw new DuplicateOrderException(key);
+        }
+    }
+
+    private Optional<OrderDTO> resolveProcessingState(String key) {
+        return idempotencyRepository.findByKey(key)
+                .map(row -> {
+                    if (isCompletedWithBody(row)) {
+                        return parseDto(row.getResponseBody(), "DB record", key).orElse(null);
+                    }
+                    return null;
+                })
+                .map(Optional::of)
+                .orElseThrow(() -> new DuplicateOrderException(key));
+    }
+
+    private Optional<OrderDTO> fallbackToDb(String key) {
+        var existing = idempotencyRepository.findByKey(key);
+        if (existing.isEmpty()) {
+            idempotencyRepository.save(IdempotencyRecord.create(key));
+            return Optional.empty();
+        }
+        if (isCompletedWithBody(existing.get())) {
+            return parseDto(existing.get().getResponseBody(), "DB record", key);
+        }
+        return Optional.empty();
+    }
+
+    private static boolean isCompletedWithBody(IdempotencyRecord r) {
+        return r.getStatus() == IdempotencyRecord.Status.COMPLETED && r.getResponseBody() != null;
+    }
+
+    private Optional<OrderDTO> parseDto(String json, String src, String key) {
+        try {
+            return Optional.of(objectMapper.readValue(json, OrderDTO.class));
+        } catch (Exception e) {
+            log.warn("{} body corrupt for key {}", src, key);
+            return Optional.empty();
+        }
     }
 
     @Transactional
     public void markCompleted(String key, Long orderId, OrderDTO dto) {
-        idempotencyRepository.findByKey(key).ifPresent(record -> {
+        idempotencyRepository.findByKey(key).ifPresent(row -> {
             try {
                 var json = objectMapper.writeValueAsString(dto);
-                record.markCompleted(orderId, json);
-                idempotencyRepository.save(record);
+                row.markCompleted(orderId, json);
+                idempotencyRepository.save(row);
                 var redisKey = REDIS_PREFIX + dto.userId() + ":" + key;
                 cacheToRedis(redisKey, json);
             } catch (Exception e) {

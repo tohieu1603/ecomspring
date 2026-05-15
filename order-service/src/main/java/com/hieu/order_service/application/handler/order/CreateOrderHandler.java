@@ -29,6 +29,9 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CreateOrderHandler implements CommandHandler<CreateOrderCommand, OrderDTO> {
 
+    private static final String VALIDATION_REQUIRED = "required";
+
+
     private final OrderRepository orderRepository;
     private final OrderDomainService domainService;
     private final OrderDtoMapper mapper;
@@ -87,11 +90,11 @@ public class CreateOrderHandler implements CommandHandler<CreateOrderCommand, Or
 
     private void validate(CreateOrderCommand cmd) {
         var errors = new LinkedHashMap<String, String>();
-        if (cmd.userId() == null || cmd.userId().isBlank()) errors.put("userId", "required");
+        if (cmd.userId() == null || cmd.userId().isBlank()) errors.put("userId", VALIDATION_REQUIRED);
         if (cmd.items() == null || cmd.items().isEmpty()) errors.put("items", "at least one item required");
-        if (cmd.recipientName() == null || cmd.recipientName().isBlank()) errors.put("recipientName", "required");
-        if (cmd.recipientPhone() == null || cmd.recipientPhone().isBlank()) errors.put("recipientPhone", "required");
-        if (cmd.paymentMethod() == null || cmd.paymentMethod().isBlank()) errors.put("paymentMethod", "required");
+        if (cmd.recipientName() == null || cmd.recipientName().isBlank()) errors.put("recipientName", VALIDATION_REQUIRED);
+        if (cmd.recipientPhone() == null || cmd.recipientPhone().isBlank()) errors.put("recipientPhone", VALIDATION_REQUIRED);
+        if (cmd.paymentMethod() == null || cmd.paymentMethod().isBlank()) errors.put("paymentMethod", VALIDATION_REQUIRED);
         if (!errors.isEmpty()) throw new ValidationException("Invalid order payload", errors);
     }
 }
