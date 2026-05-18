@@ -1,5 +1,12 @@
 package com.hieu.auth_service.infrastructure.messaging;
 
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
+
 import com.hieu.auth_service.application.port.RolePermissionCachePort;
 import com.hieu.auth_service.domain.events.DomainEvent;
 import com.hieu.auth_service.domain.models.role.Role;
@@ -8,14 +15,9 @@ import com.hieu.auth_service.domain.models.role.events.PermissionRevokedEvent;
 import com.hieu.auth_service.domain.models.role.vo.RoleId;
 import com.hieu.auth_service.domain.repositories.PermissionRepository;
 import com.hieu.auth_service.domain.repositories.RoleRepository;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-import org.springframework.transaction.event.TransactionPhase;
-import org.springframework.transaction.event.TransactionalEventListener;
-
-import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * Keeps the role-permission Redis cache in sync with role mutations.

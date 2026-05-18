@@ -2,6 +2,7 @@ package com.hieu.auth_service.interfaces.rest;
 
 import com.hieu.auth_service.application.command.ChangePasswordCommand;
 import com.hieu.auth_service.application.command.LoginCommand;
+import com.hieu.auth_service.application.command.LoginWithGoogleCommand;
 import com.hieu.auth_service.application.command.LogoutCommand;
 import com.hieu.auth_service.application.command.RefreshTokenCommand;
 import com.hieu.auth_service.application.command.RegisterUserCommand;
@@ -11,6 +12,7 @@ import com.hieu.auth_service.domain.services.TokenProviderPort;
 import com.hieu.auth_service.infrastructure.security.AuthUserDetails;
 import com.hieu.auth_service.interfaces.rest.dto.AuthMeResponse;
 import com.hieu.auth_service.interfaces.rest.dto.ChangePasswordRequest;
+import com.hieu.auth_service.interfaces.rest.dto.GoogleLoginRequest;
 import com.hieu.auth_service.interfaces.rest.dto.LoginRequest;
 import com.hieu.auth_service.interfaces.rest.dto.RegisterRequest;
 import com.hieu.auth_service.interfaces.rest.support.AuthCookieWriter;
@@ -49,6 +51,7 @@ public class AuthController {
 
     private final CommandHandler<RegisterUserCommand, AuthResponseDTO> registerHandler;
     private final CommandHandler<LoginCommand, AuthResponseDTO> loginHandler;
+    private final CommandHandler<LoginWithGoogleCommand, AuthResponseDTO> googleLoginHandler;
     private final CommandHandler<RefreshTokenCommand, AuthResponseDTO> refreshHandler;
     private final CommandHandler<LogoutCommand, Void> logoutHandler;
     private final CommandHandler<ChangePasswordCommand, Void> changePasswordHandler;
@@ -94,6 +97,27 @@ public class AuthController {
     public ResponseEntity<AuthResponseDTO> login(@Valid @RequestBody LoginRequest request) {
         AuthResponseDTO tokens = loginHandler.handle(new LoginCommand(
                 request.usernameOrEmail(), request.password()));
+        return cookieWriter.writeTokens(tokens);
+    }
+
+    /**
+     * "Login with Google" — verifies a Google ID token (the {@code credential}
+     * the frontend receives from Google Identity Services), find-or-creates a
+     * local user, then sets the same HttpOnly cookies as the password flow.
+     *
+     * <p>The frontend obtains the token using the public Google client ID; the
+     * backend verifies it against the same client ID. We never see the user's
+     * Google password.
+     *
+     * @param request body with {@code idToken}
+     * @return 200 OK with Set-Cookie headers + user profile
+     */
+    @Operation(summary = "Login with Google (ID token from Google Identity Services)")
+    @PostMapping("/google")
+    public ResponseEntity<AuthResponseDTO> loginWithGoogle(
+            @Valid @RequestBody GoogleLoginRequest request) {
+        AuthResponseDTO tokens = googleLoginHandler.handle(
+                new LoginWithGoogleCommand(request.idToken()));
         return cookieWriter.writeTokens(tokens);
     }
 

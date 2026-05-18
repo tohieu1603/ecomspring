@@ -6,7 +6,9 @@ import com.hieu.auth_service.application.dto.UserDTO;
 import com.hieu.auth_service.domain.models.permission.Permission;
 import com.hieu.auth_service.domain.models.role.Role;
 import com.hieu.auth_service.domain.models.user.User;
-import org.springframework.stereotype.Component;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.Named;
 
 import java.util.Collection;
 import java.util.List;
@@ -14,82 +16,69 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * Maps domain aggregates to read-model DTOs for the interface layer.
+ * MapStruct-driven mapper from domain aggregates to read-model DTOs.
  *
- * <p>Kept in {@code application} (not domain) because DTOs are a use-case output
- * concern. Mapping here also insulates the domain from Jackson / framework concerns.
+ * <p>Generated implementation is wired as a Spring bean
+ * ({@code componentModel = "spring"}). Value Object fields are unwrapped via
+ * nested {@code source} paths (e.g. {@code user.id.value}); Set projections
+ * over collections are produced by {@code @Named} helper methods below.
  */
-@Component
-public class UserDtoMapper {
+@Mapper(componentModel = "spring")
+public interface UserDtoMapper {
 
-    /**
-     * Projects a {@link User} plus resolved role/permission collections into a {@link UserDTO}.
-     *
-     * @param user             source aggregate
-     * @param roles            roles assigned to the user (already fetched)
-     * @param effectivePermissions all permissions granted via roles (already resolved)
-     * @return populated read model
-     */
-    public UserDTO toDto(User user, Collection<Role> roles, Collection<Permission> effectivePermissions) {
-        Set<String> roleNames = roles.stream()
-                .map(r -> r.getName().value())
-                .collect(Collectors.toSet());
-        Set<String> permissionNames = effectivePermissions.stream()
-                .map(p -> p.getName().value())
-                .collect(Collectors.toSet());
+    // ── User → UserDTO (full, with permissions) ────────────────────────────
+    @Mapping(target = "id",                    source = "user.id.value")
+    @Mapping(target = "username",              source = "user.username.value")
+    @Mapping(target = "email",                 source = "user.email.value")
+    @Mapping(target = "firstName",             source = "user.personName.firstName")
+    @Mapping(target = "lastName",              source = "user.personName.lastName")
+    @Mapping(target = "enabled",               source = "user.accountStatus.enabled")
+    @Mapping(target = "accountNonExpired",     source = "user.accountStatus.accountNonExpired")
+    @Mapping(target = "accountNonLocked",      source = "user.accountStatus.accountNonLocked")
+    @Mapping(target = "credentialsNonExpired", source = "user.accountStatus.credentialsNonExpired")
+    @Mapping(target = "lastLogin",             source = "user.accountStatus.lastLogin")
+    @Mapping(target = "createdAt",             source = "user.createdAt")
+    @Mapping(target = "updatedAt",             source = "user.updatedAt")
+    @Mapping(target = "roles",                 source = "roles",                 qualifiedByName = "toRoleNames")
+    @Mapping(target = "permissions",           source = "effectivePermissions",  qualifiedByName = "toPermissionNames")
+    UserDTO toDto(User user, Collection<Role> roles, Collection<Permission> effectivePermissions);
 
-        var s = user.getAccountStatus();
-        return new UserDTO(
-                user.getId().value(),
-                user.getUsername().value(),
-                user.getEmail().value(),
-                user.getPersonName().firstName(),
-                user.getPersonName().lastName(),
-                s.enabled(),
-                s.accountNonExpired(),
-                s.accountNonLocked(),
-                s.credentialsNonExpired(),
-                roleNames,
-                permissionNames,
-                user.getCreatedAt(),
-                user.getUpdatedAt(),
-                s.lastLogin()
-        );
-    }
-
-    /** Overload that omits permissions (cheap projection when the caller doesn't need them). */
-    public UserDTO toDto(User user, Collection<Role> roles) {
+    /** Overload that omits permissions — cheaper projection when caller doesn't need them. */
+    default UserDTO toDto(User user, Collection<Role> roles) {
         return toDto(user, roles, List.of());
     }
 
-    /**
-     * Projects a role aggregate to its read model.
-     *
-     * @param role           source role
-     * @param grantedPermissions permission names effectively granted (names preferred over ids)
-     * @return populated read model
-     */
-    public RoleDTO toDto(Role role, Set<String> grantedPermissions) {
-        return new RoleDTO(
-                role.getId().value(),
-                role.getName().value(),
-                role.getDescription(),
-                grantedPermissions,
-                role.getCreatedAt(),
-                role.getUpdatedAt()
-        );
+    // ── Role → RoleDTO ─────────────────────────────────────────────────────
+    @Mapping(target = "id",          source = "role.id.value")
+    @Mapping(target = "name",        source = "role.name.value")
+    @Mapping(target = "description", source = "role.description")
+    @Mapping(target = "permissions", source = "grantedPermissions")
+    @Mapping(target = "createdAt",   source = "role.createdAt")
+    @Mapping(target = "updatedAt",   source = "role.updatedAt")
+    RoleDTO toDto(Role role, Set<String> grantedPermissions);
+
+    // ── Permission → PermissionDTO ─────────────────────────────────────────
+    @Mapping(target = "id",       source = "id.value")
+    @Mapping(target = "name",     source = "name.value")
+    @Mapping(target = "resource", source = "name.resource")
+    @Mapping(target = "action",   source = "name.action")
+    PermissionDTO toDto(Permission permission);
+
+    // ── Helper projections (referenced via qualifiedByName) ────────────────
+
+    @Named("toRoleNames")
+    default Set<String> toRoleNames(Collection<Role> roles) {
+        if (roles == null || roles.isEmpty()) return Set.of();
+        return roles.stream()
+                .map(r -> r.getName().value())
+                .collect(Collectors.toSet());
     }
 
-    /** Projects a permission aggregate to its read model. */
-    public PermissionDTO toDto(Permission p) {
-        return new PermissionDTO(
-                p.getId().value(),
-                p.getName().value(),
-                p.getName().resource(),
-                p.getName().action(),
-                p.getDescription(),
-                p.getCreatedAt(),
-                p.getUpdatedAt()
-        );
+    @Named("toPermissionNames")
+    default Set<String> toPermissionNames(Collection<Permission> permissions) {
+        if (permissions == null || permissions.isEmpty()) return Set.of();
+        return permissions.stream()
+                .map(p -> p.getName().value())
+                .collect(Collectors.toSet());
     }
 }

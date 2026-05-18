@@ -1,9 +1,9 @@
 package com.hieu.auth_service.application.common;
 
-import com.hieu.common.error.ErrorCode;
-
 import java.util.LinkedHashMap;
 import java.util.Map;
+
+import com.hieu.common.error.ErrorCode;
 
 /**
  * Raised when command/query input fails application-level validation.

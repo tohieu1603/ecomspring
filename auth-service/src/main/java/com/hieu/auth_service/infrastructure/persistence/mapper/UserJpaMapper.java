@@ -4,6 +4,7 @@ import com.hieu.auth_service.domain.models.role.vo.RoleId;
 import com.hieu.auth_service.domain.models.user.User;
 import com.hieu.auth_service.domain.models.user.vo.AccountStatus;
 import com.hieu.auth_service.domain.models.user.vo.Email;
+import com.hieu.auth_service.domain.models.user.vo.GoogleSub;
 import com.hieu.auth_service.domain.models.user.vo.Password;
 import com.hieu.auth_service.domain.models.user.vo.PersonName;
 import com.hieu.auth_service.domain.models.user.vo.UserId;
@@ -48,6 +49,7 @@ public class UserJpaMapper {
                 .credentialsNonExpired(s.credentialsNonExpired())
                 .lastLogin(s.lastLogin())
                 .tokenVersion(user.getTokenVersion())
+                .googleSub(user.getGoogleSub() != null ? user.getGoogleSub().value() : null)
                 .roles(roleEntities)
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())
@@ -84,6 +86,7 @@ public class UserJpaMapper {
                 status,
                 roleIds,
                 entity.getTokenVersion() != null ? entity.getTokenVersion() : 1,
+                entity.getGoogleSub() != null ? GoogleSub.of(entity.getGoogleSub()) : null,
                 entity.getCreatedAt(),
                 entity.getUpdatedAt());
     }
@@ -109,6 +112,7 @@ public class UserJpaMapper {
         entity.setCredentialsNonExpired(s.credentialsNonExpired());
         entity.setLastLogin(s.lastLogin());
         entity.setTokenVersion(user.getTokenVersion());
+        entity.setGoogleSub(user.getGoogleSub() != null ? user.getGoogleSub().value() : null);
         entity.setRoles(roleEntities);
         entity.setUpdatedAt(user.getUpdatedAt());
     }

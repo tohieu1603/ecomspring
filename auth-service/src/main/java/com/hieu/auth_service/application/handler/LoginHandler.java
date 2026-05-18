@@ -1,5 +1,14 @@
 package com.hieu.auth_service.application.handler;
 
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.hieu.auth_service.application.command.LoginCommand;
 import com.hieu.auth_service.application.common.CommandHandler;
 import com.hieu.auth_service.application.dto.AuthResponseDTO;
@@ -17,15 +26,8 @@ import com.hieu.auth_service.domain.repositories.UserRepository;
 import com.hieu.auth_service.domain.services.PasswordEncoderPort;
 import com.hieu.auth_service.domain.services.TokenDomainService;
 import com.hieu.auth_service.domain.services.TokenProviderPort;
-import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 
 /**
  * Handles {@link LoginCommand}: verifies credentials, issues a new access+refresh pair.

@@ -90,6 +90,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST,
                                 "/api/auth/login",
                                 "/api/auth/register",
+                                "/api/auth/google",
                                 "/api/auth/refresh").permitAll()
                         // C2: Only health+info are public; all other actuator endpoints require ROLE_ADMIN.
                         .requestMatchers("/actuator/health", "/actuator/info").permitAll()

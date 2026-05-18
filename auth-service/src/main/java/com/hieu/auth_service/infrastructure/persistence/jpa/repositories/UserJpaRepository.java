@@ -25,6 +25,9 @@ public interface UserJpaRepository extends JpaRepository<UserJpaEntity, String> 
     @Query("SELECT u FROM UserJpaEntity u LEFT JOIN FETCH u.roles WHERE u.email = :email")
     Optional<UserJpaEntity> findByEmailWithRoles(@Param("email") String email);
 
+    @Query("SELECT u FROM UserJpaEntity u LEFT JOIN FETCH u.roles WHERE u.googleSub = :sub")
+    Optional<UserJpaEntity> findByGoogleSubWithRoles(@Param("sub") String googleSub);
+
     boolean existsByUsername(String username);
 
     boolean existsByEmail(String email);

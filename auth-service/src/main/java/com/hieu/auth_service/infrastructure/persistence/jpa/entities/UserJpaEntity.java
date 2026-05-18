@@ -1,10 +1,20 @@
 package com.hieu.auth_service.infrastructure.persistence.jpa.entities;
 
-import jakarta.persistence.*;
-import lombok.*;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.Table;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @Table(name = "users")
@@ -34,6 +44,9 @@ public class UserJpaEntity extends BaseManualIdEntity {
     private Instant lastLogin;
     private Integer tokenVersion = 1;
 
+    @Column(name = "google_sub", length = 255)
+    private String googleSub;
+
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "user_roles",
@@ -49,7 +62,7 @@ public class UserJpaEntity extends BaseManualIdEntity {
                          String firstName, String lastName, boolean enabled,
                          boolean accountNonExpired, boolean accountNonLocked,
                          boolean credentialsNonExpired, Instant lastLogin,
-                         Integer tokenVersion, Set<RoleJpaEntity> roles,
+                         Integer tokenVersion, String googleSub, Set<RoleJpaEntity> roles,
                          Instant createdAt, Instant updatedAt, boolean isNew) {
         this.id = id;
         this.username = username;
@@ -63,6 +76,7 @@ public class UserJpaEntity extends BaseManualIdEntity {
         this.credentialsNonExpired = credentialsNonExpired;
         this.lastLogin = lastLogin;
         this.tokenVersion = tokenVersion;
+        this.googleSub = googleSub;
         this.roles = roles != null ? roles : new HashSet<>();
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;

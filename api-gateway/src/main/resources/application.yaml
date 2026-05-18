@@ -30,7 +30,7 @@ spring:
             - id: auth-service-public
               uri: lb://auth-service
               predicates:
-                - Path=/api/auth/login,/api/auth/register,/api/auth/refresh
+                - Path=/api/auth/login,/api/auth/register,/api/auth/refresh,/api/auth/google
 
             # ── Auth Service — protected endpoints (require JWT) ───────
             - id: auth-service-protected

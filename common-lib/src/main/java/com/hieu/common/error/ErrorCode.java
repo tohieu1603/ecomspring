@@ -51,6 +51,9 @@ public enum ErrorCode {
     AUTH_BLACKLISTED       ("AUTH-1015", HttpStatus.UNAUTHORIZED),
     ACCOUNT_EXPIRED        ("AUTH-1016", HttpStatus.FORBIDDEN),
     CREDENTIALS_EXPIRED    ("AUTH-1017", HttpStatus.UNAUTHORIZED),
+    OAUTH_TOKEN_INVALID    ("AUTH-1018", HttpStatus.UNAUTHORIZED),
+    OAUTH_EMAIL_UNVERIFIED ("AUTH-1019", HttpStatus.FORBIDDEN),
+    OAUTH_ACCOUNT_LINKED   ("AUTH-1020", HttpStatus.CONFLICT),
 
     // ── Catalog domain (CATALOG-2xxx) ──────────────────────────────────
     PRODUCT_NOT_FOUND          ("CATALOG-2001", HttpStatus.NOT_FOUND),

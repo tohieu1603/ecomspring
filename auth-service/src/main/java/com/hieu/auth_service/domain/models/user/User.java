@@ -1,21 +1,37 @@
 package com.hieu.auth_service.domain.models.user;
 
-import com.hieu.auth_service.domain.models.role.vo.RoleId;
-import com.hieu.auth_service.domain.models.user.events.*;
-import com.hieu.auth_service.domain.models.user.exceptions.AccountNotUsableException;
-import com.hieu.auth_service.domain.models.user.exceptions.InvalidCredentialsException;
-import com.hieu.auth_service.domain.models.user.vo.*;
-import com.hieu.auth_service.domain.services.PasswordEncoderPort;
-import com.hieu.auth_service.domain.shared.AggregateRoot;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.ToString;
-
 import java.time.Instant;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
+
+import com.hieu.auth_service.domain.models.role.vo.RoleId;
+import com.hieu.auth_service.domain.models.user.events.AccountStatusChangedEvent;
+import com.hieu.auth_service.domain.models.user.events.EmailChangedEvent;
+import com.hieu.auth_service.domain.models.user.events.OAuthProviderLinkedEvent;
+import com.hieu.auth_service.domain.models.user.events.PasswordChangedEvent;
+import com.hieu.auth_service.domain.models.user.events.RoleAssignedEvent;
+import com.hieu.auth_service.domain.models.user.events.RoleRemovedEvent;
+import com.hieu.auth_service.domain.models.user.events.UserCreatedEvent;
+import com.hieu.auth_service.domain.models.user.events.UserLoggedInEvent;
+import com.hieu.auth_service.domain.models.user.exceptions.AccountNotUsableException;
+import com.hieu.auth_service.domain.models.user.exceptions.InvalidCredentialsException;
+import com.hieu.auth_service.domain.models.user.exceptions.OAuthAccountAlreadyLinkedException;
+import com.hieu.auth_service.domain.models.user.vo.AccountStatus;
+import com.hieu.auth_service.domain.models.user.vo.Email;
+import com.hieu.auth_service.domain.models.user.vo.GoogleSub;
+import com.hieu.auth_service.domain.models.user.vo.Password;
+import com.hieu.auth_service.domain.models.user.vo.PersonName;
+import com.hieu.auth_service.domain.models.user.vo.UserId;
+import com.hieu.auth_service.domain.models.user.vo.Username;
+import com.hieu.auth_service.domain.services.PasswordEncoderPort;
+import com.hieu.auth_service.domain.shared.AggregateRoot;
+
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.ToString;
 
 /**
  * User aggregate root.
@@ -40,6 +56,7 @@ public final class User extends AggregateRoot {
     private AccountStatus accountStatus;
     private Set<RoleId> roles;
     private int tokenVersion;
+    private GoogleSub googleSub;         
     private Instant createdAt;
     private Instant updatedAt;
 
@@ -78,7 +95,8 @@ public final class User extends AggregateRoot {
     /** Rebuilds an aggregate from persistent state — used only by repositories. */
     public static User reconstitute(UserId id, Username username, Email email, Password password,
                                     PersonName personName, AccountStatus status, Set<RoleId> roles,
-                                    int tokenVersion, Instant createdAt, Instant updatedAt) {
+                                    int tokenVersion, GoogleSub googleSub,
+                                    Instant createdAt, Instant updatedAt) {
         User u = new User();
         u.id = id;
         u.username = username;
@@ -88,10 +106,65 @@ public final class User extends AggregateRoot {
         u.accountStatus = status;
         u.roles = new HashSet<>(roles);
         u.tokenVersion = tokenVersion;
+        u.googleSub = googleSub;
         u.createdAt = createdAt;
         u.updatedAt = updatedAt;
         return u;
     }
+
+    /**
+     * Creates a brand-new account from a verified Google identity. The user
+     * gets a random unguessable BCrypt-encoded password so the password-login
+     * path always rejects them — they must keep using Google until they
+     * explicitly set a password via {@link #setInitialPassword}.
+     *
+     * <p>Caller responsibility: ensure {@code username} is unique (typically
+     * derived from email's local-part with a numeric suffix if needed).
+     */
+    public static User registerFromGoogle(Username username, Email email, PersonName personName,
+                                          GoogleSub googleSub, PasswordEncoderPort encoder) {
+        Objects.requireNonNull(googleSub, "googleSub");
+        Objects.requireNonNull(encoder, "encoder");
+
+        User u = new User();
+        u.id = UserId.generate();
+        u.username = username;
+        u.email = email;
+        // Random hash → guaranteed not to match anything a human would type.
+        u.password = Password.createEncoded(encoder.encode(UUID.randomUUID().toString()));
+        u.personName = personName;
+        u.accountStatus = AccountStatus.createActive();
+        u.tokenVersion = 1;
+        u.googleSub = googleSub;
+        u.createdAt = Instant.now();
+        u.updatedAt = u.createdAt;
+
+        u.registerEvent(new UserCreatedEvent(u.id.value(), username.value(), email.value()));
+        u.registerEvent(new OAuthProviderLinkedEvent(
+                u.id.value(), "google", googleSub.value(), /*newAccount*/ true));
+        return u;
+    }
+
+    /**
+     * Links an existing password account with a Google identity. Idempotent
+     * when the same {@code sub} is re-linked. Throws when a <i>different</i>
+     * Google sub is already attached — we don't support multiple Google
+     * identities per HIEU account today.
+     */
+    public void linkGoogleAccount(GoogleSub sub) {
+        Objects.requireNonNull(sub, "sub");
+        if (googleSub != null) {
+            if (googleSub.equals(sub)) return;          // idempotent re-link
+            throw new OAuthAccountAlreadyLinkedException("google");
+        }
+        googleSub = sub;
+        updatedAt = Instant.now();
+        registerEvent(new OAuthProviderLinkedEvent(
+                id.value(), "google", sub.value(), /*newAccount*/ false));
+    }
+
+    /** Whether this account has a Google identity bound to it. */
+    public boolean isLinkedWithGoogle() { return googleSub != null; }
 
     // ── Authentication ────────────────────────────────────────────────────
 

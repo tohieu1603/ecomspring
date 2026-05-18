@@ -83,6 +83,14 @@ jwt:
   refresh-expiration-days: ${JWT_REFRESH_TTL_DAYS:7}     # 7 days
   issuer: ${JWT_ISSUER:hieu.com}
 
+# ── Google "Login with Google" — same client ID FE and BE share ──
+# Set this in .env / prod env from the OAuth 2.0 Client (Web) created on
+# console.cloud.google.com. The frontend uses the same value to mint ID tokens
+# via Google Identity Services; the backend uses it to verify the audience.
+google:
+  oauth:
+    client-id: ${GOOGLE_CLIENT_ID:}
+
 # ── OpenAPI / Swagger ──
 springdoc:
   api-docs:

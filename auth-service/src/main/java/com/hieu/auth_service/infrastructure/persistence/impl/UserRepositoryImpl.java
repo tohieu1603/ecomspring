@@ -14,6 +14,7 @@ import com.hieu.auth_service.domain.events.DomainEventPublisher;
 import com.hieu.auth_service.domain.models.role.vo.RoleId;
 import com.hieu.auth_service.domain.models.user.User;
 import com.hieu.auth_service.domain.models.user.vo.Email;
+import com.hieu.auth_service.domain.models.user.vo.GoogleSub;
 import com.hieu.auth_service.domain.models.user.vo.UserId;
 import com.hieu.auth_service.domain.models.user.vo.Username;
 import com.hieu.auth_service.domain.repositories.UserRepository;
@@ -87,6 +88,12 @@ public class UserRepositoryImpl implements UserRepository {
     @Transactional(readOnly = true)
     public Optional<User> findByEmail(Email email) {
         return jpaRepository.findByEmailWithRoles(email.value()).map(mapper::toDomain);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<User> findByGoogleSub(GoogleSub googleSub) {
+        return jpaRepository.findByGoogleSubWithRoles(googleSub.value()).map(mapper::toDomain);
     }
 
     @Override
