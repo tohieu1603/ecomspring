@@ -12,7 +12,8 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.List;
 import java.util.Objects;
@@ -41,21 +42,28 @@ public class DataSeeder {
     /**
      * Boot-time seeder. Runs after Spring Data is fully initialised so repositories are ready.
      *
+     * <p>The whole seed runs inside an explicit {@link TransactionTemplate} rather than a
+     * {@code @Transactional} method: the runner used to self-invoke {@code seed(...)} on the same
+     * bean, which bypasses the Spring AOP proxy and silently dropped the transaction boundary —
+     * leaving half-baked role/permission graphs on a startup crash.
+     *
      * @param permissionRepository permission aggregate repository
      * @param roleRepository       role aggregate repository
+     * @param transactionManager   platform transaction manager backing the seed transaction
      * @return {@link ApplicationRunner} executed once per JVM start
      */
     @Bean
     public ApplicationRunner seedDefaultRolesAndPermissions(PermissionRepository permissionRepository,
-                                                            RoleRepository roleRepository) {
-        return args -> seed(permissionRepository, roleRepository);
+                                                            RoleRepository roleRepository,
+                                                            PlatformTransactionManager transactionManager) {
+        TransactionTemplate tx = new TransactionTemplate(transactionManager);
+        return args -> tx.executeWithoutResult(status -> seed(permissionRepository, roleRepository));
     }
 
     /**
-     * Wraps the seeding in a single transaction so either everything succeeds or nothing
-     * is committed — avoids half-baked role/permission graphs on startup crash.
+     * Seeds default permissions/roles. Always invoked within the {@link TransactionTemplate}
+     * created by {@link #seedDefaultRolesAndPermissions} so it commits atomically.
      */
-    @Transactional
     protected void seed(PermissionRepository permissionRepository, RoleRepository roleRepository) {
         // 1. Permissions — chỉ INSERT khi chưa tồn tại; return value của orElseGet
         // không dùng đến nhưng vẫn cần `ifPresentOrElse` hoặc tương đương để Sonar

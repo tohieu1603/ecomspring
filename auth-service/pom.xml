@@ -147,13 +147,6 @@
             <version>${springdoc.version}</version>
         </dependency>
 
-        <!-- C5: Rate limiting for /login and /register — in-memory per-IP token buckets. -->
-        <dependency>
-            <groupId>com.bucket4j</groupId>
-            <artifactId>bucket4j-core</artifactId>
-            <version>8.10.1</version>
-        </dependency>
-
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>

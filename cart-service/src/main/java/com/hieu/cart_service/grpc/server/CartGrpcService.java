@@ -27,6 +27,16 @@ public class CartGrpcService extends CartServiceGrpc.CartServiceImplBase {
 
     @Override
     public void getCart(GetCartRequest request, StreamObserver<GetCartResponse> observer) {
+        // Validate userId is present — prevents empty-key lookups that would
+        // return all items with userId="" or cause NPE in downstream repos.
+        // NOTE: this port must be gated by service-mesh mTLS / network policy;
+        // gRPC calls do not pass through the servlet JWT filter.
+        if (request.getUserId() == null || request.getUserId().isBlank()) {
+            observer.onError(io.grpc.Status.INVALID_ARGUMENT
+                    .withDescription("userId must not be blank")
+                    .asRuntimeException());
+            return;
+        }
         try {
             // Modernization: delegate to CartService to hit Redis cache + catalog revalidation.
             var cartDTO = cartService.getCart(request.getUserId());
@@ -62,6 +72,12 @@ public class CartGrpcService extends CartServiceGrpc.CartServiceImplBase {
 
     @Override
     public void clearCart(ClearCartRequest request, StreamObserver<ClearCartResponse> observer) {
+        if (request.getUserId() == null || request.getUserId().isBlank()) {
+            observer.onError(io.grpc.Status.INVALID_ARGUMENT
+                    .withDescription("userId must not be blank")
+                    .asRuntimeException());
+            return;
+        }
         try {
             cartService.clearCart(request.getUserId());
             observer.onNext(ClearCartResponse.newBuilder().setSuccess(true).build());

@@ -55,7 +55,14 @@ public class InAppPushService {
 
         return Flux.merge(events, keepAlive)
                 .doOnSubscribe(s -> log.debug("SSE subscribed userId={}", userId))
-                .doFinally(signal -> log.debug("SSE closed userId={} signal={}", userId, signal));
+                .doFinally(signal -> {
+                    log.debug("SSE closed userId={} signal={}", userId, signal);
+                    // Remove the sink when no subscribers remain to prevent unbounded map growth.
+                    Sinks.Many<NotificationDTO> s2 = sinks.get(userId);
+                    if (s2 != null && s2.currentSubscriberCount() == 0) {
+                        sinks.remove(userId, s2);
+                    }
+                });
     }
 
     /**

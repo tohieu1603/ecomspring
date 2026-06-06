@@ -7,6 +7,7 @@ import com.hieu.order_service.application.dto.ReturnRequestDTO;
 import com.hieu.order_service.application.mapper.OrderDtoMapper;
 import com.hieu.order_service.domain.exception.InvalidOrderStateException;
 import com.hieu.order_service.domain.exception.OrderNotFoundException;
+import org.springframework.security.access.AccessDeniedException;
 import com.hieu.order_service.domain.model.order.ReturnRequest;
 import com.hieu.order_service.domain.model.order.valueobject.*;
 import com.hieu.order_service.domain.repository.OrderRepository;
@@ -35,6 +36,10 @@ public class RequestReturnHandler implements CommandHandler<RequestReturnCommand
     public ReturnRequestDTO handle(RequestReturnCommand cmd) {
         var order = orderRepository.findById(OrderId.of(cmd.orderId()))
                 .orElseThrow(() -> new OrderNotFoundException(cmd.orderId()));
+        // Ownership check — prevent user A from filing a return on user B's order.
+        if (!order.getUserId().value().equals(cmd.userId())) {
+            throw new AccessDeniedException("Order " + cmd.orderId() + " does not belong to the requesting user");
+        }
         if (!order.canBeReturned()) {
             throw new InvalidOrderStateException("Order cannot be returned in state: " + order.getStatus());
         }

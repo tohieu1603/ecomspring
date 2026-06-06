@@ -207,6 +207,11 @@ public class InventoryService {
         if (redisResult == 0) {
             throw new InsufficientStockException("Insufficient stock for order " + request.orderId());
         }
+        // Track whether Redis was actually decremented (result==1). If the second
+        // reserveStockAtomically still returns -1 (persistent cache miss), Redis was
+        // never decremented — calling releaseStockBatch in that case would add phantom
+        // stock and cause Redis to drift above the DB value (oversell window).
+        final boolean redisDecremented = (redisResult == 1);
 
         // DB part retried on optimistic lock conflict; Redis NOT re-executed on retry.
         // Route through self-proxy so @Transactional + @Retryable advice fires.
@@ -219,14 +224,14 @@ public class InventoryService {
             // but only the winner persisted to DB. The loser (us) must release its
             // Redis deduction or Redis drifts permanently below DB.
             log.info("Idempotent reserve (concurrent loser): orderId={}", dup.getOrderId());
-            redisService.releaseStockBatch(itemMap);
+            if (redisDecremented) redisService.releaseStockBatch(itemMap);
             return ReservationResult.success(dup.getOrderId());
         } catch (ReserveRetryExhaustedException exhausted) {
             // 3 optimistic-lock retries failed → release our Redis deduction.
-            redisService.releaseStockBatch(itemMap);
+            if (redisDecremented) redisService.releaseStockBatch(itemMap);
             return ReservationResult.failure("stock conflict, retry later");
         } catch (Exception e) {
-            redisService.releaseStockBatch(itemMap);
+            if (redisDecremented) redisService.releaseStockBatch(itemMap);
             throw e;
         }
     }

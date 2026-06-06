@@ -14,7 +14,6 @@ public record UserId(String value) {
             throw new IllegalArgumentException("UserId cannot be null or empty");
         }
         value = value.trim();
-        // Validate UUID format — chống corrupted strings từ DB/JWT/external lọt vào aggregate
         UUID.fromString(value);
     }
 

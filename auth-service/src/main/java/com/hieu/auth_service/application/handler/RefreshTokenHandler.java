@@ -65,6 +65,12 @@ public class RefreshTokenHandler implements CommandHandler<RefreshTokenCommand, 
 
         User user = userRepository.findById(presented.getUserId())
                 .orElseThrow(() -> new UserNotFoundException(presented.getUserId().value()));
+
+        // An account disabled / locked / expired after the refresh token was issued must not be
+        // able to keep minting fresh access tokens by rotating — re-check status on every refresh,
+        // mirroring the login path.
+        user.ensureAuthenticatable();
+
         List<Role> userRoles = roleRepository.findByIdIn(user.getRoles());
         Set<String> roleNames = userRoles.stream()
                 .map(r -> r.getName().value())

@@ -1,5 +1,12 @@
 package com.hieu.auth_service.domain.models.user;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+
 import com.hieu.auth_service.domain.events.DomainEvent;
 import com.hieu.auth_service.domain.models.role.vo.RoleId;
 import com.hieu.auth_service.domain.models.user.events.AccountStatusChangedEvent;
@@ -19,13 +26,6 @@ import com.hieu.auth_service.domain.models.user.vo.PersonName;
 import com.hieu.auth_service.domain.models.user.vo.Username;
 import com.hieu.auth_service.domain.services.PasswordEncoderPort;
 import com.hieu.auth_service.testsupport.FakePasswordEncoder;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Pure unit tests for the {@link User} aggregate — registration, authentication, credential
@@ -119,7 +119,7 @@ class UserTest {
                     .isEqualTo(AccountNotUsableException.Reason.DISABLED);
         }
     }
-
+ 
     @Nested
     @DisplayName("changePassword()")
     class ChangePassword {

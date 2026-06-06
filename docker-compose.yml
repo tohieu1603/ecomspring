@@ -369,7 +369,10 @@ services:
       - '--config.file=/etc/alertmanager/alertmanager.yml'
       - '--storage.path=/alertmanager'
     ports:
-      - "9093:9093"
+      # Host 9093 is reserved for catalog-service's gRPC server (host-run) and the 909x band
+      # is used by other services' gRPC ports. Expose Alertmanager's UI on 19093 instead;
+      # container port unchanged.
+      - "19093:9093"
     volumes:
       - ./prometheus/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
       - alertmanagerdata:/alertmanager

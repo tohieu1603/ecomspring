@@ -115,6 +115,9 @@ public final class Variant {
     }
 
     public void adjustStock(int delta) {
+        if (delta == Integer.MIN_VALUE) {
+            throw new IllegalArgumentException("delta overflow: Integer.MIN_VALUE is not allowed");
+        }
         this.quantity = delta >= 0 ? quantity.add(delta) : quantity.subtract(-delta);
         reconcileStatusAfterStockChange();
     }

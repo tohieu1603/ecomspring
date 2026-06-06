@@ -43,8 +43,8 @@ import java.time.Instant;
  */
 @Document(collection = "notifications")
 @CompoundIndexes({
-        @CompoundIndex(name = "userId_createdAt_desc", def = "{'userId': 1, 'createdAt': -1}"),
-        @CompoundIndex(name = "userId_isRead",         def = "{'userId': 1, 'isRead': 1}"),
+        @CompoundIndex(name = "userId_createdAt_desc", def = "{'userId': 1, 'created_at': -1}"),
+        @CompoundIndex(name = "userId_isRead",         def = "{'userId': 1, 'is_read': 1}"),
         // The dedup index also accelerates lookups inside Kafka consumers.
         @CompoundIndex(name = "dedup_unique",
                 def = "{'userId': 1, 'referenceType': 1, 'referenceId': 1, 'type': 1}",

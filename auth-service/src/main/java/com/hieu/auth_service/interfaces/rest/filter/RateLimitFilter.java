@@ -57,6 +57,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     private static final String LOGIN_PATH    = "/api/v1/auth/login";
     private static final String REGISTER_PATH = "/api/v1/auth/register";
+    private static final String REFRESH_PATH  = "/api/v1/auth/refresh";
+    private static final String GOOGLE_PATH   = "/api/v1/auth/google";
 
     /** Key prefix; full key is {@code rate_limit:{tag}:{ip}}. */
     private static final String KEY_PREFIX = "rate_limit:";
@@ -89,6 +91,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private final ObjectMapper objectMapper;
     private final RateLimitProperties props;
     private final Set<String> whitelist;
+    private final Set<String> trustedProxies;
 
     public RateLimitFilter(StringRedisTemplate redis,
                            ObjectMapper objectMapper,
@@ -97,6 +100,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
         this.objectMapper = objectMapper;
         this.props = props;
         this.whitelist = props.whitelistSet();
+        this.trustedProxies = props.trustedProxySet();
     }
 
     @Override
@@ -129,12 +133,24 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private RateLimitProperties.Endpoint configFor(String path) {
         if (LOGIN_PATH.equals(path))    return props.login();
         if (REGISTER_PATH.equals(path)) return props.register();
+        if (REFRESH_PATH.equals(path))  return props.refresh();
+        if (GOOGLE_PATH.equals(path))   return props.google();
         return null;
     }
 
     private static String keyFor(String path, String ip) {
-        String tag = LOGIN_PATH.equals(path) ? "login" : "register";
-        return KEY_PREFIX + tag + ":" + ip;
+        return KEY_PREFIX + tagFor(path) + ":" + ip;
+    }
+
+    /** Stable per-endpoint bucket tag. Unknown paths never reach here (filtered by {@link #configFor}). */
+    private static String tagFor(String path) {
+        return switch (path) {
+            case LOGIN_PATH    -> "login";
+            case REGISTER_PATH -> "register";
+            case REFRESH_PATH  -> "refresh";
+            case GOOGLE_PATH   -> "google";
+            default            -> "unknown";
+        };
     }
 
     /**
@@ -146,13 +162,20 @@ public class RateLimitFilter extends OncePerRequestFilter {
      * copies; otherwise a malicious client could spoof their IP to dodge
      * per-IP throttling.
      */
-    private static String clientIp(HttpServletRequest request) {
-        String xff = request.getHeader("X-Forwarded-For");
-        if (xff != null && !xff.isBlank()) {
-            int comma = xff.indexOf(',');
-            return (comma > 0 ? xff.substring(0, comma) : xff).trim();
+    private String clientIp(HttpServletRequest request) {
+        String remoteAddr = request.getRemoteAddr();
+        // Only honour XFF when the direct peer is a configured trusted proxy (or no proxy list is
+        // set, preserving legacy single-tier behaviour). Otherwise an attacker spoofs the header
+        // to mint a fresh per-IP bucket on every request and bypass throttling entirely.
+        boolean trustXff = trustedProxies.isEmpty() || trustedProxies.contains(remoteAddr);
+        if (trustXff) {
+            String xff = request.getHeader("X-Forwarded-For");
+            if (xff != null && !xff.isBlank()) {
+                int comma = xff.indexOf(',');
+                return (comma > 0 ? xff.substring(0, comma) : xff).trim();
+            }
         }
-        return request.getRemoteAddr();
+        return remoteAddr;
     }
 
     // ── Redis ─────────────────────────────────────────────────────────────────

@@ -136,8 +136,16 @@ public class PaymentController {
 
     @GetMapping("/order/{orderId}")
     @Operation(summary = "Get payment by order ID")
-    public ResponseEntity<ApiResponse<PaymentDTO>> getPaymentByOrder(@PathVariable String orderId) {
-        return ResponseEntity.ok(ApiResponse.ok(paymentService.getPaymentByOrder(orderId)));
+    public ResponseEntity<ApiResponse<PaymentDTO>> getPaymentByOrder(
+            @PathVariable String orderId,
+            @AuthenticationPrincipal AuthenticatedUser user) {
+        PaymentDTO dto = paymentService.getPaymentByOrder(orderId);
+        boolean isAdmin = user.hasRole("ROLE_ADMIN") || user.hasRole("ADMIN");
+        if (!isAdmin && !dto.getUserId().equals(user.userId())) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "Access denied for order: " + orderId);
+        }
+        return ResponseEntity.ok(ApiResponse.ok(dto));
     }
 
     @GetMapping("/my")

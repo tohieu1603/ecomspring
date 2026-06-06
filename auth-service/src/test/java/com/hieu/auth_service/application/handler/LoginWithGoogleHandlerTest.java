@@ -141,15 +141,15 @@ class LoginWithGoogleHandlerTest {
     }
 
     @Test
-    @DisplayName("no existing user → auto-registers a new Google account with the default customer role")
+    @DisplayName("no existing user → auto-registers a new Google account with the default user role")
     void google_autoRegistersNewUser() {
         GoogleClaims claims = verifiedClaims();
-        Role customer = Role.create(RoleName.of("ROLE_CUSTOMER"), "customers");
+        Role defaultRole = Role.create(RoleName.of("ROLE_USER"), "default users");
         when(googleVerifier.verify("raw")).thenReturn(claims);
         when(userRepository.findByGoogleSub(GoogleSub.of(claims.sub()))).thenReturn(Optional.empty());
         when(userRepository.findByEmail(Email.of(claims.email()))).thenReturn(Optional.empty());
         when(userRepository.isUsernameTaken(any())).thenReturn(false); // "alice" is free
-        when(roleRepository.findByName(RoleName.of("ROLE_CUSTOMER"))).thenReturn(Optional.of(customer));
+        when(roleRepository.findByName(RoleName.of("ROLE_USER"))).thenReturn(Optional.of(defaultRole));
         stubTokenIssuance();
 
         handler.handle(new LoginWithGoogleCommand("raw"));
@@ -160,7 +160,7 @@ class LoginWithGoogleHandlerTest {
         assertThat(created.getUsername()).isEqualTo(Username.of("alice"));
         assertThat(created.getEmail()).isEqualTo(Email.of("alice@example.com"));
         assertThat(created.isLinkedWithGoogle()).isTrue();
-        assertThat(created.getRoles()).containsExactly(customer.getId());
+        assertThat(created.getRoles()).containsExactly(defaultRole.getId());
     }
 
     @Test
@@ -173,7 +173,7 @@ class LoginWithGoogleHandlerTest {
         // "alice" taken, "alice1" free.
         when(userRepository.isUsernameTaken(Username.of("alice"))).thenReturn(true);
         when(userRepository.isUsernameTaken(Username.of("alice1"))).thenReturn(false);
-        lenient().when(roleRepository.findByName(RoleName.of("ROLE_CUSTOMER"))).thenReturn(Optional.empty());
+        lenient().when(roleRepository.findByName(RoleName.of("ROLE_USER"))).thenReturn(Optional.empty());
         stubTokenIssuance();
 
         handler.handle(new LoginWithGoogleCommand("raw"));

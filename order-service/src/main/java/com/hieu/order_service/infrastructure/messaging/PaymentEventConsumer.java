@@ -3,6 +3,7 @@ package com.hieu.order_service.infrastructure.messaging;
 import com.hieu.order_service.application.common.DomainEventPublisher;
 import com.hieu.order_service.domain.exception.OrderNotFoundException;
 import com.hieu.order_service.domain.model.order.valueobject.OrderNumber;
+import com.hieu.order_service.domain.model.order.valueobject.OrderStatus;
 import com.hieu.order_service.domain.repository.OrderRepository;
 import com.hieu.order_service.infrastructure.grpc.client.CartGrpcClient;
 import lombok.RequiredArgsConstructor;
@@ -43,11 +44,24 @@ public class PaymentEventConsumer {
                 .orElseThrow(() -> new OrderNotFoundException(orderNumber));
 
         if ("payment.completed".equals(topic)) {
+            // Idempotency: redelivered event after order is already CONFIRMED/DELIVERED → skip.
+            if (!order.getStatus().canTransitionTo(OrderStatus.PAYMENT_COMPLETED)) {
+                log.info("payment.completed already processed for order {} (status={}), skipping",
+                        orderNumber, order.getStatus());
+                return;
+            }
             order.markPaymentCompleted();
             order.confirm();
         } else {
+            // Idempotency: already PAYMENT_FAILED/CANCELLED → skip.
+            if (!order.getStatus().canTransitionTo(OrderStatus.PAYMENT_FAILED)) {
+                log.info("payment.failed already processed for order {} (status={}), skipping",
+                        orderNumber, order.getStatus());
+                return;
+            }
             var reason = payload.get("reason") != null ? payload.get("reason").toString() : "Payment failed";
-            order.markFailed(reason);
+            // PAYMENT_PENDING → PAYMENT_FAILED (not FAILED — that requires a different path).
+            order.markPaymentFailed(reason);
         }
 
         var saved = orderRepository.save(order);

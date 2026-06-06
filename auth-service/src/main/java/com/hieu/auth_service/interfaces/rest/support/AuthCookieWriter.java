@@ -17,7 +17,7 @@ import com.hieu.auth_service.application.dto.AuthResponseDTO;
  * <ul>
  *   <li>{@code ACCESS_TOKEN} cookie — {@code HttpOnly}, {@code Secure}, {@code SameSite=Lax},
  *       path=/, max-age = JWT access TTL.</li>
- *   <li>{@code REFRESH_TOKEN} cookie — same flags, path=/api/auth (only sent on auth-specific
+ *   <li>{@code REFRESH_TOKEN} cookie — same flags, path=/api/v1/auth (only sent on auth-specific
  *       calls) to reduce unnecessary exposure on every request.</li>
  *   <li>Response body strips the raw tokens; only the {@code user} profile remains.</li>
  * </ul>
@@ -30,7 +30,9 @@ public class AuthCookieWriter {
 
     public static final String ACCESS_COOKIE = "ACCESS_TOKEN";
     public static final String REFRESH_COOKIE = "REFRESH_TOKEN";
-    private static final String REFRESH_PATH = "/api/auth";
+    // Must match the controller mapping ("/api/v1/auth/**"); a stale "/api/auth" meant browsers
+    // never sent the refresh cookie to /api/v1/auth/refresh or /logout, silently breaking the flow.
+    private static final String REFRESH_PATH = "/api/v1/auth";
 
     @Value("${auth.cookie.secure:true}")
     private boolean secure;

@@ -216,11 +216,11 @@ public class NotificationApplicationService {
      */
     public Mono<Long> markAllReadForUser(String userId) {
         var now = Instant.now();
-        var query = new Query(Criteria.where("userId").is(userId).and("isRead").is(false));
+        var query = new Query(Criteria.where("userId").is(userId).and("is_read").is(false));
         var update = new Update()
-                .set("isRead", true)
-                .set("readAt", now)
-                .set("updatedAt", now)
+                .set("is_read", true)
+                .set("read_at", now)
+                .set("updated_at", now)
                 .set("status", NotificationStatus.READ.name());
 
         return mongoTemplate.updateMulti(query, update, NotificationDocument.class)

@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import java.time.Instant;
+import java.util.Optional;
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
@@ -18,7 +19,15 @@ import com.hieu.auth_service.application.port.TokenBlacklistPort;
 import com.hieu.auth_service.application.query.CheckPermissionQuery;
 import com.hieu.auth_service.application.query.CheckRoleQuery;
 import com.hieu.auth_service.application.query.GetUserByIdQuery;
+import com.hieu.auth_service.domain.models.user.User;
 import com.hieu.auth_service.domain.models.user.exceptions.UserNotFoundException;
+import com.hieu.auth_service.domain.models.user.vo.AccountStatus;
+import com.hieu.auth_service.domain.models.user.vo.Email;
+import com.hieu.auth_service.domain.models.user.vo.Password;
+import com.hieu.auth_service.domain.models.user.vo.PersonName;
+import com.hieu.auth_service.domain.models.user.vo.UserId;
+import com.hieu.auth_service.domain.models.user.vo.Username;
+import com.hieu.auth_service.domain.repositories.UserRepository;
 import com.hieu.auth_service.domain.services.TokenProviderPort;
 import com.hieu.auth_service.domain.services.TokenProviderPort.AccessClaims;
 import com.hieu.auth_service.interfaces.grpc.proto.CheckPermissionRequest;
@@ -43,13 +52,26 @@ class AuthGrpcServiceTest {
 
     @Mock TokenProviderPort tokenProvider;
     @Mock TokenBlacklistPort tokenBlacklist;
+    @Mock UserRepository userRepository;
     @Mock QueryHandler<CheckRoleQuery, Boolean> checkRoleHandler;
     @Mock QueryHandler<CheckPermissionQuery, Boolean> checkPermissionHandler;
     @Mock QueryHandler<GetUserByIdQuery, UserDTO> getUserByIdHandler;
 
+    /** Stable UUID used as the token subject so {@link UserId} validation passes. */
+    private static final String UID = "11111111-1111-1111-1111-111111111111";
+
     private AuthGrpcService service() {
-        return new AuthGrpcService(tokenProvider, tokenBlacklist,
+        return new AuthGrpcService(tokenProvider, tokenBlacklist, userRepository,
                 checkRoleHandler, checkPermissionHandler, getUserByIdHandler);
+    }
+
+    /** Builds an active domain user with the given id + tokenVersion for the verifyToken cross-check. */
+    private static User activeUser(String id, int tokenVersion) {
+        return User.reconstitute(
+                UserId.of(id), Username.of("alice"), Email.of("alice@example.com"),
+                Password.createEncoded("$2a$dummyhash"), PersonName.of("Alice", "Smith"),
+                AccountStatus.createActive(), Set.of(), tokenVersion, null,
+                Instant.now(), Instant.now());
     }
 
     /** Minimal unary StreamObserver capturing onNext. */
@@ -66,7 +88,7 @@ class AuthGrpcServiceTest {
     }
 
     private static AccessClaims claims(Set<String> roles) {
-        return new AccessClaims("jti-1", "user-1", "alice", 7, roles,
+        return new AccessClaims("jti-1", UID, "alice", 7, roles,
                 Instant.now().plusSeconds(900));
     }
 
@@ -76,13 +98,14 @@ class AuthGrpcServiceTest {
     void verifyToken_validNotBlacklisted_mapsClaimsToResponse() {
         when(tokenProvider.parseAccessToken("good")).thenReturn(claims(Set.of("ROLE_USER", "ROLE_ADMIN")));
         when(tokenBlacklist.isRevoked("jti-1")).thenReturn(false);
+        when(userRepository.findById(UserId.of(UID))).thenReturn(Optional.of(activeUser(UID, 7)));
 
         Capturing<VerifyTokenResponse> obs = capture();
         service().verifyToken(VerifyTokenRequest.newBuilder().setAccessToken("good").build(), obs);
 
         VerifyTokenResponse r = obs.value;
         assertThat(r.getValid()).isTrue();
-        assertThat(r.getUserId()).isEqualTo("user-1");
+        assertThat(r.getUserId()).isEqualTo(UID);
         assertThat(r.getUsername()).isEqualTo("alice");
         assertThat(r.getTokenVersion()).isEqualTo(7);
         assertThat(r.getRolesList()).containsExactlyInAnyOrder("ROLE_USER", "ROLE_ADMIN");
@@ -114,16 +137,58 @@ class AuthGrpcServiceTest {
     }
 
     @Test
-    void verifyToken_nullUserIdAndUsername_normalisedToEmpty() {
-        AccessClaims nullish = new AccessClaims("jti-1", null, null, 0, Set.of(), Instant.now().plusSeconds(60));
+    void verifyToken_tokenVersionSuperseded_returnsInvalid() {
+        when(tokenProvider.parseAccessToken("stale")).thenReturn(claims(Set.of("ROLE_USER")));
+        when(tokenBlacklist.isRevoked("jti-1")).thenReturn(false);
+        // Live user carries a newer tokenVersion (e.g. after a password change) than the token.
+        when(userRepository.findById(UserId.of(UID))).thenReturn(Optional.of(activeUser(UID, 8)));
+
+        Capturing<VerifyTokenResponse> obs = capture();
+        service().verifyToken(VerifyTokenRequest.newBuilder().setAccessToken("stale").build(), obs);
+
+        assertThat(obs.value.getValid()).isFalse();
+    }
+
+    @Test
+    void verifyToken_inactiveAccount_returnsInvalid() {
+        when(tokenProvider.parseAccessToken("locked")).thenReturn(claims(Set.of("ROLE_USER")));
+        when(tokenBlacklist.isRevoked("jti-1")).thenReturn(false);
+        User lockedUser = User.reconstitute(
+                UserId.of(UID), Username.of("alice"), Email.of("alice@example.com"),
+                Password.createEncoded("$2a$dummyhash"), PersonName.of("Alice", "Smith"),
+                AccountStatus.createLocked(), Set.of(), 7, null, Instant.now(), Instant.now());
+        when(userRepository.findById(UserId.of(UID))).thenReturn(Optional.of(lockedUser));
+
+        Capturing<VerifyTokenResponse> obs = capture();
+        service().verifyToken(VerifyTokenRequest.newBuilder().setAccessToken("locked").build(), obs);
+
+        assertThat(obs.value.getValid()).isFalse();
+    }
+
+    @Test
+    void verifyToken_userNotFound_returnsInvalid() {
+        when(tokenProvider.parseAccessToken("ghost")).thenReturn(claims(Set.of("ROLE_USER")));
+        when(tokenBlacklist.isRevoked("jti-1")).thenReturn(false);
+        when(userRepository.findById(UserId.of(UID))).thenReturn(Optional.empty());
+
+        Capturing<VerifyTokenResponse> obs = capture();
+        service().verifyToken(VerifyTokenRequest.newBuilder().setAccessToken("ghost").build(), obs);
+
+        assertThat(obs.value.getValid()).isFalse();
+    }
+
+    @Test
+    void verifyToken_nullUsername_normalisedToEmpty() {
+        AccessClaims nullish = new AccessClaims("jti-1", UID, null, 3, Set.of(), Instant.now().plusSeconds(60));
         when(tokenProvider.parseAccessToken("t")).thenReturn(nullish);
         when(tokenBlacklist.isRevoked("jti-1")).thenReturn(false);
+        when(userRepository.findById(UserId.of(UID))).thenReturn(Optional.of(activeUser(UID, 3)));
 
         Capturing<VerifyTokenResponse> obs = capture();
         service().verifyToken(VerifyTokenRequest.newBuilder().setAccessToken("t").build(), obs);
 
         assertThat(obs.value.getValid()).isTrue();
-        assertThat(obs.value.getUserId()).isEmpty();
+        assertThat(obs.value.getUserId()).isEqualTo(UID);
         assertThat(obs.value.getUsername()).isEmpty();
     }
 

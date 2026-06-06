@@ -6,7 +6,10 @@ import com.hieu.auth_service.application.port.TokenBlacklistPort;
 import com.hieu.auth_service.application.query.CheckPermissionQuery;
 import com.hieu.auth_service.application.query.CheckRoleQuery;
 import com.hieu.auth_service.application.query.GetUserByIdQuery;
+import com.hieu.auth_service.domain.models.user.User;
 import com.hieu.auth_service.domain.models.user.exceptions.UserNotFoundException;
+import com.hieu.auth_service.domain.models.user.vo.UserId;
+import com.hieu.auth_service.domain.repositories.UserRepository;
 import com.hieu.auth_service.domain.services.TokenProviderPort;
 import com.hieu.auth_service.interfaces.grpc.proto.AuthServiceGrpc;
 import com.hieu.auth_service.interfaces.grpc.proto.CheckPermissionRequest;
@@ -40,6 +43,7 @@ public class AuthGrpcService extends AuthServiceGrpc.AuthServiceImplBase {
 
     private final TokenProviderPort tokenProvider;
     private final TokenBlacklistPort tokenBlacklist;
+    private final UserRepository userRepository;
     private final QueryHandler<CheckRoleQuery, Boolean> checkRoleHandler;
     private final QueryHandler<CheckPermissionQuery, Boolean> checkPermissionHandler;
     private final QueryHandler<GetUserByIdQuery, UserDTO> getUserByIdHandler;
@@ -55,7 +59,10 @@ public class AuthGrpcService extends AuthServiceGrpc.AuthServiceImplBase {
         VerifyTokenResponse.Builder reply = VerifyTokenResponse.newBuilder();
         try {
             var claims = tokenProvider.parseAccessToken(request.getAccessToken());
-            if (tokenBlacklist.isRevoked(claims.tokenId())) {
+            if (tokenBlacklist.isRevoked(claims.tokenId()) || !isCurrentAndActive(claims)) {
+                // Blacklisted, superseded (tokenVersion bumped on password-change / admin revoke),
+                // or belonging to a now-inactive account — REST enforces the same checks, so gRPC
+                // callers must not see a different answer.
                 reply.setValid(false);
             } else {
                 reply.setValid(true)
@@ -115,6 +122,22 @@ public class AuthGrpcService extends AuthServiceGrpc.AuthServiceImplBase {
         }
         observer.onNext(reply.build());
         observer.onCompleted();
+    }
+
+    /**
+     * Confirms the token's claims still match the live user: the {@code tokenVersion} has not been
+     * bumped (password change / forced revoke) and the account is still active. Any lookup failure
+     * (unknown or malformed user id) is treated as "not valid" rather than surfacing an error.
+     */
+    private boolean isCurrentAndActive(TokenProviderPort.AccessClaims claims) {
+        try {
+            return userRepository.findById(UserId.of(claims.userId()))
+                    .filter(User::isActive)
+                    .map(u -> u.getTokenVersion() == claims.tokenVersion())
+                    .orElse(false);
+        } catch (IllegalArgumentException malformedId) {
+            return false;
+        }
     }
 
     /** Protobuf strings cannot be null; normalise to empty instead. */

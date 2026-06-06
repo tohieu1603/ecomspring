@@ -1,10 +1,9 @@
 package com.hieu.auth_service.infrastructure.persistence.mapper;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.time.Instant;
 import java.util.Set;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.Test;
 
 import com.hieu.auth_service.domain.models.role.vo.RoleId;

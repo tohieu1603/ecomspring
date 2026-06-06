@@ -164,7 +164,12 @@ public class OrderController {
     @GetMapping("/{id}/internal")
     public OrderDTO getInternal(@PathVariable Long id,
                                 @RequestHeader(value = "X-Internal-Token", required = false) String token) {
-        if (internalToken == null || internalToken.isBlank() || !internalToken.equals(token)) {
+        boolean valid = internalToken != null && !internalToken.isBlank()
+                && token != null
+                && java.security.MessageDigest.isEqual(
+                        internalToken.getBytes(java.nio.charset.StandardCharsets.UTF_8),
+                        token.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        if (!valid) {
             throw new AccessDeniedException("Internal endpoint requires X-Internal-Token");
         }
         return getOrderByIdInternalHandler.handle(new GetOrderByIdInternalQuery(id));

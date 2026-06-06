@@ -221,6 +221,13 @@ public class Order extends AggregateRoot {
         registerEvent(new OrderCancelledEvent(id.value(), orderNumber.value(), userId.value(), reason, voucherCode));
     }
 
+    public void markPaymentFailed(String reason) {
+        transition(OrderStatus.PAYMENT_FAILED);
+        this.failureReason = reason;
+        updatedAt = Instant.now();
+        registerEvent(new OrderFailedEvent(id.value(), orderNumber.value(), userId.value(), reason));
+    }
+
     public void markFailed(String reason) {
         transition(OrderStatus.FAILED);
         this.failureReason = reason;

@@ -60,14 +60,14 @@ public interface ProductJpaRepository extends JpaRepository<ProductJpaEntity, Lo
 
     @Query("""
            SELECT p.id FROM ProductJpaEntity p
-           WHERE p.status <> 'DELETED'
+           WHERE p.status = 'ACTIVE'
            ORDER BY p.createdAt DESC, p.id DESC
            """)
     List<Long> findFirstPageIds(Pageable pageable);
 
     @Query("""
            SELECT p.id FROM ProductJpaEntity p
-           WHERE p.status <> 'DELETED'
+           WHERE p.status = 'ACTIVE'
              AND (p.createdAt < :cursorCreatedAt
                   OR (p.createdAt = :cursorCreatedAt AND p.id < :cursorId))
            ORDER BY p.createdAt DESC, p.id DESC
@@ -95,7 +95,7 @@ public interface ProductJpaRepository extends JpaRepository<ProductJpaEntity, Lo
     @Query("""
            SELECT p.id FROM ProductJpaEntity p
            LEFT JOIN p.variants v
-           WHERE p.status <> 'DELETED'
+           WHERE p.status = 'ACTIVE'
              AND (:categoryId IS NULL OR p.categoryId = :categoryId)
            GROUP BY p.id, p.name, p.createdAt
            ORDER BY MIN(COALESCE(v.salePrice, v.price)) ASC, p.id ASC
@@ -105,7 +105,7 @@ public interface ProductJpaRepository extends JpaRepository<ProductJpaEntity, Lo
     @Query("""
            SELECT p.id FROM ProductJpaEntity p
            LEFT JOIN p.variants v
-           WHERE p.status <> 'DELETED'
+           WHERE p.status = 'ACTIVE'
              AND (:categoryId IS NULL OR p.categoryId = :categoryId)
            GROUP BY p.id, p.name, p.createdAt
            ORDER BY MIN(COALESCE(v.salePrice, v.price)) DESC, p.id DESC
@@ -114,7 +114,7 @@ public interface ProductJpaRepository extends JpaRepository<ProductJpaEntity, Lo
 
     @Query("""
            SELECT p.id FROM ProductJpaEntity p
-           WHERE p.status <> 'DELETED'
+           WHERE p.status = 'ACTIVE'
              AND (:categoryId IS NULL OR p.categoryId = :categoryId)
            ORDER BY p.name ASC, p.id ASC
            """)
@@ -122,7 +122,7 @@ public interface ProductJpaRepository extends JpaRepository<ProductJpaEntity, Lo
 
     @Query("""
            SELECT p.id FROM ProductJpaEntity p
-           WHERE p.status <> 'DELETED'
+           WHERE p.status = 'ACTIVE'
              AND (:categoryId IS NULL OR p.categoryId = :categoryId)
            ORDER BY p.name DESC, p.id DESC
            """)
@@ -130,7 +130,7 @@ public interface ProductJpaRepository extends JpaRepository<ProductJpaEntity, Lo
 
     @Query("""
            SELECT p.id FROM ProductJpaEntity p
-           WHERE p.status <> 'DELETED'
+           WHERE p.status = 'ACTIVE'
              AND (:categoryId IS NULL OR p.categoryId = :categoryId)
            ORDER BY p.createdAt DESC, p.id DESC
            """)

@@ -1,5 +1,15 @@
 package com.hieu.auth_service.domain.models.refreshtoken;
 
+import java.time.Instant;
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+
 import com.hieu.auth_service.domain.events.DomainEvent;
 import com.hieu.auth_service.domain.models.refreshtoken.events.TokenCreatedEvent;
 import com.hieu.auth_service.domain.models.refreshtoken.events.TokenRevokedEvent;
@@ -13,16 +23,6 @@ import com.hieu.auth_service.domain.models.refreshtoken.vo.TokenFamily;
 import com.hieu.auth_service.domain.models.refreshtoken.vo.TokenId;
 import com.hieu.auth_service.domain.models.refreshtoken.vo.TokenValue;
 import com.hieu.auth_service.domain.models.user.vo.UserId;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
-
-import java.time.Instant;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Pure unit tests for the {@link RefreshToken} aggregate — rotation, reuse detection,

@@ -34,8 +34,9 @@ public class ShipmentController {
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.ok(dto, "Shipment created"));
     }
 
-    /** Internal (no JWT required): used by payment-service after payment confirmed. */
+    /** Internal (ADMIN only): used by payment-service after payment confirmed. */
     @PostMapping("/internal")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<ShipmentDTO>> createShipmentInternal(
             @Valid @RequestBody CreateShipmentRequest req) {
         var dto = shipmentService.createShipment(req);

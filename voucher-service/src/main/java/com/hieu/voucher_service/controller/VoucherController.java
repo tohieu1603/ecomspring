@@ -1,6 +1,7 @@
 package com.hieu.voucher_service.controller;
 
 import com.hieu.common.api.ApiResponse;
+import com.hieu.common.security.AuthenticatedUser;
 import com.hieu.voucher_service.dto.ApplyVoucherResponse;
 import com.hieu.voucher_service.dto.CreateVoucherRequest;
 import com.hieu.voucher_service.dto.ReleaseVoucherRequest;
@@ -15,6 +16,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -83,14 +85,18 @@ public class VoucherController {
 
     /**
      * Validate và apply voucher — gọi bởi order-service khi checkout.
+     * userId is extracted from the authenticated JWT principal, NOT the request body,
+     * to prevent callers from forging another user's identity and bypassing per-user
+     * limits or targetUserIds restrictions.
      */
     @PostMapping("/validate")
     public ResponseEntity<ApiResponse<ApplyVoucherResponse>> validateAndApply(
-            @Valid @RequestBody ValidateVoucherRequest request) {
+            @Valid @RequestBody ValidateVoucherRequest request,
+            @AuthenticationPrincipal AuthenticatedUser currentUser) {
         ApplyVoucherResponse response = voucherService.validateAndApply(
                 request.getCode(),
                 request.getOrderAmount(),
-                request.getUserId(),
+                currentUser.userId(),
                 request.getOrderId(),
                 request.getProductIds());
         return ResponseEntity.ok(ApiResponse.ok(response));

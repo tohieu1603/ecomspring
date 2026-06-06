@@ -12,6 +12,7 @@ import com.hieu.auth_service.infrastructure.persistence.jpa.entities.UserJpaEnti
 import com.hieu.auth_service.infrastructure.persistence.jpa.repositories.RefreshTokenJpaRepository;
 import com.hieu.auth_service.infrastructure.persistence.jpa.repositories.UserJpaRepository;
 import com.hieu.auth_service.infrastructure.persistence.mapper.RefreshTokenJpaMapper;
+import com.hieu.auth_service.infrastructure.security.RefreshTokenHasher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,10 +36,15 @@ public class RefreshTokenRepositoryImpl implements RefreshTokenRepository {
     private final UserJpaRepository userJpaRepository;
     private final RefreshTokenJpaMapper mapper;
     private final DomainEventPublisher eventPublisher;
+    private final RefreshTokenHasher tokenHasher;
 
     /**
      * Persists or updates a refresh-token aggregate. Resolves the owning user entity so
      * Hibernate can populate the mandatory {@code user_id} FK without detached-entity surprises.
+     *
+     * <p>On INSERT the raw token secret is replaced by its SHA-256 digest before it touches the
+     * database — only the digest is ever stored. On UPDATE the aggregate was rehydrated via
+     * {@link #toDigest} lookups, so its value is already the digest and is persisted as-is.
      */
     @Override
     @Transactional
@@ -48,10 +54,19 @@ public class RefreshTokenRepositoryImpl implements RefreshTokenRepository {
                         "Cannot save refresh token — owning user not found: " + token.getUserId().value()));
 
         boolean isNew = !jpaRepository.existsById(token.getId().value());
-        RefreshTokenJpaEntity saved = jpaRepository.save(mapper.toJpaEntity(token, userRef, isNew));
+        RefreshTokenJpaEntity entity = mapper.toJpaEntity(token, userRef, isNew);
+        if (isNew) {
+            entity.setToken(tokenHasher.hash(token.getValue().value()));
+        }
+        RefreshTokenJpaEntity saved = jpaRepository.save(entity);
 
         token.pullDomainEvents().forEach(eventPublisher::publish);
         return mapper.toDomain(saved);
+    }
+
+    /** Hashes a presented raw token so it can be matched against the stored digest. */
+    private String toDigest(TokenValue tokenValue) {
+        return tokenHasher.hash(tokenValue.value());
     }
 
     @Override
@@ -63,13 +78,13 @@ public class RefreshTokenRepositoryImpl implements RefreshTokenRepository {
     @Override
     @Transactional(readOnly = true)
     public Optional<RefreshToken> findByTokenValue(TokenValue tokenValue) {
-        return jpaRepository.findByToken(tokenValue.value()).map(mapper::toDomain);
+        return jpaRepository.findByToken(toDigest(tokenValue)).map(mapper::toDomain);
     }
 
     @Override
     @Transactional
     public Optional<RefreshToken> findByTokenValueForUpdate(TokenValue tokenValue) {
-        return jpaRepository.findByTokenForUpdate(tokenValue.value()).map(mapper::toDomain);
+        return jpaRepository.findByTokenForUpdate(toDigest(tokenValue)).map(mapper::toDomain);
     }
 
     @Override

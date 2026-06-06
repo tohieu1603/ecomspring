@@ -37,7 +37,6 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 // Public
                 .requestMatchers(HttpMethod.GET,  "/api/v1/shipments/tracking/**").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/v1/shipments/internal").permitAll()
                 // Shipping fee quote — checkout uses this before login completes
                 .requestMatchers(HttpMethod.GET,  "/api/v1/shipping/carriers").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/shipping/calculate-fee").permitAll()

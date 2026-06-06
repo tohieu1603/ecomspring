@@ -4,9 +4,12 @@ import java.io.IOException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.authentication.AccountStatusException;
+import org.springframework.security.authentication.AccountStatusUserDetailsChecker;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsChecker;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
@@ -52,6 +55,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private static final String HEADER = "Authorization";
     private static final String PREFIX = "Bearer ";
 
+    /**
+     * Enforces the account-status flags (enabled / non-locked / non-expired / credentials-non-expired)
+     * carried by {@link AuthUserDetails}. The bare filter previously authenticated a request from
+     * any structurally-valid token, so an admin locking or disabling an account had no effect on
+     * already-issued access tokens — this closes that gap on every request.
+     */
+    private static final UserDetailsChecker ACCOUNT_STATUS_CHECKER = new AccountStatusUserDetailsChecker();
+
     private final TokenProviderPort tokenProvider;
     private final TokenBlacklistPort tokenBlacklist;
     private final CustomUserDetailsService userDetailsService;
@@ -86,6 +97,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     log.debug("tokenVersion mismatch for userId={} (jwt={}, current={})",
                             claims.userId(), claims.tokenVersion(), aud.tokenVersion());
                     response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token superseded");
+                    return;
+                }
+
+                // Account-status guard: a disabled / locked / expired account must not authenticate even
+                // while it still holds a structurally-valid, unexpired access token.
+                try {
+                    ACCOUNT_STATUS_CHECKER.check(userDetails);
+                } catch (AccountStatusException accountInactive) {
+                    log.debug("Rejected token for inactive account userId={}: {}",
+                            claims.userId(), accountInactive.getMessage());
+                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Account not active");
                     return;
                 }
 

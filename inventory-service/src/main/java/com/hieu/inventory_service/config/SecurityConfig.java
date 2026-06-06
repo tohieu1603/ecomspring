@@ -15,7 +15,9 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 /**
  * Stateless JWT security configuration.
- * Internal endpoints (reserve/confirm/release) are permitAll — protected by service mesh trust.
+ * Internal endpoints (reserve/confirm/release) require ADMIN or SERVICE role — do not
+ * expose these as permitAll; service-mesh trust alone is insufficient because any
+ * unauthenticated caller can over-reserve or release another order's stock.
  */
 @Configuration
 @EnableWebSecurity
@@ -40,10 +42,13 @@ public class SecurityConfig {
                     "/v3/api-docs/**",
                     "/swagger-ui/**",
                     "/swagger-ui.html").permitAll()
+                // Internal mutation endpoints require a valid JWT (ADMIN or SERVICE role).
+                // permitAll here would let any unauthenticated caller over-reserve or
+                // release another order's stock without any identity check.
                 .requestMatchers(HttpMethod.POST,
                     "/api/v1/inventory/reserve",
                     "/api/v1/inventory/confirm",
-                    "/api/v1/inventory/release").permitAll()
+                    "/api/v1/inventory/release").authenticated()
                 .anyRequest().authenticated())
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();

@@ -4,9 +4,9 @@ spring:
   application:
     name: flash-sale-service
   datasource:
-    url: jdbc:postgresql://localhost:5440/flashsaledb
-    username: flashsaleuser
-    password: flashsalepass
+    url: ${DB_URL:jdbc:postgresql://localhost:5440/flashsaledb}
+    username: ${DB_USER:flashsaleuser}
+    password: ${DB_PASSWORD:flashsalepass}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: ${DB_POOL_MAX:50}

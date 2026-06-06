@@ -51,7 +51,10 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class LoginWithGoogleHandler implements CommandHandler<LoginWithGoogleCommand, AuthResponseDTO> {
 
-    private static final String DEFAULT_ROLE = "ROLE_CUSTOMER";
+    // Must match a role actually seeded by DataSeeder. ROLE_USER is the baseline role granted to
+    // every self-registered account (password or Google) — an unseeded "ROLE_CUSTOMER" silently
+    // left Google-registered users with no role at all.
+    private static final String DEFAULT_ROLE = "ROLE_USER";
     private static final int MAX_USERNAME_SUFFIX_TRIES = 1000;
 
     private final GoogleIdTokenVerifierPort googleVerifier;

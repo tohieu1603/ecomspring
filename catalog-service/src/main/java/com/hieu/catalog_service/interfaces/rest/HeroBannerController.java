@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
@@ -60,7 +61,7 @@ public class HeroBannerController {
     @PatchMapping("/admin/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public Map<String, Object> update(@PathVariable Long id, @RequestBody BannerRequest req) {
-        var e = repo.findById(id).orElseThrow(() -> new RuntimeException("Banner not found: " + id));
+        var e = repo.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Banner not found: " + id));
         applyAll(e, req);
         e.setUpdatedAt(OffsetDateTime.now());
         return toMap(repo.save(e));
@@ -81,8 +82,18 @@ public class HeroBannerController {
         if (r.ctaLabel() != null)     e.setCtaLabel(r.ctaLabel());
         if (r.enabled() != null)      e.setEnabled(r.enabled());
         if (r.displayOrder() != null) e.setDisplayOrder(r.displayOrder());
-        if (r.startsAt() != null)     e.setStartsAt(OffsetDateTime.parse(r.startsAt()));
-        if (r.endsAt() != null)       e.setEndsAt(OffsetDateTime.parse(r.endsAt()));
+        if (r.startsAt() != null) {
+            try { e.setStartsAt(OffsetDateTime.parse(r.startsAt())); }
+            catch (java.time.format.DateTimeParseException ex) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid startsAt format (ISO-8601 with offset required): " + r.startsAt());
+            }
+        }
+        if (r.endsAt() != null) {
+            try { e.setEndsAt(OffsetDateTime.parse(r.endsAt())); }
+            catch (java.time.format.DateTimeParseException ex) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid endsAt format (ISO-8601 with offset required): " + r.endsAt());
+            }
+        }
     }
 
     private static Map<String, Object> toMap(HeroBannerJpaEntity e) {

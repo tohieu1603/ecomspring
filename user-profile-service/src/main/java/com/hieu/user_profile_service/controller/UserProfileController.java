@@ -80,11 +80,22 @@ public class UserProfileController {
         return service.getProfileByEmail(email);
     }
 
-    // ── Internal (no-auth) for saga ───────────────────────────────────────
+    // ── Internal for saga (ownership-enforced) ───────────────────────────
 
+    /**
+     * Used by order-service saga to resolve the shipping address. Only the owning user
+     * or an ADMIN may call this; previously the endpoint was .permitAll() which exposed
+     * every user's address to any authenticated caller (IDOR).
+     */
     @GetMapping("/{userId}/addresses/{addressId}")
     public AddressDTO getAddressInternal(@PathVariable String userId,
-                                         @PathVariable Long addressId) {
+                                         @PathVariable Long addressId,
+                                         @AuthenticationPrincipal AuthenticatedUser caller) {
+        boolean isAdmin = caller.hasAnyRole("ROLE_ADMIN", "ADMIN");
+        if (!isAdmin && !caller.userId().equals(userId)) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "Address does not belong to caller");
+        }
         return service.getAddress(userId, addressId);
     }
 }

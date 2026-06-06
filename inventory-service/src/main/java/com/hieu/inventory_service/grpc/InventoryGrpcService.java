@@ -43,6 +43,14 @@ public class InventoryGrpcService extends InventoryServiceGrpc.InventoryServiceI
     @Override
     public void reserveStock(ReserveStockRequest req, StreamObserver<ReserveStockResponse> obs) {
         try {
+            if (req.getOrderId() == null || req.getOrderId().isBlank()) {
+                obs.onError(Status.INVALID_ARGUMENT.withDescription("orderId must not be blank").asRuntimeException());
+                return;
+            }
+            if (req.getItemsList().isEmpty()) {
+                obs.onError(Status.INVALID_ARGUMENT.withDescription("items must not be empty").asRuntimeException());
+                return;
+            }
             var items = req.getItemsList().stream()
                 .map(i -> new ReservationRequest.ReservationItem(i.getProductId(), i.getQuantity()))
                 .toList();
@@ -65,6 +73,10 @@ public class InventoryGrpcService extends InventoryServiceGrpc.InventoryServiceI
     @Override
     public void confirmReservation(ConfirmReservationRequest req, StreamObserver<ConfirmReservationResponse> obs) {
         try {
+            if (req.getReservationId() == null || req.getReservationId().isBlank()) {
+                obs.onError(Status.INVALID_ARGUMENT.withDescription("reservationId must not be blank").asRuntimeException());
+                return;
+            }
             var result = inventoryService.confirmReservation(req.getReservationId());
             obs.onNext(ConfirmReservationResponse.newBuilder().setSuccess(result.success()).build());
             obs.onCompleted();
@@ -80,6 +92,10 @@ public class InventoryGrpcService extends InventoryServiceGrpc.InventoryServiceI
     @Override
     public void releaseStock(ReleaseStockRequest req, StreamObserver<ReleaseStockResponse> obs) {
         try {
+            if (req.getReservationId() == null || req.getReservationId().isBlank()) {
+                obs.onError(Status.INVALID_ARGUMENT.withDescription("reservationId must not be blank").asRuntimeException());
+                return;
+            }
             var result = inventoryService.releaseReservation(req.getReservationId());
             obs.onNext(ReleaseStockResponse.newBuilder().setSuccess(result.success()).build());
             obs.onCompleted();
