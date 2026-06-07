@@ -3,13 +3,12 @@ package com.hieu.order_service.infrastructure.persistence.jpa.entities;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Entity
 @Table(name = "orders",
@@ -20,8 +19,14 @@ import java.util.List;
 @Getter @Setter
 public class OrderJpaEntity {
 
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Id
+    @Column(length = 36)
+    private String id;
+
+    @PrePersist
+    void assignId() {
+        if (id == null) id = UUID.randomUUID().toString();
+    }
 
     @Column(name = "order_number", nullable = false, length = 30)
     private String orderNumber;
@@ -80,14 +85,14 @@ public class OrderJpaEntity {
     @Column(name = "payment_method", nullable = false, length = 30)
     private String paymentMethod;
 
-    @Column(name = "payment_id")
-    private Long paymentId;
+    @Column(name = "payment_id", length = 36)
+    private String paymentId;
 
     @Column(name = "reservation_id")
     private String reservationId;
 
-    @Column(name = "shipment_id")
-    private Long shipmentId;
+    @Column(name = "shipment_id", length = 36)
+    private String shipmentId;
 
     @Column(name = "idempotency_key", length = 128)
     private String idempotencyKey;

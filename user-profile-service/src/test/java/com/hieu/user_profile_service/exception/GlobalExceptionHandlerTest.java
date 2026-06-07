@@ -51,7 +51,7 @@ class GlobalExceptionHandlerTest {
     @Test
     @DisplayName("AddressNotFound -> 404 NOT_FOUND with NOT_FOUND code and exception message")
     void handleAddressNotFound() {
-        var ex = new AddressNotFoundException(7L);
+        var ex = new AddressNotFoundException("7");
         ResponseEntity<ErrorResponse> resp = handler.handleAddressNotFound(ex, request("uri=/addr"));
 
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);

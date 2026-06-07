@@ -10,12 +10,12 @@ import java.util.UUID;
 public record ShipmentDeliveredEvent(
         String eventId,
         Instant occurredOn,
-        Long shipmentId,
+        String shipmentId,
         String orderId,
         String userId,
         Instant actualDeliveryDate
 ) {
-    public static ShipmentDeliveredEvent of(Long shipmentId, String orderId, String userId,
+    public static ShipmentDeliveredEvent of(String shipmentId, String orderId, String userId,
                                              Instant actualDeliveryDate) {
         return new ShipmentDeliveredEvent(
                 UUID.randomUUID().toString(),

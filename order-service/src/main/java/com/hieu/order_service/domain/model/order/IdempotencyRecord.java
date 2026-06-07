@@ -12,14 +12,14 @@ public class IdempotencyRecord {
     public enum Status { PROCESSING, COMPLETED, FAILED }
 
     private final String idempotencyKey;
-    private Long orderId;
+    private String orderId;
     private Status status;
     private String responseBody;
     private final Instant createdAt;
     private final Instant expiresAt;
     private final Instant processingStartedAt;
 
-    private IdempotencyRecord(String idempotencyKey, Status status, Long orderId,
+    private IdempotencyRecord(String idempotencyKey, Status status, String orderId,
                                String responseBody, Instant createdAt, Instant expiresAt,
                                Instant processingStartedAt) {
         this.idempotencyKey = idempotencyKey;
@@ -36,13 +36,13 @@ public class IdempotencyRecord {
         return new IdempotencyRecord(key, Status.PROCESSING, null, null, now, now.plus(Duration.ofMinutes(30)), now);
     }
 
-    public static IdempotencyRecord reconstitute(String key, Long orderId, Status status,
+    public static IdempotencyRecord reconstitute(String key, String orderId, Status status,
                                                   String responseBody, Instant createdAt,
                                                   Instant expiresAt, Instant processingStartedAt) {
         return new IdempotencyRecord(key, status, orderId, responseBody, createdAt, expiresAt, processingStartedAt);
     }
 
-    public void markCompleted(Long orderId, String json) {
+    public void markCompleted(String orderId, String json) {
         this.orderId = orderId;
         this.status = Status.COMPLETED;
         this.responseBody = json;

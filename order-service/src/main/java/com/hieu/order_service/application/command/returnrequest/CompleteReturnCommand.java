@@ -5,5 +5,5 @@ import com.hieu.order_service.application.dto.ReturnRequestDTO;
 
 import java.math.BigDecimal;
 
-public record CompleteReturnCommand(Long returnRequestId, BigDecimal refundAmount)
+public record CompleteReturnCommand(String returnRequestId, BigDecimal refundAmount)
         implements Command<ReturnRequestDTO> {}

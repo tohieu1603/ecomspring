@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS shipments (
-    id                      BIGSERIAL PRIMARY KEY,
+    id                      VARCHAR(36)  PRIMARY KEY,
     order_id                VARCHAR(64)  NOT NULL,
     user_id                 VARCHAR(64)  NOT NULL,
     carrier                 VARCHAR(32),

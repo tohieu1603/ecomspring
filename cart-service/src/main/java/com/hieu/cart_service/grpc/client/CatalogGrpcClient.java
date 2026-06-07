@@ -31,10 +31,10 @@ public class CatalogGrpcClient {
     /**
      * Fetches a product with variants by id.
      *
-     * @param productId catalog product id
+     * @param productId catalog product id (UUID string)
      * @return response or empty on any failure
      */
-    public Optional<GetProductResponse> getProduct(Long productId) {
+    public Optional<GetProductResponse> getProduct(String productId) {
         try {
             var resp = stub.withDeadlineAfter(DEADLINE_MS, TimeUnit.MILLISECONDS)
                 .getProduct(GetProductRequest.newBuilder().setProductId(productId).build());
@@ -66,12 +66,12 @@ public class CatalogGrpcClient {
      * Fetches a variant by id — resolves via product lookup then variant scan.
      * Returns empty if product not found or variant missing in response.
      */
-    public Optional<Variant> getVariantById(Long productId, Long variantId) {
+    public Optional<Variant> getVariantById(String productId, String variantId) {
         return getProduct(productId)
             .filter(GetProductResponse::getFound)
             .map(GetProductResponse::getProduct)
             .flatMap(p -> p.getVariantsList().stream()
-                .filter(v -> v.getId() == variantId)
+                .filter(v -> variantId.equals(v.getId()))
                 .findFirst());
     }
 }

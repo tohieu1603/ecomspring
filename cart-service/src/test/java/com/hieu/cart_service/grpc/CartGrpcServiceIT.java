@@ -42,13 +42,13 @@ class CartGrpcServiceIT extends AbstractIntegrationTest {
         userId = "grpc-user-" + UUID.randomUUID();
 
         // Seed cart via CartService
-        cartService.addItem(userId, new AddToCartRequest(20L, 500L, 3, null));
+        cartService.addItem(userId, new AddToCartRequest("20", "500", 3, null));
 
         GetCartResponse resp = callGetCart(userId);
 
         assertThat(resp.getUserId()).isEqualTo(userId);
         assertThat(resp.getItemsList()).hasSize(1);
-        assertThat(resp.getItemsList().get(0).getVariantId()).isEqualTo(500L);
+        assertThat(resp.getItemsList().get(0).getVariantId()).isEqualTo("500");
         assertThat(resp.getItemsList().get(0).getQuantity()).isEqualTo(3);
     }
 

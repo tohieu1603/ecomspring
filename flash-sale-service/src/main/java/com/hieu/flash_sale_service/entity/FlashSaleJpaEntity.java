@@ -24,8 +24,8 @@ import java.time.Instant;
 public class FlashSaleJpaEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(length = 36)
+    private String id;
 
     @Column(name = "product_id", nullable = false, length = 64)
     private String productId;
@@ -72,6 +72,7 @@ public class FlashSaleJpaEntity {
 
     @PrePersist
     void prePersist() {
+        if (this.id == null) this.id = java.util.UUID.randomUUID().toString();
         var now = Instant.now();
         this.createdAt = now;
         this.updatedAt = now;

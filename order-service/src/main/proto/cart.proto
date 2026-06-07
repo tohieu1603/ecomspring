@@ -38,11 +38,11 @@ message ClearCartResponse {
 }
 
 message CartItemSnapshot {
-  int64  id            = 1;
+  string id            = 1;
   string user_id       = 2;
-  int64  product_id    = 3;
+  string product_id    = 3;
   string product_name  = 4;
-  int64  variant_id    = 5;
+  string variant_id    = 5;
   string variant_sku   = 6;
   string variant_image = 7;
   string unit_price    = 8;  // BigDecimal as string

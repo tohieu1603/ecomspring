@@ -7,6 +7,7 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.UUID;
 
 @Entity
 @Table(
@@ -23,8 +24,8 @@ import java.time.Instant;
 public class PaymentJpaEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(length = 36)
+    private String id;
 
     @Column(name = "order_id", length = 64, nullable = false, unique = true)
     private String orderId;
@@ -79,6 +80,9 @@ public class PaymentJpaEntity {
 
     @PrePersist
     void prePersist() {
+        if (this.id == null) {
+            this.id = java.util.UUID.randomUUID().toString();
+        }
         Instant now = Instant.now();
         this.createdAt = now;
         this.updatedAt = now;

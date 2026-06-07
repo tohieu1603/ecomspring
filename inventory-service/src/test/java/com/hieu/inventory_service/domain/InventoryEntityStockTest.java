@@ -16,7 +16,7 @@ class InventoryEntityStockTest {
 
     private static InventoryEntity inventory(int quantity, int reserved, int minStock) {
         return InventoryEntity.builder()
-                .id(1L).productId(100L).sku("SKU-1")
+                .id("1").productId("100").sku("SKU-1")
                 .quantity(quantity).reservedQuantity(reserved).minStockLevel(minStock)
                 .build();
     }

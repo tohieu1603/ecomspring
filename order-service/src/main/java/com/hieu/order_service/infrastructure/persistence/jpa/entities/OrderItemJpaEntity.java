@@ -11,21 +11,27 @@ import java.math.BigDecimal;
 @Getter @Setter
 public class OrderItemJpaEntity {
 
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Id
+    @Column(length = 36)
+    private String id;
+
+    @PrePersist
+    void assignId() {
+        if (id == null) id = java.util.UUID.randomUUID().toString();
+    }
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id", nullable = false)
     private OrderJpaEntity order;
 
-    @Column(name = "product_id", nullable = false)
-    private Long productId;
+    @Column(name = "product_id", nullable = false, length = 36)
+    private String productId;
 
     @Column(name = "product_name", nullable = false)
     private String productName;
 
-    @Column(name = "variant_id")
-    private Long variantId;
+    @Column(name = "variant_id", length = 36)
+    private String variantId;
 
     @Column(name = "variant_sku")
     private String variantSku;

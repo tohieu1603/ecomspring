@@ -35,7 +35,7 @@ public class ReturnRequestController {
     @PostMapping("/{orderId}")
     @ResponseStatus(HttpStatus.CREATED)
     public ReturnRequestDTO requestReturn(
-            @PathVariable Long orderId,
+            @PathVariable String orderId,
             @Valid @RequestBody CreateReturnRequest req,
             @AuthenticationPrincipal AuthenticatedUser user) {
         return requestReturnHandler.handle(new RequestReturnCommand(
@@ -43,7 +43,7 @@ public class ReturnRequestController {
     }
 
     @GetMapping("/{returnRequestId}")
-    public ReturnRequestDTO getById(@PathVariable Long returnRequestId,
+    public ReturnRequestDTO getById(@PathVariable String returnRequestId,
                                     @AuthenticationPrincipal AuthenticatedUser user) {
         var isAdmin = user.roles().contains("ROLE_ADMIN");
         return getReturnRequestByIdHandler.handle(
@@ -60,7 +60,7 @@ public class ReturnRequestController {
 
     @PostMapping("/{returnRequestId}/approve")
     @PreAuthorize("hasRole('ADMIN')")
-    public ReturnRequestDTO approve(@PathVariable Long returnRequestId,
+    public ReturnRequestDTO approve(@PathVariable String returnRequestId,
                                     @RequestBody Map<String, Object> body) {
         var refund = body.get(FIELD_REFUND_AMOUNT) != null ? new BigDecimal(body.get(FIELD_REFUND_AMOUNT).toString()) : null;
         return approveReturnHandler.handle(new ApproveReturnCommand(
@@ -69,14 +69,14 @@ public class ReturnRequestController {
 
     @PostMapping("/{returnRequestId}/reject")
     @PreAuthorize("hasRole('ADMIN')")
-    public ReturnRequestDTO reject(@PathVariable Long returnRequestId,
+    public ReturnRequestDTO reject(@PathVariable String returnRequestId,
                                    @RequestBody Map<String, String> body) {
         return rejectReturnHandler.handle(new RejectReturnCommand(returnRequestId, body.get("adminNote")));
     }
 
     @PostMapping("/{returnRequestId}/complete")
     @PreAuthorize("hasRole('ADMIN')")
-    public ReturnRequestDTO complete(@PathVariable Long returnRequestId,
+    public ReturnRequestDTO complete(@PathVariable String returnRequestId,
                                      @RequestBody(required = false) Map<String, Object> body) {
         var refund = body != null && body.get(FIELD_REFUND_AMOUNT) != null
                 ? new BigDecimal(body.get(FIELD_REFUND_AMOUNT).toString()) : null;

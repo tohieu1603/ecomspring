@@ -46,7 +46,7 @@ public class ShipmentController {
     /** JWT: own shipment or admin all. */
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<ShipmentDTO>> getShipment(
-            @PathVariable Long id,
+            @PathVariable String id,
             @AuthenticationPrincipal AuthenticatedUser user) {
         var dto = shipmentService.getShipmentForUser(id, user.userId(), user.hasRole("ROLE_ADMIN"));
         return ResponseEntity.ok(ApiResponse.ok(dto));
@@ -79,7 +79,7 @@ public class ShipmentController {
     @PutMapping("/{id}/status")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<ShipmentDTO>> updateStatus(
-            @PathVariable Long id,
+            @PathVariable String id,
             @Valid @RequestBody UpdateStatusRequest req) {
         var dto = shipmentService.updateStatus(id, req.status(), req.notes());
         return ResponseEntity.ok(ApiResponse.ok(dto, "Status updated"));
@@ -89,7 +89,7 @@ public class ShipmentController {
     @PutMapping("/{id}/tracking")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<ShipmentDTO>> assignTracking(
-            @PathVariable Long id,
+            @PathVariable String id,
             @Valid @RequestBody AssignTrackingRequest req) {
         var dto = shipmentService.assignTracking(id, req.carrier(), req.trackingNumber());
         return ResponseEntity.ok(ApiResponse.ok(dto, "Tracking assigned"));
@@ -99,7 +99,7 @@ public class ShipmentController {
     @PutMapping("/{id}/estimated-delivery")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<ShipmentDTO>> setEstimatedDelivery(
-            @PathVariable Long id,
+            @PathVariable String id,
             @Valid @RequestBody SetEstimatedDeliveryRequest req) {
         var dto = shipmentService.setEstimatedDelivery(id, req.estimatedDeliveryDate());
         return ResponseEntity.ok(ApiResponse.ok(dto, "Estimated delivery date set"));
@@ -108,7 +108,7 @@ public class ShipmentController {
     /** ADMIN: OUT_FOR_DELIVERY → DELIVERED. */
     @PostMapping("/{id}/delivered")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<ShipmentDTO>> markDelivered(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<ShipmentDTO>> markDelivered(@PathVariable String id) {
         var dto = shipmentService.markDelivered(id);
         return ResponseEntity.ok(ApiResponse.ok(dto, "Shipment marked as delivered"));
     }

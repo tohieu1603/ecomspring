@@ -34,7 +34,7 @@ public class InventoryController {
 
     @GetMapping("/{productId}")
     @Operation(summary = "Get inventory by productId")
-    public ResponseEntity<InventoryDTO> getByProductId(@PathVariable Long productId) {
+    public ResponseEntity<InventoryDTO> getByProductId(@PathVariable String productId) {
         return ResponseEntity.ok(inventoryService.getByProductId(productId));
     }
 
@@ -77,7 +77,7 @@ public class InventoryController {
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Adjust stock delta")
     public ResponseEntity<InventoryDTO> adjustStock(
-        @PathVariable Long productId,
+        @PathVariable String productId,
         @RequestBody Map<String, Object> body,
         @AuthenticationPrincipal Object principal) {
         Integer delta = body.get("delta") instanceof Number n ? n.intValue() : Integer.parseInt(String.valueOf(body.get("delta")));
@@ -95,7 +95,7 @@ public class InventoryController {
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Stock movement history (audit trail)")
     public ResponseEntity<Page<StockMovementDTO>> movements(
-        @RequestParam(required = false) Long productId,
+        @RequestParam(required = false) String productId,
         @RequestParam(required = false) String sku,
         @RequestParam(defaultValue = "0") int page,
         @RequestParam(defaultValue = "50") int size) {
@@ -106,7 +106,7 @@ public class InventoryController {
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Stock movement history for a productId")
     public ResponseEntity<Page<StockMovementDTO>> historyByProduct(
-        @PathVariable Long productId,
+        @PathVariable String productId,
         @RequestParam(defaultValue = "0") int page,
         @RequestParam(defaultValue = "50") int size) {
         return ResponseEntity.ok(inventoryService.history(productId, null, page, size));

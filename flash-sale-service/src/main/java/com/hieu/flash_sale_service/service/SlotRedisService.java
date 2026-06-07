@@ -43,7 +43,7 @@ public class SlotRedisService {
      * @return remaining slots after decrement, 0 if insufficient, -1 on cache miss
      */
     @Retryable(retryFor = Exception.class, maxAttempts = 2)
-    public long reserveSlots(Long saleId, int quantity) {
+    public long reserveSlots(String saleId, int quantity) {
         var key = KEY_PREFIX + saleId;
         Long result = redisTemplate.execute(reserveSlotsScript, List.of(key), String.valueOf(quantity));
         return result == null ? -1L : result;
@@ -51,31 +51,31 @@ public class SlotRedisService {
 
     /** Fallback when retry exhausted — returns -1 to trigger DB-based seeding path. */
     @Recover
-    public long recoverReserveSlots(Exception ex, Long saleId, int quantity) {
+    public long recoverReserveSlots(Exception ex, String saleId, int quantity) {
         log.warn("Redis reserve failed for saleId={}, quantity={}: {}", saleId, quantity, ex.getMessage());
         return -1L;
     }
 
     /** Seeds the counter with SET NX + TTL (safe on restart). */
-    public void seedIfAbsent(Long saleId, int remaining) {
+    public void seedIfAbsent(String saleId, int remaining) {
         var key = KEY_PREFIX + saleId;
         redisTemplate.opsForValue().setIfAbsent(key, String.valueOf(remaining), SLOT_TTL);
     }
 
     /** Seeds unconditionally (use only during activate). */
-    public void seed(Long saleId, int remaining) {
+    public void seed(String saleId, int remaining) {
         var key = KEY_PREFIX + saleId;
         redisTemplate.opsForValue().set(key, String.valueOf(remaining), SLOT_TTL);
     }
 
     /** Increments the slot counter (rollback path). */
-    public void incrementBy(Long saleId, int quantity) {
+    public void incrementBy(String saleId, int quantity) {
         var key = KEY_PREFIX + saleId;
         redisTemplate.opsForValue().increment(key, quantity);
     }
 
     /** Reads the current counter value; returns null if key absent. */
-    public Integer getRemaining(Long saleId) {
+    public Integer getRemaining(String saleId) {
         var key = KEY_PREFIX + saleId;
         var val = redisTemplate.opsForValue().get(key);
         return val == null ? null : Integer.parseInt(val);

@@ -30,11 +30,11 @@ class CartItemTest {
 
     static CartItem aCartItem(int quantity, BigDecimal unitPrice) {
         return CartItem.builder()
-                .id(1L)
+                .id("1")
                 .userId("user-123")
-                .productId(10L)
+                .productId("10")
                 .productName("Test Product")
-                .variantId(100L)
+                .variantId("100")
                 .variantSku("SKU-TEST")
                 .unitPrice(unitPrice)
                 .quantity(quantity)

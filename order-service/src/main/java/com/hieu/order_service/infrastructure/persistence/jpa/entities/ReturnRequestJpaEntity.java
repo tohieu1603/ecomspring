@@ -6,17 +6,24 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.UUID;
 
 @Entity
 @Table(name = "return_requests")
 @Getter @Setter
 public class ReturnRequestJpaEntity {
 
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Id
+    @Column(length = 36)
+    private String id;
 
-    @Column(name = "order_id", nullable = false)
-    private Long orderId;
+    @PrePersist
+    void assignId() {
+        if (id == null) id = UUID.randomUUID().toString();
+    }
+
+    @Column(name = "order_id", nullable = false, length = 36)
+    private String orderId;
 
     @Column(name = "user_id", nullable = false)
     private String userId;

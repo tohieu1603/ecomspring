@@ -121,7 +121,7 @@ public class IdempotencyService {
     }
 
     @Transactional
-    public void markCompleted(String key, Long orderId, OrderDTO dto) {
+    public void markCompleted(String key, String orderId, OrderDTO dto) {
         idempotencyRepository.findByKey(key).ifPresent(row -> {
             try {
                 var json = objectMapper.writeValueAsString(dto);

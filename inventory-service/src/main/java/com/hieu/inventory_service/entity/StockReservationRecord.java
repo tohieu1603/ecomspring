@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.Instant;
+import java.util.UUID;
 
 /**
  * Persists reservation state per order for idempotency and compensation.
@@ -18,8 +19,8 @@ import java.time.Instant;
 public class StockReservationRecord {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(length = 36)
+    private String id;
 
     @Column(name = "order_id", nullable = false, unique = true, length = 64)
     private String orderId;
@@ -40,6 +41,7 @@ public class StockReservationRecord {
 
     @PrePersist
     protected void onCreate() {
+        if (id == null) id = UUID.randomUUID().toString();
         createdAt = Instant.now();
         updatedAt = Instant.now();
     }

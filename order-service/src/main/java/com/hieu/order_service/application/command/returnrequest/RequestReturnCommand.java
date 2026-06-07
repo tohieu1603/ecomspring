@@ -4,7 +4,7 @@ import com.hieu.order_service.application.common.Command;
 import com.hieu.order_service.application.dto.ReturnRequestDTO;
 
 public record RequestReturnCommand(
-        Long orderId,
+        String orderId,
         String userId,
         String reason,
         String returnType,

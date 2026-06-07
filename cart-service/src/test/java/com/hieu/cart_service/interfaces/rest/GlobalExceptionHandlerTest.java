@@ -54,7 +54,7 @@ class GlobalExceptionHandlerTest {
     @Test
     @DisplayName("CartItemNotFoundException -> 404 CART_NOT_FOUND with the exception message")
     void notFound() {
-        var ex = new CartItemNotFoundException("u1", 100L);
+        var ex = new CartItemNotFoundException("u1", "100");
 
         var resp = handler.notFound(ex, req);
 

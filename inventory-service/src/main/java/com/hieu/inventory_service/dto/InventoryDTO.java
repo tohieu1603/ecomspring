@@ -11,8 +11,8 @@ import java.time.Instant;
 @AllArgsConstructor
 @Builder
 public class InventoryDTO {
-    private Long id;
-    private Long productId;
+    private String id;
+    private String productId;
     private String sku;
     private Integer quantity;
     private Integer reservedQuantity;

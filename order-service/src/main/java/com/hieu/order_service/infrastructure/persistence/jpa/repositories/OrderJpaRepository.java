@@ -13,31 +13,31 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
-public interface OrderJpaRepository extends JpaRepository<OrderJpaEntity, Long> {
+public interface OrderJpaRepository extends JpaRepository<OrderJpaEntity, String> {
 
     @Query("SELECT o FROM OrderJpaEntity o LEFT JOIN FETCH o.items WHERE o.id = :id")
-    Optional<OrderJpaEntity> findByIdWithItems(@Param("id") Long id);
+    Optional<OrderJpaEntity> findByIdWithItems(@Param("id") String id);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT o FROM OrderJpaEntity o LEFT JOIN FETCH o.items WHERE o.id = :id")
-    Optional<OrderJpaEntity> findByIdWithLock(@Param("id") Long id);
+    Optional<OrderJpaEntity> findByIdWithLock(@Param("id") String id);
 
     Optional<OrderJpaEntity> findByOrderNumber(String orderNumber);
 
     @Query("SELECT o.id FROM OrderJpaEntity o ORDER BY o.createdAt DESC, o.id DESC")
-    List<Long> findFirstPageIds(Pageable pageable);
+    List<String> findFirstPageIds(Pageable pageable);
 
     @Query("SELECT o.id FROM OrderJpaEntity o WHERE (o.createdAt < :createdAt) OR (o.createdAt = :createdAt AND o.id < :id) ORDER BY o.createdAt DESC, o.id DESC")
-    List<Long> findIdsAfterCursor(@Param("createdAt") Instant createdAt, @Param("id") Long id, Pageable pageable);
+    List<String> findIdsAfterCursor(@Param("createdAt") Instant createdAt, @Param("id") String id, Pageable pageable);
 
     @Query("SELECT o.id FROM OrderJpaEntity o WHERE o.status = :status ORDER BY o.createdAt DESC, o.id DESC")
-    List<Long> findFirstPageIdsByStatus(@Param("status") String status, Pageable pageable);
+    List<String> findFirstPageIdsByStatus(@Param("status") String status, Pageable pageable);
 
     @Query("SELECT o.id FROM OrderJpaEntity o WHERE o.status = :status AND ((o.createdAt < :createdAt) OR (o.createdAt = :createdAt AND o.id < :id)) ORDER BY o.createdAt DESC, o.id DESC")
-    List<Long> findIdsAfterCursorByStatus(@Param("status") String status, @Param("createdAt") Instant createdAt, @Param("id") Long id, Pageable pageable);
+    List<String> findIdsAfterCursorByStatus(@Param("status") String status, @Param("createdAt") Instant createdAt, @Param("id") String id, Pageable pageable);
 
     @Query("SELECT o FROM OrderJpaEntity o LEFT JOIN FETCH o.items WHERE o.id IN :ids")
-    List<OrderJpaEntity> findAllByIdInWithItems(@Param("ids") List<Long> ids);
+    List<OrderJpaEntity> findAllByIdInWithItems(@Param("ids") List<String> ids);
 
     @org.springframework.data.jpa.repository.EntityGraph(attributePaths = "items")
     Page<OrderJpaEntity> findByUserId(String userId, Pageable pageable);
@@ -46,13 +46,13 @@ public interface OrderJpaRepository extends JpaRepository<OrderJpaEntity, Long> 
     Page<OrderJpaEntity> findByUserIdAndStatus(String userId, String status, Pageable pageable);
 
     @Query("SELECT o.id FROM OrderJpaEntity o WHERE o.userId = :userId ORDER BY o.createdAt DESC, o.id DESC")
-    List<Long> findFirstPageIdsByUserId(@Param("userId") String userId, Pageable pageable);
+    List<String> findFirstPageIdsByUserId(@Param("userId") String userId, Pageable pageable);
 
     @Query("SELECT o.id FROM OrderJpaEntity o WHERE o.userId = :userId AND ((o.createdAt < :createdAt) OR (o.createdAt = :createdAt AND o.id < :id)) ORDER BY o.createdAt DESC, o.id DESC")
-    List<Long> findIdsAfterCursorByUserId(@Param("userId") String userId, @Param("createdAt") Instant createdAt, @Param("id") Long id, Pageable pageable);
+    List<String> findIdsAfterCursorByUserId(@Param("userId") String userId, @Param("createdAt") Instant createdAt, @Param("id") String id, Pageable pageable);
 
     @Query("SELECT COUNT(o) > 0 FROM OrderJpaEntity o JOIN o.items i WHERE o.userId = :userId AND i.productId = :productId AND o.status IN ('DELIVERED', 'RETURNED')")
-    boolean existsByUserIdAndProductId(@Param("userId") String userId, @Param("productId") Long productId);
+    boolean existsByUserIdAndProductId(@Param("userId") String userId, @Param("productId") String productId);
 
     /**
      * Per-user aggregation for the admin customers list. Counts only

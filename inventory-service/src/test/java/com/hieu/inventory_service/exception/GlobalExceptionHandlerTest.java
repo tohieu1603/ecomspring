@@ -56,7 +56,7 @@ class GlobalExceptionHandlerTest {
     @Test
     @DisplayName("InventoryNotFoundException -> 404 INVENTORY-6004 with original message")
     void notFound() {
-        var ex = new InventoryNotFoundException(42L);
+        var ex = new InventoryNotFoundException("42");
         var resp = handler.notFound(ex, req);
         assertBody(resp, HttpStatus.NOT_FOUND, ErrorCode.INVENTORY_NOT_FOUND.code(),
                 "/api/v1/inventory/test");
@@ -66,7 +66,7 @@ class GlobalExceptionHandlerTest {
     @Test
     @DisplayName("InsufficientStockException -> 409 INVENTORY-6009 with original message")
     void insufficientStock() {
-        var ex = new InsufficientStockException(7L, 2, 10);
+        var ex = new InsufficientStockException("7", 2, 10);
         var resp = handler.insufficientStock(ex, req);
         assertBody(resp, HttpStatus.CONFLICT, ErrorCode.INVENTORY_INSUFFICIENT.code(),
                 "/api/v1/inventory/test");

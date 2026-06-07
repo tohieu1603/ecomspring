@@ -1,7 +1,7 @@
--- Order Service: initial schema
+-- Order Service: initial schema (UUID string PKs)
 
 CREATE TABLE IF NOT EXISTS orders (
-    id               BIGSERIAL PRIMARY KEY,
+    id               VARCHAR(36)     NOT NULL PRIMARY KEY,
     order_number     VARCHAR(30)     NOT NULL,
     user_id          VARCHAR(255)    NOT NULL,
     status           VARCHAR(30)     NOT NULL,
@@ -20,9 +20,9 @@ CREATE TABLE IF NOT EXISTS orders (
     postal_code      VARCHAR(20),
     notes            VARCHAR(1000),
     payment_method   VARCHAR(30)     NOT NULL,
-    payment_id       BIGINT,
+    payment_id       VARCHAR(36),
     reservation_id   VARCHAR(128),
-    shipment_id      BIGINT,
+    shipment_id      VARCHAR(36),
     idempotency_key  VARCHAR(128),
     failure_reason   TEXT,
     created_at       TIMESTAMPTZ     NOT NULL DEFAULT NOW(),
@@ -38,11 +38,11 @@ CREATE TABLE IF NOT EXISTS orders (
 );
 
 CREATE TABLE IF NOT EXISTS order_items (
-    id           BIGSERIAL PRIMARY KEY,
-    order_id     BIGINT          NOT NULL,
-    product_id   BIGINT          NOT NULL,
+    id           VARCHAR(36)     NOT NULL PRIMARY KEY,
+    order_id     VARCHAR(36)     NOT NULL,
+    product_id   VARCHAR(36)     NOT NULL,
     product_name VARCHAR(500)    NOT NULL,
-    variant_id   BIGINT,
+    variant_id   VARCHAR(36),
     variant_sku  VARCHAR(100),
     variant_image VARCHAR(1000),
     unit_price   NUMERIC(19, 2)  NOT NULL,
@@ -51,8 +51,8 @@ CREATE TABLE IF NOT EXISTS order_items (
 );
 
 CREATE TABLE IF NOT EXISTS return_requests (
-    id            BIGSERIAL PRIMARY KEY,
-    order_id      BIGINT          NOT NULL,
+    id            VARCHAR(36)     NOT NULL PRIMARY KEY,
+    order_id      VARCHAR(36)     NOT NULL,
     user_id       VARCHAR(255)    NOT NULL,
     reason        VARCHAR(1000)   NOT NULL,
     return_type   VARCHAR(20)     NOT NULL,
@@ -66,7 +66,7 @@ CREATE TABLE IF NOT EXISTS return_requests (
 
 CREATE TABLE IF NOT EXISTS idempotency_records (
     idempotency_key      VARCHAR(128)    NOT NULL PRIMARY KEY,
-    order_id             BIGINT,
+    order_id             VARCHAR(36),
     status               VARCHAR(20)     NOT NULL DEFAULT 'PROCESSING',
     response_body        TEXT,
     created_at           TIMESTAMPTZ     NOT NULL DEFAULT NOW(),

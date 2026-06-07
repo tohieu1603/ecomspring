@@ -7,9 +7,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
 
-public interface ReturnRequestJpaRepository extends JpaRepository<ReturnRequestJpaEntity, Long> {
+public interface ReturnRequestJpaRepository extends JpaRepository<ReturnRequestJpaEntity, String> {
 
     Page<ReturnRequestJpaEntity> findByUserId(String userId, Pageable pageable);
 
-    Optional<ReturnRequestJpaEntity> findByOrderId(Long orderId);
+    Optional<ReturnRequestJpaEntity> findByOrderId(String orderId);
 }

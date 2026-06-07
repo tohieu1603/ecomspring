@@ -7,7 +7,7 @@ import java.time.Instant;
 
 /** Read model for a flash sale. */
 public record FlashSaleDTO(
-        Long id,
+        String id,
         String productId,
         String productName,
         BigDecimal originalPrice,

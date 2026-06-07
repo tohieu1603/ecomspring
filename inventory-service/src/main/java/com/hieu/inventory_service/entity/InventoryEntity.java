@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.Instant;
+import java.util.UUID;
 
 /**
  * JPA entity for the {@code inventories} table.
@@ -20,11 +21,11 @@ import java.time.Instant;
 public class InventoryEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(length = 36)
+    private String id;
 
-    @Column(name = "product_id", nullable = false, unique = true)
-    private Long productId;
+    @Column(name = "product_id", nullable = false, unique = true, length = 36)
+    private String productId;
 
     @Column(nullable = false, unique = true, length = 64)
     private String sku;
@@ -47,6 +48,11 @@ public class InventoryEntity {
     private Long version;
 
     @PrePersist
+    protected void onCreate() {
+        if (id == null) id = UUID.randomUUID().toString();
+        lastUpdated = Instant.now();
+    }
+
     @PreUpdate
     protected void onUpdate() {
         lastUpdated = Instant.now();

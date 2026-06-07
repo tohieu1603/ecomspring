@@ -6,7 +6,7 @@ import java.time.Instant;
 public record FlashSaleSlotReservedEvent(
         String eventId,
         Instant occurredOn,
-        Long saleId,
+        String saleId,
         String userId,
         int quantity,
         int remainingSlots

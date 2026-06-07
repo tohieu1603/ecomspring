@@ -32,7 +32,7 @@ public class AdminOrderActionHandler {
     private final DomainEventPublisher eventPublisher;
 
     @Transactional
-    public OrderDTO apply(Long orderId, Action action, Long shipmentId) {
+    public OrderDTO apply(String orderId, Action action, String shipmentId) {
         var order = orderRepository.findById(OrderId.of(orderId))
                 .orElseThrow(() -> new OrderNotFoundException(orderId));
         switch (action) {

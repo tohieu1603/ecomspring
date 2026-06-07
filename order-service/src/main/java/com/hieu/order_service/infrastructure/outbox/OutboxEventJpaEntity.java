@@ -15,8 +15,13 @@ import java.time.Instant;
 public class OutboxEventJpaEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(length = 36)
+    private String id;
+
+    @PrePersist
+    void assignId() {
+        if (id == null) id = java.util.UUID.randomUUID().toString();
+    }
 
     @Column(name = "aggregate_type", nullable = false, length = 64)
     private String aggregateType;

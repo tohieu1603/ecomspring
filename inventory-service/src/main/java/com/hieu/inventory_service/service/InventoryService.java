@@ -62,7 +62,7 @@ public class InventoryService {
     // -------------------------------------------------------------------------
 
     @Transactional
-    public InventoryDTO create(Long productId, String sku, Integer quantity, Integer minStockLevel) {
+    public InventoryDTO create(String productId, String sku, Integer quantity, Integer minStockLevel) {
         var entity = InventoryEntity.builder()
             .productId(productId)
             .sku(sku)
@@ -76,7 +76,7 @@ public class InventoryService {
     }
 
     @Transactional(readOnly = true)
-    public InventoryDTO getByProductId(Long productId) {
+    public InventoryDTO getByProductId(String productId) {
         return inventoryRepository.findByProductId(productId)
             .map(this::toDTO)
             .orElseThrow(() -> new InventoryNotFoundException(productId));
@@ -98,7 +98,7 @@ public class InventoryService {
     }
 
     @Transactional
-    public InventoryDTO adjustStock(Long productId, int delta) {
+    public InventoryDTO adjustStock(String productId, int delta) {
         return adjustStock(productId, delta, null, null);
     }
 
@@ -110,7 +110,7 @@ public class InventoryService {
      * in the history view.
      */
     @Transactional
-    public InventoryDTO adjustStock(Long productId, int delta, String actor, String note) {
+    public InventoryDTO adjustStock(String productId, int delta, String actor, String note) {
         var inventories = inventoryRepository.findAllByProductIdInWithLock(List.of(productId));
         var entity = inventories.stream().findFirst()
             .orElseThrow(() -> new InventoryNotFoundException(productId));
@@ -154,7 +154,7 @@ public class InventoryService {
      */
     @Transactional(readOnly = true)
     public org.springframework.data.domain.Page<StockMovementDTO> history(
-            Long productId, String sku, int page, int size) {
+            String productId, String sku, int page, int size) {
         var pageReq = org.springframework.data.domain.PageRequest.of(page, Math.min(size, 200));
         org.springframework.data.domain.Page<StockMovement> p;
         if (sku != null && !sku.isBlank()) {
@@ -247,7 +247,7 @@ public class InventoryService {
      * it just provides the lock scope.
      */
     @Transactional
-    public void seedRedisFromDb(List<Long> productIds) {
+    public void seedRedisFromDb(List<String> productIds) {
         var inventories = inventoryRepository.findAllByProductIdInWithLock(productIds);
         for (var inv : inventories) {
             redisService.setStockIfAbsent(inv.getProductId(), inv.getAvailableQuantity());
@@ -260,7 +260,7 @@ public class InventoryService {
         maxAttempts = 3,
         backoff = @Backoff(delay = 100, multiplier = 2)
     )
-    public ReservationResult doReserveDb(String orderId, Map<Long, Integer> itemMap) {
+    public ReservationResult doReserveDb(String orderId, Map<String, Integer> itemMap) {
         // Authoritative idempotency check: catch concurrent same-orderId via the
         // unique constraint on stock_reservations.order_id. The findByOrderId at the
         // start of reserveStock is a fast-path; this catch block closes the race.
@@ -300,7 +300,7 @@ public class InventoryService {
     }
 
     @Recover
-    public ReservationResult recoverReserve(ObjectOptimisticLockingFailureException ex, String orderId, Map<Long, Integer> itemMap) {
+    public ReservationResult recoverReserve(ObjectOptimisticLockingFailureException ex, String orderId, Map<String, Integer> itemMap) {
         log.warn("Reserve stock DB failed after retries for order {}: {}", orderId, ex.getMessage());
         // Re-throw so reserveStock's catch block releases the Redis deduction. Returning
         // failure here would mark the retry as "handled" and swallow the exception →
@@ -390,7 +390,7 @@ public class InventoryService {
     // Helpers
     // -------------------------------------------------------------------------
 
-    private String serializeItems(Map<Long, Integer> items) {
+    private String serializeItems(Map<String, Integer> items) {
         try {
             return objectMapper.writeValueAsString(items);
         } catch (Exception e) {
@@ -399,17 +399,12 @@ public class InventoryService {
     }
 
     /**
-     * JSON-deserialise {@code items} column. Jackson defaults to String keys when the
-     * target is raw {@code Map}, so we parse into String keys then rebuild a typed
-     * {@code Map<Long, Integer>} for stable downstream lookups by product id.
+     * JSON-deserialise {@code items} column. Keys are String UUIDs (productId).
      */
-    private Map<Long, Integer> deserializeItems(String json) {
+    private Map<String, Integer> deserializeItems(String json) {
         try {
-            Map<String, Integer> raw = objectMapper.readValue(json,
+            return objectMapper.readValue(json,
                 new tools.jackson.core.type.TypeReference<Map<String, Integer>>() {});
-            Map<Long, Integer> result = new java.util.LinkedHashMap<>(raw.size());
-            raw.forEach((k, v) -> result.put(Long.parseLong(k), v));
-            return result;
         } catch (Exception e) {
             throw new IllegalStateException("Failed to deserialize items: " + json, e);
         }

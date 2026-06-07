@@ -58,7 +58,7 @@ public class LowStockEventPublisher {
     public record LowStockEvent(
         String eventId,
         Instant occurredOn,
-        Long productId,
+        String productId,
         String sku,
         int quantity,
         int minStockLevel

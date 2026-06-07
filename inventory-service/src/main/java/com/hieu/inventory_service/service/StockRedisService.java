@@ -33,7 +33,7 @@ public class StockRedisService {
      * Atomically checks and decrements stock via Lua.
      * @return 1=success, 0=insufficient, -1=cache miss
      */
-    public int reserveStockAtomically(Map<Long, Integer> items) {
+    public int reserveStockAtomically(Map<String, Integer> items) {
         var keys = new ArrayList<String>();
         var args = new ArrayList<String>();
         for (var entry : items.entrySet()) {
@@ -45,7 +45,7 @@ public class StockRedisService {
     }
 
     /** Seeds or refreshes a stock counter with a 1-hour TTL. */
-    public void setStock(Long productId, int quantity) {
+    public void setStock(String productId, int quantity) {
         redisTemplate.opsForValue().set(KEY_PREFIX + productId, String.valueOf(quantity), TTL);
     }
 
@@ -54,12 +54,12 @@ public class StockRedisService {
      * deductions when seeding from DB after a cache miss. If the key already exists,
      * another thread has already (re)seeded it; we trust the live value.
      */
-    public void setStockIfAbsent(Long productId, int quantity) {
+    public void setStockIfAbsent(String productId, int quantity) {
         redisTemplate.opsForValue().setIfAbsent(KEY_PREFIX + productId, String.valueOf(quantity), TTL);
     }
 
     /** Drops the cached counter so the next reserve re-seeds from DB under lock. */
-    public void invalidate(Long productId) {
+    public void invalidate(String productId) {
         redisTemplate.delete(KEY_PREFIX + productId);
     }
 
@@ -67,7 +67,7 @@ public class StockRedisService {
      * Atomically restores stock for multiple products in a single Lua call — avoids
      * partial-failure inconsistency that per-product loop rollback cannot guarantee.
      */
-    public void releaseStockBatch(Map<Long, Integer> productToQty) {
+    public void releaseStockBatch(Map<String, Integer> productToQty) {
         if (productToQty.isEmpty()) return;
         List<String> keys = new ArrayList<>();
         List<String> args = new ArrayList<>();
@@ -84,7 +84,7 @@ public class StockRedisService {
      * creating a phantom key with no TTL when the cache has already expired, which
      * would cause Redis to permanently drift above the DB value.
      */
-    public void releaseStock(Long productId, int quantity) {
+    public void releaseStock(String productId, int quantity) {
         String key = KEY_PREFIX + productId;
         // Conditionally INCRBY + EXPIRE only when the key exists; if missing, the next
         // setStock() call (triggered by a DB read) will seed a fresh value.

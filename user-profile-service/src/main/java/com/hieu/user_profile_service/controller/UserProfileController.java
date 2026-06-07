@@ -48,7 +48,7 @@ public class UserProfileController {
 
     @PatchMapping("/me/addresses/{addressId}")
     public AddressDTO updateAddress(@AuthenticationPrincipal AuthenticatedUser user,
-                                    @PathVariable Long addressId,
+                                    @PathVariable String addressId,
                                     @Valid @RequestBody UpsertAddressRequest req) {
         return service.updateAddress(user.userId(), addressId, req);
     }
@@ -56,13 +56,13 @@ public class UserProfileController {
     @DeleteMapping("/me/addresses/{addressId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteAddress(@AuthenticationPrincipal AuthenticatedUser user,
-                              @PathVariable Long addressId) {
+                              @PathVariable String addressId) {
         service.deleteAddress(user.userId(), addressId);
     }
 
     @PostMapping("/me/addresses/{addressId}/set-default")
     public AddressDTO setDefault(@AuthenticationPrincipal AuthenticatedUser user,
-                                 @PathVariable Long addressId) {
+                                 @PathVariable String addressId) {
         return service.setDefaultAddress(user.userId(), addressId);
     }
 
@@ -89,7 +89,7 @@ public class UserProfileController {
      */
     @GetMapping("/{userId}/addresses/{addressId}")
     public AddressDTO getAddressInternal(@PathVariable String userId,
-                                         @PathVariable Long addressId,
+                                         @PathVariable String addressId,
                                          @AuthenticationPrincipal AuthenticatedUser caller) {
         boolean isAdmin = caller.hasAnyRole("ROLE_ADMIN", "ADMIN");
         if (!isAdmin && !caller.userId().equals(userId)) {

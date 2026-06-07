@@ -9,11 +9,11 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 import java.util.Optional;
 
-public interface AddressRepository extends JpaRepository<AddressJpaEntity, Long> {
+public interface AddressRepository extends JpaRepository<AddressJpaEntity, String> {
 
     List<AddressJpaEntity> findByUserProfile_UserId(String userId);
 
-    Optional<AddressJpaEntity> findByIdAndUserProfile_UserId(Long id, String userId);
+    Optional<AddressJpaEntity> findByIdAndUserProfile_UserId(String id, String userId);
 
     @Modifying
     @Query("UPDATE AddressJpaEntity a SET a.isDefault = false WHERE a.userProfile.userId = :userId")

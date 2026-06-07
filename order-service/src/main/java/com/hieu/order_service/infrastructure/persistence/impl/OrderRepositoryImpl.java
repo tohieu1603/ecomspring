@@ -78,7 +78,7 @@ public class OrderRepositoryImpl implements OrderRepository {
     }
 
     @Override
-    public List<OrderId> findIdsAfterCursor(Instant createdAt, Long id, int limit) {
+    public List<OrderId> findIdsAfterCursor(Instant createdAt, String id, int limit) {
         return jpa.findIdsAfterCursor(createdAt, id, PageRequest.of(0, limit)).stream().map(OrderId::of).toList();
     }
 
@@ -88,7 +88,7 @@ public class OrderRepositoryImpl implements OrderRepository {
     }
 
     @Override
-    public List<OrderId> findIdsAfterCursorByStatus(OrderStatus status, Instant createdAt, Long id, int limit) {
+    public List<OrderId> findIdsAfterCursorByStatus(OrderStatus status, Instant createdAt, String id, int limit) {
         return jpa.findIdsAfterCursorByStatus(status.name(), createdAt, id, PageRequest.of(0, limit)).stream().map(OrderId::of).toList();
     }
 
@@ -97,7 +97,7 @@ public class OrderRepositoryImpl implements OrderRepository {
         if (ids.isEmpty()) return Collections.emptyList();
         var raw = ids.stream().map(OrderId::value).toList();
         var rows = jpa.findAllByIdInWithItems(raw);
-        var order = new HashMap<Long, Integer>();
+        var order = new HashMap<String, Integer>();
         for (int i = 0; i < raw.size(); i++) order.put(raw.get(i), i);
         return rows.stream()
                 .sorted(Comparator.comparingInt(e -> order.getOrDefault(e.getId(), Integer.MAX_VALUE)))
@@ -121,12 +121,12 @@ public class OrderRepositoryImpl implements OrderRepository {
     }
 
     @Override
-    public List<OrderId> findIdsAfterCursorByUserId(UserId userId, Instant createdAt, Long id, int limit) {
+    public List<OrderId> findIdsAfterCursorByUserId(UserId userId, Instant createdAt, String id, int limit) {
         return jpa.findIdsAfterCursorByUserId(userId.value(), createdAt, id, PageRequest.of(0, limit)).stream().map(OrderId::of).toList();
     }
 
     @Override
-    public boolean existsByUserIdAndProductId(String userId, Long productId) {
+    public boolean existsByUserIdAndProductId(String userId, String productId) {
         return jpa.existsByUserIdAndProductId(userId, productId);
     }
 

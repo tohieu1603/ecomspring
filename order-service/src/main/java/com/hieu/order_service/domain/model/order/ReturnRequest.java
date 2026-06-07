@@ -88,5 +88,5 @@ public class ReturnRequest extends AggregateRoot {
                 userId.value(), refund == null ? null : refund.amount()));
     }
 
-    public void assignId(Long id) { this.id = ReturnRequestId.of(id); }
+    public void assignId(String id) { this.id = ReturnRequestId.of(id); }
 }

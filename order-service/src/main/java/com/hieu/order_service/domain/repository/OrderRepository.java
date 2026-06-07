@@ -18,15 +18,15 @@ public interface OrderRepository {
     Optional<Order> findByIdWithLock(OrderId id);
     Optional<Order> findByOrderNumber(OrderNumber number);
     List<OrderId> findFirstPageIds(int limit);
-    List<OrderId> findIdsAfterCursor(Instant createdAt, Long id, int limit);
+    List<OrderId> findIdsAfterCursor(Instant createdAt, String id, int limit);
     List<OrderId> findFirstPageIdsByStatus(OrderStatus status, int limit);
-    List<OrderId> findIdsAfterCursorByStatus(OrderStatus status, Instant createdAt, Long id, int limit);
+    List<OrderId> findIdsAfterCursorByStatus(OrderStatus status, Instant createdAt, String id, int limit);
     List<Order> findAllByIdsWithItems(List<OrderId> ids);
     Page<Order> findByUserId(UserId userId, Pageable pageable);
     Page<Order> findByUserIdAndStatus(UserId userId, OrderStatus status, Pageable pageable);
     List<OrderId> findFirstPageIdsByUserId(UserId userId, int limit);
-    List<OrderId> findIdsAfterCursorByUserId(UserId userId, Instant createdAt, Long id, int limit);
-    boolean existsByUserIdAndProductId(String userId, Long productId);
+    List<OrderId> findIdsAfterCursorByUserId(UserId userId, Instant createdAt, String id, int limit);
+    boolean existsByUserIdAndProductId(String userId, String productId);
 
     /**
      * Counts orders cancelled by the given user since the cutoff. Used to

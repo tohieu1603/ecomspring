@@ -44,14 +44,14 @@ class CartServiceIT extends AbstractIntegrationTest {
     @DisplayName("addItem_newItem_persistsAndCachesInRedis — item mới được lưu DB và evict cache")
     void addItem_newItem_persistsAndCachesInRedis() {
         userId = "user-" + UUID.randomUUID();
-        var req = new AddToCartRequest(10L, 100L, 2, null);
+        var req = new AddToCartRequest("10", "100", 2, null);
 
         CartDTO cart = cartService.addItem(userId, req);
 
         assertThat(cart).isNotNull();
         assertThat(cart.userId()).isEqualTo(userId);
         assertThat(cart.items()).hasSize(1);
-        assertThat(cart.items().get(0).variantId()).isEqualTo(100L);
+        assertThat(cart.items().get(0).variantId()).isEqualTo("100");
         assertThat(cart.items().get(0).quantity()).isEqualTo(2);
 
         // Verify DB persisted
@@ -66,7 +66,7 @@ class CartServiceIT extends AbstractIntegrationTest {
     @DisplayName("addItem_existingItem_incrementsQuantity — item đã có → cộng dồn số lượng")
     void addItem_existingItem_incrementsQuantity() {
         userId = "user-" + UUID.randomUUID();
-        var req = new AddToCartRequest(10L, 200L, 3, null);
+        var req = new AddToCartRequest("10", "200", 3, null);
 
         cartService.addItem(userId, req);
         cartService.addItem(userId, req); // add again
@@ -83,7 +83,7 @@ class CartServiceIT extends AbstractIntegrationTest {
     void addItem_optimisticLockConflict_throws() throws InterruptedException {
         userId = "user-" + UUID.randomUUID();
         // Pre-seed item so both threads hit the update path (existing item)
-        cartService.addItem(userId, new AddToCartRequest(10L, 300L, 1, null));
+        cartService.addItem(userId, new AddToCartRequest("10", "300", 1, null));
 
         int threads = 2;
         ExecutorService pool = Executors.newFixedThreadPool(threads);
@@ -97,7 +97,7 @@ class CartServiceIT extends AbstractIntegrationTest {
                 ready.countDown();
                 try {
                     start.await();
-                    cartService.addItem(userId, new AddToCartRequest(10L, 300L, 1, null));
+                    cartService.addItem(userId, new AddToCartRequest("10", "300", 1, null));
                     successes.incrementAndGet();
                 } catch (Exception e) {
                     errors.incrementAndGet();
@@ -120,7 +120,7 @@ class CartServiceIT extends AbstractIntegrationTest {
     @DisplayName("getCart_cacheHit_doesNotQueryDb — Redis hit → trả về cache mà không query DB")
     void getCart_cacheHit_doesNotQueryDb() {
         userId = "user-" + UUID.randomUUID();
-        var req = new AddToCartRequest(10L, 400L, 1, null);
+        var req = new AddToCartRequest("10", "400", 1, null);
         cartService.addItem(userId, req);
 
         // First getCart populates Redis cache

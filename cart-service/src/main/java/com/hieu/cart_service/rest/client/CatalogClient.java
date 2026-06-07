@@ -42,8 +42,8 @@ public interface CatalogClient {
      * package keeps the contract co-located with the binding.
      */
     record VariantSnapshot(
-            Long id,
-            Long productId,
+            String id,
+            String productId,
             String sku,
             BigDecimal price,
             String image,

@@ -5,10 +5,10 @@ import java.time.Instant;
 
 /** Immutable view of a single cart line item. */
 public record CartItemDTO(
-        Long id,
-        Long productId,
+        String id,
+        String productId,
         String productName,
-        Long variantId,
+        String variantId,
         String variantSku,
         String variantImage,
         BigDecimal unitPrice,

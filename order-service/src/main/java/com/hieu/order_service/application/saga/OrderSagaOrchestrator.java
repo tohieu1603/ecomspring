@@ -78,7 +78,7 @@ public class OrderSagaOrchestrator {
         this.sagaExecutor = sagaExecutor;
     }
 
-    public OrderDTO executeCreateOrderSaga(Long orderId, String authToken) {
+    public OrderDTO executeCreateOrderSaga(String orderId, String authToken) {
         // Single load — the JPA adapter does LEFT JOIN FETCH on items so iterating
         // order.getItems() later doesn't trigger a per-row lazy query.
         var order = orderRepository.findById(OrderId.of(orderId))
@@ -104,6 +104,7 @@ public class OrderSagaOrchestrator {
                         orderId,
                         productIds,
                         authToken);
+
                 stateTransitioner.applyVoucherDiscount(orderId, discount);
                 voucherApplied = true;
                 // Reload so subsequent steps see the new totalAmount used by payment-service.
@@ -196,7 +197,7 @@ public class OrderSagaOrchestrator {
      * concurrent "cancel" clicks don't produce divergent states.
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public OrderDTO executeCancelOrderSaga(Long orderId, String reason, String userId, boolean isAdmin) {
+    public OrderDTO executeCancelOrderSaga(String orderId, String reason, String userId, boolean isAdmin) {
         var order = orderRepository.findByIdWithLock(OrderId.of(orderId))
                 .orElseThrow(() -> new OrderNotFoundException(orderId));
         // Owner-or-admin gate. Without this, any authenticated user can cancel any order.

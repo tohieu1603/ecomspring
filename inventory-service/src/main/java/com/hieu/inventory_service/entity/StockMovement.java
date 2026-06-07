@@ -9,6 +9,7 @@ import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.Instant;
+import java.util.UUID;
 
 /**
  * Append-only audit row for stock-changing ops.
@@ -30,11 +31,11 @@ public class StockMovement {
     public enum Reason { ADJUST, RESERVE, CONFIRM, RELEASE, CREATE }
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(length = 36)
+    private String id;
 
-    @Column(name = "product_id", nullable = false)
-    private Long productId;
+    @Column(name = "product_id", nullable = false, length = 36)
+    private String productId;
 
     @Column(name = "sku", nullable = false)
     private String sku;
@@ -67,4 +68,9 @@ public class StockMovement {
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
+
+    @PrePersist
+    protected void onCreate() {
+        if (id == null) id = UUID.randomUUID().toString();
+    }
 }

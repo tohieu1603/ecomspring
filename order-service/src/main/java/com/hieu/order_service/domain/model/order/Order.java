@@ -31,9 +31,9 @@ public class Order extends AggregateRoot {
     private ShippingAddress shippingAddress;
     private String notes;
     private String paymentMethod;
-    private Long paymentId;
+    private String paymentId;
     private ReservationId reservationId;
-    private Long shipmentId;
+    private String shipmentId;
     private String idempotencyKey;
     private String failureReason;
     private Instant createdAt;
@@ -81,8 +81,8 @@ public class Order extends AggregateRoot {
                                      Money shippingFee, Money totalAmount, String voucherCode,
                                      RecipientName recipientName, RecipientPhone recipientPhone,
                                      ShippingAddress shippingAddress, String notes,
-                                     String paymentMethod, Long paymentId,
-                                     ReservationId reservationId, Long shipmentId,
+                                     String paymentMethod, String paymentId,
+                                     ReservationId reservationId, String shipmentId,
                                      String idempotencyKey, String failureReason,
                                      Instant createdAt, Instant updatedAt, Instant completedAt,
                                      Instant deliveredAt, Instant cancelledAt,
@@ -180,7 +180,7 @@ public class Order extends AggregateRoot {
         updatedAt = Instant.now();
     }
 
-    public void markPaymentInitiated(Long paymentId) {
+    public void markPaymentInitiated(String paymentId) {
         this.paymentId = paymentId;
         updatedAt = Instant.now();
         registerEvent(new OrderPaymentInitiatedEvent(id.value(), orderNumber.value(), paymentId));
@@ -199,7 +199,7 @@ public class Order extends AggregateRoot {
         registerEvent(new OrderConfirmedEvent(id.value(), orderNumber.value(), userId.value(), paymentId));
     }
 
-    public void markShipped(Long shipmentId) {
+    public void markShipped(String shipmentId) {
         transition(OrderStatus.SHIPPED);
         this.shipmentId = shipmentId;
         updatedAt = Instant.now();
@@ -240,7 +240,7 @@ public class Order extends AggregateRoot {
 
     public List<OrderItem> getItems() { return Collections.unmodifiableList(items); }
 
-    public void assignId(Long id) { this.id = OrderId.of(id); }
+    public void assignId(String id) { this.id = OrderId.of(id); }
     public void addReconstitutedItem(OrderItem item) { items.add(item); }
 
     private void transition(OrderStatus next) {

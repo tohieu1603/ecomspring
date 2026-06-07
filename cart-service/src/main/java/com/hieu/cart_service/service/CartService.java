@@ -143,7 +143,7 @@ public class CartService {
      * push the cart past current inventory.
      */
     @Transactional
-    public CartDTO updateItem(String userId, Long variantId, UpdateCartItemRequest req) {
+    public CartDTO updateItem(String userId, String variantId, UpdateCartItemRequest req) {
         if (req.quantity() == 0) {
             return removeItem(userId, variantId);
         }
@@ -169,7 +169,7 @@ public class CartService {
 
     /** Deletes a single cart item. */
     @Transactional
-    public CartDTO removeItem(String userId, Long variantId) {
+    public CartDTO removeItem(String userId, String variantId) {
         cartItemRepository.deleteByUserIdAndVariantId(userId, variantId);
         cacheService.evictCart(userId);
         return refreshAndCache(userId);
@@ -186,7 +186,7 @@ public class CartService {
 
     /** Called by Kafka consumer: remove items by productId and evict affected caches. */
     @Transactional
-    public void removeItemsByProduct(Long productId) {
+    public void removeItemsByProduct(String productId) {
         var affected = cartItemRepository.findUserIdsByProductId(productId);
         cartItemRepository.deleteAllByProductId(productId);
         affected.forEach(cacheService::evictCart);
@@ -201,7 +201,7 @@ public class CartService {
      * Round-trip to catalog for the freshest product + variant; reject with
      * the right HTTP code if anything has changed since the user's page loaded.
      */
-    private ValidatedVariant loadAndValidate(Long productId, Long variantId) {
+    private ValidatedVariant loadAndValidate(String productId, String variantId) {
         if (catalogClient.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
                 "Không thể kiểm tra tồn kho lúc này. Vui lòng thử lại.");
@@ -219,7 +219,7 @@ public class CartService {
                 "Sản phẩm hiện không còn được bán.");
         }
         Variant variant = product.getVariantsList().stream()
-            .filter(v -> v.getId() == variantId)
+            .filter(v -> variantId.equals(v.getId()))
             .findFirst()
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                 "Phân loại sản phẩm không còn tồn tại."));

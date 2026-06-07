@@ -128,7 +128,7 @@ public class PaymentController {
     @GetMapping("/{id}")
     @Operation(summary = "Get payment by ID")
     public ResponseEntity<ApiResponse<PaymentDTO>> getPayment(
-            @PathVariable Long id,
+            @PathVariable String id,
             @AuthenticationPrincipal AuthenticatedUser user) {
         boolean isAdmin = user.hasRole("ROLE_ADMIN") || user.hasRole("ADMIN");
         return ResponseEntity.ok(ApiResponse.ok(paymentService.getPayment(id, user.userId(), isAdmin)));
@@ -160,7 +160,7 @@ public class PaymentController {
     @PostMapping("/{id}/confirm")
     @Operation(summary = "Confirm payment (PENDING → PAID)")
     public ResponseEntity<ApiResponse<PaymentDTO>> confirmPayment(
-            @PathVariable Long id,
+            @PathVariable String id,
             @AuthenticationPrincipal AuthenticatedUser user,
             @Valid @RequestBody ConfirmPaymentRequest request) {
         return ResponseEntity.ok(ApiResponse.ok(
@@ -170,7 +170,7 @@ public class PaymentController {
     @PostMapping("/{id}/cancel")
     @Operation(summary = "Cancel payment (PENDING/FAILED → CANCELLED)")
     public ResponseEntity<ApiResponse<PaymentDTO>> cancelPayment(
-            @PathVariable Long id,
+            @PathVariable String id,
             @AuthenticationPrincipal AuthenticatedUser user) {
         return ResponseEntity.ok(ApiResponse.ok(paymentService.cancelPayment(id, user.userId()), "Payment cancelled"));
     }
@@ -178,7 +178,7 @@ public class PaymentController {
     @PostMapping("/{id}/refund")
     @Operation(summary = "Request refund (PAID → REFUND_REQUESTED)")
     public ResponseEntity<ApiResponse<PaymentDTO>> requestRefund(
-            @PathVariable Long id,
+            @PathVariable String id,
             @AuthenticationPrincipal AuthenticatedUser user,
             @Valid @RequestBody RefundRequest request) {
         return ResponseEntity.ok(ApiResponse.ok(
@@ -189,7 +189,7 @@ public class PaymentController {
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Process refund (REFUND_REQUESTED → REFUNDED) — Admin only")
     public ResponseEntity<ApiResponse<PaymentDTO>> processRefund(
-            @PathVariable Long id,
+            @PathVariable String id,
             @RequestBody(required = false) RefundRequest request) {
         java.math.BigDecimal amount = (request != null) ? request.getRefundAmount() : null;
         String reason = (request != null) ? request.getReason() : null;

@@ -14,7 +14,7 @@ CREATE TABLE user_profiles (
 CREATE INDEX ix_profile_email ON user_profiles(email);
 
 CREATE TABLE user_addresses (
-  id BIGSERIAL PRIMARY KEY,
+  id VARCHAR(36) PRIMARY KEY,
   user_id VARCHAR(64) NOT NULL REFERENCES user_profiles(user_id) ON DELETE CASCADE,
   label VARCHAR(64),
   recipient_name VARCHAR(128) NOT NULL,

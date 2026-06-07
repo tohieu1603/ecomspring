@@ -47,7 +47,7 @@ class FlashSaleEventPublisherTest {
     @DisplayName("onStarted -> sends to 'flashsale.started' keyed by saleId")
     void onStarted() {
         stubSendOk();
-        var event = new FlashSaleStartedEvent("e1", Instant.now(), 55L, "p1",
+        var event = new FlashSaleStartedEvent("e1", Instant.now(), "55", "p1",
                 Instant.now(), Instant.now().plusSeconds(60), 100);
 
         publisher.onStarted(event);
@@ -59,7 +59,7 @@ class FlashSaleEventPublisherTest {
     @DisplayName("onEnded -> sends to 'flashsale.ended' keyed by saleId")
     void onEnded() {
         stubSendOk();
-        var event = new FlashSaleEndedEvent("e2", Instant.now(), 77L, "p2", 12);
+        var event = new FlashSaleEndedEvent("e2", Instant.now(), "77", "p2", 12);
 
         publisher.onEnded(event);
 
@@ -70,7 +70,7 @@ class FlashSaleEventPublisherTest {
     @DisplayName("onSlotReserved -> sends to 'flashsale.slot-reserved' keyed by saleId")
     void onSlotReserved() {
         stubSendOk();
-        var event = new FlashSaleSlotReservedEvent("e3", Instant.now(), 88L, "u1", 2, 8);
+        var event = new FlashSaleSlotReservedEvent("e3", Instant.now(), "88", "u1", 2, 8);
 
         publisher.onSlotReserved(event);
 
@@ -81,7 +81,7 @@ class FlashSaleEventPublisherTest {
     @DisplayName("topic and key match the constants and event saleId for the started event")
     void capturesTopicAndKey() {
         stubSendOk();
-        var event = new FlashSaleStartedEvent("e", Instant.now(), 123L, "p",
+        var event = new FlashSaleStartedEvent("e", Instant.now(), "123", "p",
                 Instant.now(), Instant.now().plusSeconds(60), 10);
 
         publisher.onStarted(event);
@@ -100,7 +100,7 @@ class FlashSaleEventPublisherTest {
         failed.completeExceptionally(new RuntimeException("broker down"));
         when(kafkaTemplate.send(any(String.class), any(String.class), any()))
                 .thenReturn(failed);
-        var event = new FlashSaleEndedEvent("e", Instant.now(), 1L, "p", 0);
+        var event = new FlashSaleEndedEvent("e", Instant.now(), "1", "p", 0);
 
         assertThatCode(() -> publisher.onEnded(event)).doesNotThrowAnyException();
         verify(kafkaTemplate).send(eq(KafkaTopics.FLASH_SALE_ENDED), eq("1"), any());

@@ -4,8 +4,8 @@ import java.math.BigDecimal;
 import java.time.Instant;
 
 public record ReturnRequestDTO(
-        Long id,
-        Long orderId,
+        String id,
+        String orderId,
         String userId,
         String reason,
         String returnType,

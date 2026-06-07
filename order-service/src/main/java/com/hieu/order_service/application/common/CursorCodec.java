@@ -12,15 +12,15 @@ public final class CursorCodec {
 
     private CursorCodec() {}
 
-    public record Cursor(Instant createdAt, Long id) {
+    public record Cursor(Instant createdAt, String id) {
         public Cursor {
             Objects.requireNonNull(createdAt, "createdAt");
             Objects.requireNonNull(id, "id");
-            if (id <= 0) throw new IllegalArgumentException("cursor id must be positive");
+            if (id.isBlank()) throw new IllegalArgumentException("cursor id must not be blank");
         }
     }
 
-    public static String encode(Instant createdAt, Long id) {
+    public static String encode(Instant createdAt, String id) {
         if (createdAt == null || id == null) return null;
         long epochMicros = createdAt.getEpochSecond() * 1_000_000L + createdAt.getNano() / 1_000;
         var raw = epochMicros + DELIM + id;
@@ -34,7 +34,7 @@ public final class CursorCodec {
             int split = raw.indexOf(DELIM);
             if (split < 0) throw new IllegalArgumentException("missing delimiter");
             long epochMicros = Long.parseLong(raw.substring(0, split));
-            long id = Long.parseLong(raw.substring(split + DELIM.length()));
+            String id = raw.substring(split + DELIM.length());
             var ts = Instant.ofEpochSecond(epochMicros / 1_000_000L, (epochMicros % 1_000_000L) * 1_000L);
             return new Cursor(ts, id);
         } catch (IllegalArgumentException e) {

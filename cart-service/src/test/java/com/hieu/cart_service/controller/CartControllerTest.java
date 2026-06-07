@@ -58,7 +58,7 @@ class CartControllerTest {
     @Test
     @DisplayName("addItem delegates the request under the user's id and returns 200")
     void addItem() {
-        var req = new AddToCartRequest(10L, 100L, 2, "idem-1");
+        var req = new AddToCartRequest("10", "100", 2, "idem-1");
         var cart = sampleCart();
         when(cartService.addItem("u1", req)).thenReturn(cart);
 
@@ -74,23 +74,23 @@ class CartControllerTest {
     void updateItem() {
         var req = new UpdateCartItemRequest(5);
         var cart = sampleCart();
-        when(cartService.updateItem("u1", 100L, req)).thenReturn(cart);
+        when(cartService.updateItem("u1", "100", req)).thenReturn(cart);
 
-        ResponseEntity<CartDTO> resp = controller.updateItem(USER, 100L, req);
+        ResponseEntity<CartDTO> resp = controller.updateItem(USER, "100", req);
 
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(resp.getBody()).isSameAs(cart);
-        verify(cartService).updateItem("u1", 100L, req);
+        verify(cartService).updateItem("u1", "100", req);
     }
 
     @Test
     @DisplayName("removeItem returns 204 No Content with no body and delegates the removal")
     void removeItem() {
-        ResponseEntity<Void> resp = controller.removeItem(USER, 100L);
+        ResponseEntity<Void> resp = controller.removeItem(USER, "100");
 
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
         assertThat(resp.getBody()).isNull();
-        verify(cartService).removeItem("u1", 100L);
+        verify(cartService).removeItem("u1", "100");
         verifyNoMoreInteractions(cartService);
     }
 

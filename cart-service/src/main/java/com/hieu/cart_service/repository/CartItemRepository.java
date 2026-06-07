@@ -10,15 +10,15 @@ import java.util.List;
 import java.util.Optional;
 
 /** JPA repository for {@link CartItem}. */
-public interface CartItemRepository extends JpaRepository<CartItem, Long> {
+public interface CartItemRepository extends JpaRepository<CartItem, String> {
 
     List<CartItem> findAllByUserId(String userId);
 
-    Optional<CartItem> findByUserIdAndVariantId(String userId, Long variantId);
+    Optional<CartItem> findByUserIdAndVariantId(String userId, String variantId);
 
     @Modifying
     @Query("DELETE FROM CartItem c WHERE c.userId = :userId AND c.variantId = :variantId")
-    int deleteByUserIdAndVariantId(@Param("userId") String userId, @Param("variantId") Long variantId);
+    int deleteByUserIdAndVariantId(@Param("userId") String userId, @Param("variantId") String variantId);
 
     @Modifying
     @Query("DELETE FROM CartItem c WHERE c.userId = :userId")
@@ -26,9 +26,9 @@ public interface CartItemRepository extends JpaRepository<CartItem, Long> {
 
     /** Used by Kafka consumer when product is deleted/inactive. Returns affected userIds. */
     @Query("SELECT DISTINCT c.userId FROM CartItem c WHERE c.productId = :productId")
-    List<String> findUserIdsByProductId(@Param("productId") Long productId);
+    List<String> findUserIdsByProductId(@Param("productId") String productId);
 
     @Modifying
     @Query("DELETE FROM CartItem c WHERE c.productId = :productId")
-    int deleteAllByProductId(@Param("productId") Long productId);
+    int deleteAllByProductId(@Param("productId") String productId);
 }

@@ -4,7 +4,7 @@ import java.time.Instant;
 
 /** Read-only shipment projection returned to clients. */
 public record ShipmentDTO(
-        Long id,
+        String id,
         String orderId,
         String userId,
         String carrier,

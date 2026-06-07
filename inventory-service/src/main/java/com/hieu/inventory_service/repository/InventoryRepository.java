@@ -13,17 +13,17 @@ import java.util.Optional;
 
 /** Data access for {@link InventoryEntity}. */
 @Repository
-public interface InventoryRepository extends JpaRepository<InventoryEntity, Long> {
+public interface InventoryRepository extends JpaRepository<InventoryEntity, String> {
 
-    Optional<InventoryEntity> findByProductId(Long productId);
+    Optional<InventoryEntity> findByProductId(String productId);
 
     Optional<InventoryEntity> findBySku(String sku);
 
-    boolean existsByProductId(Long productId);
+    boolean existsByProductId(String productId);
 
     boolean existsBySku(String sku);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT i FROM InventoryEntity i WHERE i.productId IN :ids ORDER BY i.productId")
-    List<InventoryEntity> findAllByProductIdInWithLock(@Param("ids") List<Long> ids);
+    List<InventoryEntity> findAllByProductIdInWithLock(@Param("ids") List<String> ids);
 }

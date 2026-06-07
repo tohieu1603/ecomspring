@@ -24,7 +24,7 @@ service CatalogService {
 }
 
 message GetProductRequest {
-  int64 product_id = 1;
+  string product_id = 1;
 }
 
 message GetProductResponse {
@@ -53,11 +53,11 @@ message CheckStockResponse {
 }
 
 message Product {
-  int64   id          = 1;
+  string  id          = 1;
   string  name        = 2;
   string  slug        = 3;
   string  description = 4;
-  int64   category_id = 5;
+  string  category_id = 5;
   string  brand       = 6;
   string  thumbnail   = 7;
   string  status      = 8;
@@ -65,8 +65,8 @@ message Product {
 }
 
 message Variant {
-  int64  id         = 1;
-  int64  product_id = 2;
+  string id         = 1;
+  string product_id = 2;
   string sku        = 3;
   string price      = 4;   // BigDecimal serialised as string to preserve scale
   string sale_price = 5;
@@ -76,9 +76,9 @@ message Variant {
 }
 
 message VariantAttr {
-  int64  attr_id   = 1;
+  string attr_id   = 1;
   string attr_code = 2;
   string attr_name = 3;
-  int64  val_id    = 4;
+  string val_id    = 4;
   string val_text  = 5;
 }

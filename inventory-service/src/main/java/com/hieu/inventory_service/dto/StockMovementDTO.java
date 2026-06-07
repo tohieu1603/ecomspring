@@ -6,8 +6,8 @@ import java.time.Instant;
 
 /** Wire-friendly projection of {@link StockMovement}. */
 public record StockMovementDTO(
-        Long id,
-        Long productId,
+        String id,
+        String productId,
         String sku,
         int delta,
         int quantityBefore,

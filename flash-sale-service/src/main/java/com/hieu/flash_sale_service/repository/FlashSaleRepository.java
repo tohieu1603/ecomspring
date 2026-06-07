@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Optional;
 
 /** Spring Data repository for {@link FlashSaleJpaEntity}. */
-public interface FlashSaleRepository extends JpaRepository<FlashSaleJpaEntity, Long> {
+public interface FlashSaleRepository extends JpaRepository<FlashSaleJpaEntity, String> {
 
     @Query("SELECT f FROM FlashSaleJpaEntity f WHERE f.status = :status AND f.startTime <= :now AND f.endTime >= :now")
     Page<FlashSaleJpaEntity> findActiveSales(
@@ -28,9 +28,9 @@ public interface FlashSaleRepository extends JpaRepository<FlashSaleJpaEntity, L
 
     @Lock(LockModeType.PESSIMISTIC_READ)
     @Query("SELECT f FROM FlashSaleJpaEntity f WHERE f.id = :id")
-    Optional<FlashSaleJpaEntity> findByIdWithReadLock(@Param("id") Long id);
+    Optional<FlashSaleJpaEntity> findByIdWithReadLock(@Param("id") String id);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT f FROM FlashSaleJpaEntity f WHERE f.id = :id")
-    Optional<FlashSaleJpaEntity> findByIdWithWriteLock(@Param("id") Long id);
+    Optional<FlashSaleJpaEntity> findByIdWithWriteLock(@Param("id") String id);
 }

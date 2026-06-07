@@ -13,7 +13,7 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
 @Repository
-public interface PaymentRepository extends JpaRepository<PaymentJpaEntity, Long> {
+public interface PaymentRepository extends JpaRepository<PaymentJpaEntity, String> {
 
     Optional<PaymentJpaEntity> findByOrderId(String orderId);
 

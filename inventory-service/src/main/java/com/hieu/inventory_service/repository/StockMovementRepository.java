@@ -5,9 +5,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface StockMovementRepository extends JpaRepository<StockMovement, Long> {
+public interface StockMovementRepository extends JpaRepository<StockMovement, String> {
 
-    Page<StockMovement> findByProductIdOrderByCreatedAtDesc(Long productId, Pageable pageable);
+    Page<StockMovement> findByProductIdOrderByCreatedAtDesc(String productId, Pageable pageable);
 
     Page<StockMovement> findBySkuOrderByCreatedAtDesc(String sku, Pageable pageable);
 

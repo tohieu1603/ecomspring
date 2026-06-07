@@ -8,16 +8,16 @@ import java.util.UUID;
 public record OrderReturnRequestedEvent(
         UUID eventId,
         Instant occurredOn,
-        Long orderId,
-        Long returnRequestId,
+        String orderId,
+        String returnRequestId,
         String userId,
         String reason
 ) implements DomainEvent {
 
-    public OrderReturnRequestedEvent(Long orderId, Long returnRequestId, String userId, String reason) {
+    public OrderReturnRequestedEvent(String orderId, String returnRequestId, String userId, String reason) {
         this(UUID.randomUUID(), Instant.now(), orderId, returnRequestId, userId, reason);
     }
 
     @Override
-    public String aggregateId() { return String.valueOf(orderId); }
+    public String aggregateId() { return orderId; }
 }

@@ -42,7 +42,7 @@ public class CartController {
     @Operation(summary = "Update item quantity (0 = delete)")
     public ResponseEntity<CartDTO> updateItem(
             @AuthenticationPrincipal AuthenticatedUser user,
-            @PathVariable Long variantId,
+            @PathVariable String variantId,
             @Valid @RequestBody UpdateCartItemRequest req) {
         return ResponseEntity.ok(cartService.updateItem(user.userId(), variantId, req));
     }
@@ -51,7 +51,7 @@ public class CartController {
     @Operation(summary = "Remove a single item from cart")
     public ResponseEntity<Void> removeItem(
             @AuthenticationPrincipal AuthenticatedUser user,
-            @PathVariable Long variantId) {
+            @PathVariable String variantId) {
         cartService.removeItem(user.userId(), variantId);
         return ResponseEntity.noContent().build();
     }

@@ -11,5 +11,5 @@ public record ReservationRequest(
     @NotEmpty List<ReservationItem> items
 ) {
     /** Single line item in a reservation request. */
-    public record ReservationItem(Long productId, int quantity) {}
+    public record ReservationItem(String productId, int quantity) {}
 }

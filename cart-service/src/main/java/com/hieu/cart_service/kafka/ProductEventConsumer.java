@@ -59,10 +59,9 @@ public class ProductEventConsumer {
         }
     }
 
-    private Long extractProductId(Map<String, Object> event) {
+    private String extractProductId(Map<String, Object> event) {
         var raw = event.get("productId");
         if (raw == null) return null;
-        if (raw instanceof Number n) return n.longValue();
-        try { return Long.parseLong(raw.toString()); } catch (NumberFormatException e) { return null; }
+        return raw.toString();
     }
 }

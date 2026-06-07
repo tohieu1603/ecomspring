@@ -51,7 +51,7 @@ class PaymentControllerTest {
         return new AuthenticatedUser(id, "u", List.of(roles), List.of());
     }
 
-    private static PaymentDTO dto(Long id) {
+    private static PaymentDTO dto(String id) {
         return PaymentDTO.builder().id(id).status("PENDING").build();
     }
 
@@ -66,14 +66,14 @@ class PaymentControllerTest {
     @DisplayName("initiatePayment returns 201 CREATED and delegates with the principal's userId")
     void initiate_created() {
         var req = new InitiatePaymentRequest();
-        when(paymentService.initiatePayment("user-1", req)).thenReturn(dto(10L));
+        when(paymentService.initiatePayment("user-1", req)).thenReturn(dto("10"));
 
         var resp = controller().initiatePayment(req, user("user-1"));
 
         assertThat(resp.getStatusCode().value()).isEqualTo(201);
         assertThat(resp.getBody().success()).isTrue();
         assertThat(resp.getBody().message()).isEqualTo("Payment initiated");
-        assertThat(resp.getBody().data().getId()).isEqualTo(10L);
+        assertThat(resp.getBody().data().getId()).isEqualTo("10");
         verify(paymentService).initiatePayment("user-1", req);
     }
 
@@ -82,33 +82,33 @@ class PaymentControllerTest {
     @Test
     @DisplayName("getPayment passes isAdmin=false for a plain user")
     void getPayment_nonAdmin() {
-        when(paymentService.getPayment(5L, "user-1", false)).thenReturn(dto(5L));
+        when(paymentService.getPayment("5", "user-1", false)).thenReturn(dto("5"));
 
-        var resp = controller().getPayment(5L, user("user-1", "ROLE_USER"));
+        var resp = controller().getPayment("5", user("user-1", "ROLE_USER"));
 
         assertThat(resp.getStatusCode().value()).isEqualTo(200);
-        assertThat(resp.getBody().data().getId()).isEqualTo(5L);
-        verify(paymentService).getPayment(5L, "user-1", false);
+        assertThat(resp.getBody().data().getId()).isEqualTo("5");
+        verify(paymentService).getPayment("5", "user-1", false);
     }
 
     @Test
     @DisplayName("getPayment passes isAdmin=true when principal has ROLE_ADMIN")
     void getPayment_roleAdmin() {
-        when(paymentService.getPayment(5L, "admin-1", true)).thenReturn(dto(5L));
+        when(paymentService.getPayment("5", "admin-1", true)).thenReturn(dto("5"));
 
-        controller().getPayment(5L, user("admin-1", "ROLE_ADMIN"));
+        controller().getPayment("5", user("admin-1", "ROLE_ADMIN"));
 
-        verify(paymentService).getPayment(5L, "admin-1", true);
+        verify(paymentService).getPayment("5", "admin-1", true);
     }
 
     @Test
     @DisplayName("getPayment treats the bare 'ADMIN' role as admin too")
     void getPayment_bareAdminRole() {
-        when(paymentService.getPayment(5L, "admin-2", true)).thenReturn(dto(5L));
+        when(paymentService.getPayment("5", "admin-2", true)).thenReturn(dto("5"));
 
-        controller().getPayment(5L, user("admin-2", "ADMIN"));
+        controller().getPayment("5", user("admin-2", "ADMIN"));
 
-        verify(paymentService).getPayment(5L, "admin-2", true);
+        verify(paymentService).getPayment("5", "admin-2", true);
     }
 
     // ── pagination / passthrough endpoints ─────────────────────────────
@@ -116,7 +116,7 @@ class PaymentControllerTest {
     @Test
     @DisplayName("getMyPayments forwards page/size params to the service")
     void getMyPayments_forwardsPaging() {
-        var page = PageDTO.<PaymentDTO>builder().content(List.of(dto(1L))).pageNumber(2).pageSize(25).build();
+        var page = PageDTO.<PaymentDTO>builder().content(List.of(dto("1"))).pageNumber(2).pageSize(25).build();
         when(paymentService.getMyPayments("user-1", 2, 25)).thenReturn(page);
 
         var resp = controller().getMyPayments(user("user-1"), 2, 25);
@@ -129,11 +129,12 @@ class PaymentControllerTest {
     @Test
     @DisplayName("getPaymentByOrder delegates to the service")
     void getPaymentByOrder() {
-        when(paymentService.getPaymentByOrder("ORD-9")).thenReturn(dto(3L));
+        // Use ROLE_ADMIN so the access check in getPaymentByOrder is bypassed
+        when(paymentService.getPaymentByOrder("ORD-9")).thenReturn(dto("3"));
 
-        var resp = controller().getPaymentByOrder("ORD-9");
+        var resp = controller().getPaymentByOrder("ORD-9", user("user-1", "ROLE_ADMIN"));
 
-        assertThat(resp.getBody().data().getId()).isEqualTo(3L);
+        assertThat(resp.getBody().data().getId()).isEqualTo("3");
     }
 
     @Test
@@ -141,23 +142,23 @@ class PaymentControllerTest {
     void confirm() {
         var body = new ConfirmPaymentRequest();
         body.setTransactionId("tx-77");
-        when(paymentService.confirmPayment(8L, "user-1", "tx-77")).thenReturn(dto(8L));
+        when(paymentService.confirmPayment("8", "user-1", "tx-77")).thenReturn(dto("8"));
 
-        var resp = controller().confirmPayment(8L, user("user-1"), body);
+        var resp = controller().confirmPayment("8", user("user-1"), body);
 
         assertThat(resp.getBody().message()).isEqualTo("Payment confirmed");
-        verify(paymentService).confirmPayment(8L, "user-1", "tx-77");
+        verify(paymentService).confirmPayment("8", "user-1", "tx-77");
     }
 
     @Test
     @DisplayName("cancelPayment delegates and returns cancelled message")
     void cancel() {
-        when(paymentService.cancelPayment(8L, "user-1")).thenReturn(dto(8L));
+        when(paymentService.cancelPayment("8", "user-1")).thenReturn(dto("8"));
 
-        var resp = controller().cancelPayment(8L, user("user-1"));
+        var resp = controller().cancelPayment("8", user("user-1"));
 
         assertThat(resp.getBody().message()).isEqualTo("Payment cancelled");
-        verify(paymentService).cancelPayment(8L, "user-1");
+        verify(paymentService).cancelPayment("8", "user-1");
     }
 
     @Test
@@ -165,12 +166,12 @@ class PaymentControllerTest {
     void requestRefund() {
         var body = new RefundRequest();
         body.setReason("damaged");
-        when(paymentService.requestRefund(8L, "user-1", "damaged")).thenReturn(dto(8L));
+        when(paymentService.requestRefund("8", "user-1", "damaged")).thenReturn(dto("8"));
 
-        var resp = controller().requestRefund(8L, user("user-1"), body);
+        var resp = controller().requestRefund("8", user("user-1"), body);
 
         assertThat(resp.getBody().message()).isEqualTo("Refund requested");
-        verify(paymentService).requestRefund(8L, "user-1", "damaged");
+        verify(paymentService).requestRefund("8", "user-1", "damaged");
     }
 
     @Test
@@ -179,23 +180,23 @@ class PaymentControllerTest {
         var body = new RefundRequest();
         body.setReason("admin refund");
         body.setRefundAmount(new BigDecimal("12.50"));
-        when(paymentService.processRefund(8L, new BigDecimal("12.50"), "admin refund")).thenReturn(dto(8L));
+        when(paymentService.processRefund("8", new BigDecimal("12.50"), "admin refund")).thenReturn(dto("8"));
 
-        var resp = controller().processRefund(8L, body);
+        var resp = controller().processRefund("8", body);
 
         assertThat(resp.getBody().message()).isEqualTo("Refund processed");
-        verify(paymentService).processRefund(8L, new BigDecimal("12.50"), "admin refund");
+        verify(paymentService).processRefund("8", new BigDecimal("12.50"), "admin refund");
     }
 
     @Test
     @DisplayName("processRefund passes nulls for amount/reason when body is absent (full refund)")
     void processRefund_noBody() {
-        when(paymentService.processRefund(8L, null, null)).thenReturn(dto(8L));
+        when(paymentService.processRefund("8", null, null)).thenReturn(dto("8"));
 
-        var resp = controller().processRefund(8L, null);
+        var resp = controller().processRefund("8", null);
 
         assertThat(resp.getStatusCode().value()).isEqualTo(200);
-        verify(paymentService).processRefund(8L, null, null);
+        verify(paymentService).processRefund("8", null, null);
     }
 
     // ── listMethods (storefront merge/filter/sort) ─────────────────────

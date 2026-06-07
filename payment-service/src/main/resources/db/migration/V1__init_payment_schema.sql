@@ -1,7 +1,7 @@
 -- V1 — Payment schema.
 
 CREATE TABLE payments (
-    id               BIGSERIAL PRIMARY KEY,
+    id               VARCHAR(36)      PRIMARY KEY,
     order_id         VARCHAR(64)      NOT NULL,
     user_id          VARCHAR(64)      NOT NULL,
     amount           NUMERIC(19,2)    NOT NULL,

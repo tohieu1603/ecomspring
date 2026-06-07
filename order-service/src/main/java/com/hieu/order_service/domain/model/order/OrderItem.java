@@ -10,17 +10,17 @@ import lombok.Getter;
 @Getter
 public class OrderItem {
 
-    private Long id;
+    private String id;
     private final ProductId productId;
     private final ProductName productName;
-    private final Long variantId;
+    private final String variantId;
     private final String variantSku;
     private final String variantImage;
     private final Money unitPrice;
     private final Quantity quantity;
 
-    private OrderItem(Long id, ProductId productId, ProductName productName,
-                      Long variantId, String variantSku, String variantImage,
+    private OrderItem(String id, ProductId productId, ProductName productName,
+                      String variantId, String variantSku, String variantImage,
                       Money unitPrice, Quantity quantity) {
         this.id = id;
         this.productId = productId;
@@ -33,18 +33,18 @@ public class OrderItem {
     }
 
     public static OrderItem create(ProductId productId, ProductName productName,
-                                   Long variantId, String variantSku, String variantImage,
+                                   String variantId, String variantSku, String variantImage,
                                    Money unitPrice, Quantity quantity) {
         return new OrderItem(null, productId, productName, variantId, variantSku, variantImage, unitPrice, quantity);
     }
 
-    public static OrderItem reconstitute(Long id, ProductId productId, ProductName productName,
-                                         Long variantId, String variantSku, String variantImage,
+    public static OrderItem reconstitute(String id, ProductId productId, ProductName productName,
+                                         String variantId, String variantSku, String variantImage,
                                          Money unitPrice, Quantity quantity) {
         return new OrderItem(id, productId, productName, variantId, variantSku, variantImage, unitPrice, quantity);
     }
 
     public Money subtotal() { return unitPrice.multiply(quantity.value()); }
 
-    public void assignId(Long id) { this.id = id; }
+    public void assignId(String id) { this.id = id; }
 }

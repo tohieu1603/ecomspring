@@ -8,7 +8,7 @@ import org.springframework.data.repository.query.Param;
 import java.time.Instant;
 import java.util.List;
 
-public interface OutboxEventJpaRepository extends JpaRepository<OutboxEventJpaEntity, Long> {
+public interface OutboxEventJpaRepository extends JpaRepository<OutboxEventJpaEntity, String> {
 
     @Query(value = """
             SELECT * FROM outbox_events
@@ -21,9 +21,9 @@ public interface OutboxEventJpaRepository extends JpaRepository<OutboxEventJpaEn
 
     @Modifying
     @Query("UPDATE OutboxEventJpaEntity o SET o.processedAt = :processedAt WHERE o.id = :id")
-    void markProcessed(@Param("id") Long id, @Param("processedAt") Instant processedAt);
+    void markProcessed(@Param("id") String id, @Param("processedAt") Instant processedAt);
 
     @Modifying
     @Query("UPDATE OutboxEventJpaEntity o SET o.retryCount = :retryCount, o.nextAttemptAt = :nextAttemptAt WHERE o.id = :id")
-    void bumpRetry(@Param("id") Long id, @Param("retryCount") int retryCount, @Param("nextAttemptAt") Instant nextAttemptAt);
+    void bumpRetry(@Param("id") String id, @Param("retryCount") int retryCount, @Param("nextAttemptAt") Instant nextAttemptAt);
 }

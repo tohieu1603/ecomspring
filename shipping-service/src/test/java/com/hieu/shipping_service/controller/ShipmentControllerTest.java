@@ -34,7 +34,7 @@ class ShipmentControllerTest {
     @Mock ShipmentService service;
     @InjectMocks ShipmentController controller;
 
-    private static ShipmentDTO dto(Long id) {
+    private static ShipmentDTO dto(String id) {
         return new ShipmentDTO(id, "ORD-1", "u1", "GHTK", "TRK-1", "PENDING",
                 "Recipient", "0900000000", "123 Street", "Ward", "District", "HCM", "Vietnam",
                 null, null, "note", Instant.now(), Instant.now(), 0L);
@@ -49,14 +49,14 @@ class ShipmentControllerTest {
     void createShipment_created() {
         var req = new CreateShipmentRequest("ORD-1", "u1", "GHTK", "R", "0900000000",
                 "123", null, null, "HCM", "Vietnam", null);
-        when(service.createShipment(req)).thenReturn(dto(1L));
+        when(service.createShipment(req)).thenReturn(dto("uuid-1"));
 
         ResponseEntity<ApiResponse<ShipmentDTO>> resp = controller.createShipment(req);
 
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         assertThat(resp.getBody()).isNotNull();
         assertThat(resp.getBody().success()).isTrue();
-        assertThat(resp.getBody().data().id()).isEqualTo(1L);
+        assertThat(resp.getBody().data().id()).isEqualTo("uuid-1");
         assertThat(resp.getBody().message()).isEqualTo("Shipment created");
     }
 
@@ -65,7 +65,7 @@ class ShipmentControllerTest {
     void createShipmentInternal_created() {
         var req = new CreateShipmentRequest("ORD-1", "u1", "GHTK", "R", "0900000000",
                 "123", null, null, "HCM", "Vietnam", null);
-        when(service.createShipment(req)).thenReturn(dto(2L));
+        when(service.createShipment(req)).thenReturn(dto("uuid-2"));
 
         var resp = controller.createShipmentInternal(req);
 
@@ -76,29 +76,29 @@ class ShipmentControllerTest {
     @Test
     @DisplayName("getShipment passes userId and admin=false for a regular user")
     void getShipment_regularUser() {
-        when(service.getShipmentForUser(1L, "u1", false)).thenReturn(dto(1L));
+        when(service.getShipmentForUser("uuid-1", "u1", false)).thenReturn(dto("uuid-1"));
 
-        var resp = controller.getShipment(1L, user("u1", false));
+        var resp = controller.getShipment("uuid-1", user("u1", false));
 
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(resp.getBody().data().id()).isEqualTo(1L);
-        verify(service).getShipmentForUser(1L, "u1", false);
+        assertThat(resp.getBody().data().id()).isEqualTo("uuid-1");
+        verify(service).getShipmentForUser("uuid-1", "u1", false);
     }
 
     @Test
     @DisplayName("getShipment passes admin=true when principal has ROLE_ADMIN")
     void getShipment_admin() {
-        when(service.getShipmentForUser(1L, "admin-id", true)).thenReturn(dto(1L));
+        when(service.getShipmentForUser("uuid-1", "admin-id", true)).thenReturn(dto("uuid-1"));
 
-        controller.getShipment(1L, user("admin-id", true));
+        controller.getShipment("uuid-1", user("admin-id", true));
 
-        verify(service).getShipmentForUser(1L, "admin-id", true);
+        verify(service).getShipmentForUser("uuid-1", "admin-id", true);
     }
 
     @Test
     @DisplayName("getByOrder forwards orderId + principal + admin flag")
     void getByOrder() {
-        when(service.getShipmentByOrderForUser("ORD-1", "u1", false)).thenReturn(dto(1L));
+        when(service.getShipmentByOrderForUser("ORD-1", "u1", false)).thenReturn(dto("uuid-1"));
 
         var resp = controller.getByOrder("ORD-1", user("u1", false));
 
@@ -121,7 +121,7 @@ class ShipmentControllerTest {
     @Test
     @DisplayName("getMyShipments uses the principal's userId")
     void getMyShipments() {
-        when(service.getMyShipments("u1")).thenReturn(List.of(dto(1L), dto(2L)));
+        when(service.getMyShipments("u1")).thenReturn(List.of(dto("uuid-1"), dto("uuid-2")));
 
         var resp = controller.getMyShipments(user("u1", false));
 
@@ -133,46 +133,46 @@ class ShipmentControllerTest {
     @Test
     @DisplayName("updateStatus forwards status + notes and returns OK")
     void updateStatus() {
-        when(service.updateStatus(1L, "PICKED_UP", "picked")).thenReturn(dto(1L));
+        when(service.updateStatus("uuid-1", "PICKED_UP", "picked")).thenReturn(dto("uuid-1"));
 
-        var resp = controller.updateStatus(1L, new UpdateStatusRequest("PICKED_UP", "picked"));
+        var resp = controller.updateStatus("uuid-1", new UpdateStatusRequest("PICKED_UP", "picked"));
 
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(resp.getBody().message()).isEqualTo("Status updated");
-        verify(service).updateStatus(1L, "PICKED_UP", "picked");
+        verify(service).updateStatus("uuid-1", "PICKED_UP", "picked");
     }
 
     @Test
     @DisplayName("assignTracking forwards carrier + trackingNumber")
     void assignTracking() {
-        when(service.assignTracking(1L, "GHTK", "TRK-1")).thenReturn(dto(1L));
+        when(service.assignTracking("uuid-1", "GHTK", "TRK-1")).thenReturn(dto("uuid-1"));
 
-        var resp = controller.assignTracking(1L, new AssignTrackingRequest("GHTK", "TRK-1"));
+        var resp = controller.assignTracking("uuid-1", new AssignTrackingRequest("GHTK", "TRK-1"));
 
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(resp.getBody().message()).isEqualTo("Tracking assigned");
-        verify(service).assignTracking(1L, "GHTK", "TRK-1");
+        verify(service).assignTracking("uuid-1", "GHTK", "TRK-1");
     }
 
     @Test
     @DisplayName("setEstimatedDelivery forwards the date")
     void setEstimatedDelivery() {
         var when = Instant.parse("2026-06-10T00:00:00Z");
-        when(service.setEstimatedDelivery(1L, when)).thenReturn(dto(1L));
+        when(service.setEstimatedDelivery("uuid-1", when)).thenReturn(dto("uuid-1"));
 
-        var resp = controller.setEstimatedDelivery(1L, new SetEstimatedDeliveryRequest(when));
+        var resp = controller.setEstimatedDelivery("uuid-1", new SetEstimatedDeliveryRequest(when));
 
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(resp.getBody().message()).isEqualTo("Estimated delivery date set");
-        verify(service).setEstimatedDelivery(1L, when);
+        verify(service).setEstimatedDelivery("uuid-1", when);
     }
 
     @Test
     @DisplayName("markDelivered returns OK with delivered message")
     void markDelivered() {
-        when(service.markDelivered(1L)).thenReturn(dto(1L));
+        when(service.markDelivered("uuid-1")).thenReturn(dto("uuid-1"));
 
-        var resp = controller.markDelivered(1L);
+        var resp = controller.markDelivered("uuid-1");
 
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(resp.getBody().message()).isEqualTo("Shipment marked as delivered");
@@ -181,7 +181,7 @@ class ShipmentControllerTest {
     @Test
     @DisplayName("listByStatus forwards pagination params and returns the page")
     void listByStatus() {
-        Page<ShipmentDTO> page = new PageImpl<>(List.of(dto(1L)));
+        Page<ShipmentDTO> page = new PageImpl<>(List.of(dto("uuid-1")));
         when(service.listByStatus("IN_TRANSIT", 2, 25)).thenReturn(page);
 
         var resp = controller.listByStatus("IN_TRANSIT", 2, 25);

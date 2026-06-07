@@ -48,21 +48,21 @@ public class FlashSaleController {
     @PostMapping("/{id}/activate")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Activate a scheduled flash sale (ADMIN)")
-    public ResponseEntity<ApiResponse<FlashSaleDTO>> activate(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<FlashSaleDTO>> activate(@PathVariable String id) {
         return ResponseEntity.ok(ApiResponse.ok(service.activateSale(id), "Flash sale activated"));
     }
 
     @PostMapping("/{id}/end")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "End an active flash sale (ADMIN)")
-    public ResponseEntity<ApiResponse<FlashSaleDTO>> end(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<FlashSaleDTO>> end(@PathVariable String id) {
         return ResponseEntity.ok(ApiResponse.ok(service.endSale(id), "Flash sale ended"));
     }
 
     @PostMapping("/{id}/cancel")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Cancel a flash sale (ADMIN)")
-    public ResponseEntity<ApiResponse<FlashSaleDTO>> cancel(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<FlashSaleDTO>> cancel(@PathVariable String id) {
         return ResponseEntity.ok(ApiResponse.ok(service.cancelSale(id), "Flash sale cancelled"));
     }
 
@@ -78,13 +78,13 @@ public class FlashSaleController {
 
     @GetMapping("/{id}")
     @Operation(summary = "Get a flash sale by id (PUBLIC)")
-    public ResponseEntity<ApiResponse<FlashSaleDTO>> getById(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<FlashSaleDTO>> getById(@PathVariable String id) {
         return ResponseEntity.ok(ApiResponse.ok(service.getSale(id)));
     }
 
     @GetMapping("/{id}/availability")
     @Operation(summary = "Check slot availability for a flash sale (PUBLIC)")
-    public ResponseEntity<ApiResponse<AvailabilityResponse>> availability(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<AvailabilityResponse>> availability(@PathVariable String id) {
         return ResponseEntity.ok(ApiResponse.ok(service.checkAvailability(id)));
     }
 
@@ -93,7 +93,7 @@ public class FlashSaleController {
     @PostMapping("/{id}/participate")
     @Operation(summary = "Participate in a flash sale (JWT)")
     public ResponseEntity<ApiResponse<ParticipateResponse>> participate(
-            @PathVariable Long id,
+            @PathVariable String id,
             @Valid @RequestBody ParticipateRequest request,
             @AuthenticationPrincipal AuthenticatedUser currentUser) {
         var response = service.participate(id, currentUser.userId(), request.quantity());

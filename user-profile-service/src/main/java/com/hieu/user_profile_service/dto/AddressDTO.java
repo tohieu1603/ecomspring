@@ -13,7 +13,7 @@ import lombok.Value;
 @Value
 @Builder
 public class AddressDTO {
-    Long id;
+    String id;
     String userId;
     String label;
     String recipientName;

@@ -11,7 +11,7 @@ import java.util.Optional;
 
 /** Spring Data repository for {@link ShipmentJpaEntity}. */
 @Repository
-public interface ShipmentRepository extends JpaRepository<ShipmentJpaEntity, Long> {
+public interface ShipmentRepository extends JpaRepository<ShipmentJpaEntity, String> {
 
     Optional<ShipmentJpaEntity> findByOrderId(String orderId);
 

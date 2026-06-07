@@ -84,6 +84,6 @@ public class PaymentServiceClient {
         return resp.data();
     }
 
-    /** Public return shape — kept identical to the pre-migration record so callers don't change. */
-    public record PaymentInitiated(Long paymentId, String qrCodeUrl, String payUrl) {}
+    /** Public return shape — paymentId is now String UUID. */
+    public record PaymentInitiated(String paymentId, String qrCodeUrl, String payUrl) {}
 }

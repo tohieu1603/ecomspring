@@ -40,7 +40,7 @@ class FlashSaleControllerTest {
     @Mock FlashSaleApplicationService service;
     @InjectMocks FlashSaleController controller;
 
-    private static FlashSaleDTO dto(Long id) {
+    private static FlashSaleDTO dto(String id) {
         return new FlashSaleDTO(id, "p1", "Product One",
                 BigDecimal.valueOf(100), BigDecimal.valueOf(80),
                 10, 0, 2, Instant.now(), Instant.now().plusSeconds(3600),
@@ -48,7 +48,7 @@ class FlashSaleControllerTest {
     }
 
     private static PageDTO<FlashSaleDTO> page() {
-        return new PageDTO<>(List.of(dto(1L)), 0, 20, 1, 1, true, true);
+        return new PageDTO<>(List.of(dto("1")), 0, 20, 1, 1, true, true);
     }
 
     @Test
@@ -57,7 +57,7 @@ class FlashSaleControllerTest {
         var request = new CreateFlashSaleRequest("p1", "Product One",
                 BigDecimal.valueOf(100), BigDecimal.valueOf(80), 10, 2,
                 Instant.now().plusSeconds(3600), Instant.now().plusSeconds(7200), "desc");
-        var created = dto(42L);
+        var created = dto("42");
         when(service.createSale(request)).thenReturn(created);
 
         ResponseEntity<ApiResponse<FlashSaleDTO>> resp = controller.createSale(request);
@@ -84,21 +84,21 @@ class FlashSaleControllerTest {
     @Test
     @DisplayName("activate -> 200 OK with 'Flash sale activated' message")
     void activate() {
-        when(service.activateSale(1L)).thenReturn(dto(1L));
+        when(service.activateSale("1")).thenReturn(dto("1"));
 
-        ResponseEntity<ApiResponse<FlashSaleDTO>> resp = controller.activate(1L);
+        ResponseEntity<ApiResponse<FlashSaleDTO>> resp = controller.activate("1");
 
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(resp.getBody().message()).isEqualTo("Flash sale activated");
-        verify(service).activateSale(1L);
+        verify(service).activateSale("1");
     }
 
     @Test
     @DisplayName("end -> 200 OK with 'Flash sale ended' message")
     void end() {
-        when(service.endSale(1L)).thenReturn(dto(1L));
+        when(service.endSale("1")).thenReturn(dto("1"));
 
-        ResponseEntity<ApiResponse<FlashSaleDTO>> resp = controller.end(1L);
+        ResponseEntity<ApiResponse<FlashSaleDTO>> resp = controller.end("1");
 
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(resp.getBody().message()).isEqualTo("Flash sale ended");
@@ -107,9 +107,9 @@ class FlashSaleControllerTest {
     @Test
     @DisplayName("cancel -> 200 OK with 'Flash sale cancelled' message")
     void cancel() {
-        when(service.cancelSale(1L)).thenReturn(dto(1L));
+        when(service.cancelSale("1")).thenReturn(dto("1"));
 
-        ResponseEntity<ApiResponse<FlashSaleDTO>> resp = controller.cancel(1L);
+        ResponseEntity<ApiResponse<FlashSaleDTO>> resp = controller.cancel("1");
 
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(resp.getBody().message()).isEqualTo("Flash sale cancelled");
@@ -129,10 +129,10 @@ class FlashSaleControllerTest {
     @Test
     @DisplayName("getById -> 200 OK with the sale payload (no message)")
     void getById() {
-        var found = dto(9L);
-        when(service.getSale(9L)).thenReturn(found);
+        var found = dto("9");
+        when(service.getSale("9")).thenReturn(found);
 
-        ResponseEntity<ApiResponse<FlashSaleDTO>> resp = controller.getById(9L);
+        ResponseEntity<ApiResponse<FlashSaleDTO>> resp = controller.getById("9");
 
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(resp.getBody().data()).isSameAs(found);
@@ -143,9 +143,9 @@ class FlashSaleControllerTest {
     @DisplayName("availability -> 200 OK with the availability payload")
     void availability() {
         var avail = new AvailabilityResponse(10, 3, 7, true, null);
-        when(service.checkAvailability(4L)).thenReturn(avail);
+        when(service.checkAvailability("4")).thenReturn(avail);
 
-        ResponseEntity<ApiResponse<AvailabilityResponse>> resp = controller.availability(4L);
+        ResponseEntity<ApiResponse<AvailabilityResponse>> resp = controller.availability("4");
 
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(resp.getBody().data()).isSameAs(avail);
@@ -157,14 +157,14 @@ class FlashSaleControllerTest {
         var principal = new AuthenticatedUser("user-123", "alice",
                 List.of("ROLE_USER"), List.of());
         var request = new ParticipateRequest(3);
-        var response = new ParticipateResponse(true, 100L, 7, null);
-        when(service.participate(5L, "user-123", 3)).thenReturn(response);
+        var response = new ParticipateResponse(true, "100", 7, null);
+        when(service.participate("5", "user-123", 3)).thenReturn(response);
 
         ResponseEntity<ApiResponse<ParticipateResponse>> resp =
-                controller.participate(5L, request, principal);
+                controller.participate("5", request, principal);
 
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(resp.getBody().data()).isSameAs(response);
-        verify(service).participate(5L, "user-123", 3);
+        verify(service).participate("5", "user-123", 3);
     }
 }

@@ -67,11 +67,11 @@ class InventoryGrpcServiceTest {
     @Test
     @DisplayName("checkStock maps available=true when stock >= requested")
     void checkStock_available() {
-        when(inventoryService.getByProductId(5L))
-                .thenReturn(InventoryDTO.builder().productId(5L).availableQuantity(30).build());
+        when(inventoryService.getByProductId("5"))
+                .thenReturn(InventoryDTO.builder().productId("5").availableQuantity(30).build());
         var obs = new Capture<CheckStockResponse>();
 
-        grpcService.checkStock(CheckStockRequest.newBuilder().setProductId(5L).setQuantity(10).build(), obs);
+        grpcService.checkStock(CheckStockRequest.newBuilder().setProductId("5").setQuantity(10).build(), obs);
 
         assertThat(obs.error).isNull();
         assertThat(obs.completed).isTrue();
@@ -82,11 +82,11 @@ class InventoryGrpcServiceTest {
     @Test
     @DisplayName("checkStock maps available=false when stock < requested")
     void checkStock_insufficient() {
-        when(inventoryService.getByProductId(5L))
-                .thenReturn(InventoryDTO.builder().productId(5L).availableQuantity(3).build());
+        when(inventoryService.getByProductId("5"))
+                .thenReturn(InventoryDTO.builder().productId("5").availableQuantity(3).build());
         var obs = new Capture<CheckStockResponse>();
 
-        grpcService.checkStock(CheckStockRequest.newBuilder().setProductId(5L).setQuantity(10).build(), obs);
+        grpcService.checkStock(CheckStockRequest.newBuilder().setProductId("5").setQuantity(10).build(), obs);
 
         assertThat(obs.value.getAvailable()).isFalse();
         assertThat(obs.value.getAvailableQuantity()).isEqualTo(3);
@@ -95,10 +95,10 @@ class InventoryGrpcServiceTest {
     @Test
     @DisplayName("checkStock translates InventoryNotFoundException -> NOT_FOUND")
     void checkStock_notFound() {
-        when(inventoryService.getByProductId(9L)).thenThrow(new InventoryNotFoundException(9L));
+        when(inventoryService.getByProductId("9")).thenThrow(new InventoryNotFoundException("9"));
         var obs = new Capture<CheckStockResponse>();
 
-        grpcService.checkStock(CheckStockRequest.newBuilder().setProductId(9L).setQuantity(1).build(), obs);
+        grpcService.checkStock(CheckStockRequest.newBuilder().setProductId("9").setQuantity(1).build(), obs);
 
         assertThat(obs.value).isNull();
         assertThat(codeOf(obs.error)).isEqualTo(Status.Code.NOT_FOUND);
@@ -107,10 +107,10 @@ class InventoryGrpcServiceTest {
     @Test
     @DisplayName("checkStock translates unexpected error -> INTERNAL")
     void checkStock_internal() {
-        when(inventoryService.getByProductId(9L)).thenThrow(new RuntimeException("db down"));
+        when(inventoryService.getByProductId("9")).thenThrow(new RuntimeException("db down"));
         var obs = new Capture<CheckStockResponse>();
 
-        grpcService.checkStock(CheckStockRequest.newBuilder().setProductId(9L).setQuantity(1).build(), obs);
+        grpcService.checkStock(CheckStockRequest.newBuilder().setProductId("9").setQuantity(1).build(), obs);
 
         assertThat(codeOf(obs.error)).isEqualTo(Status.Code.INTERNAL);
     }
@@ -126,8 +126,8 @@ class InventoryGrpcServiceTest {
 
         var req = ReserveStockRequest.newBuilder()
                 .setOrderId("ORDER-1")
-                .addItems(ReserveItem.newBuilder().setProductId(100L).setQuantity(4).build())
-                .addItems(ReserveItem.newBuilder().setProductId(200L).setQuantity(7).build())
+                .addItems(ReserveItem.newBuilder().setProductId("100").setQuantity(4).build())
+                .addItems(ReserveItem.newBuilder().setProductId("200").setQuantity(7).build())
                 .build();
         grpcService.reserveStock(req, obs);
 
@@ -135,9 +135,9 @@ class InventoryGrpcServiceTest {
         ReservationRequest mapped = reservationCaptor.getValue();
         assertThat(mapped.orderId()).isEqualTo("ORDER-1");
         assertThat(mapped.items()).hasSize(2);
-        assertThat(mapped.items().get(0).productId()).isEqualTo(100L);
+        assertThat(mapped.items().get(0).productId()).isEqualTo("100");
         assertThat(mapped.items().get(0).quantity()).isEqualTo(4);
-        assertThat(mapped.items().get(1).productId()).isEqualTo(200L);
+        assertThat(mapped.items().get(1).productId()).isEqualTo("200");
 
         assertThat(obs.error).isNull();
         assertThat(obs.completed).isTrue();
@@ -165,7 +165,7 @@ class InventoryGrpcServiceTest {
     @DisplayName("reserveStock translates InsufficientStockException -> FAILED_PRECONDITION")
     void reserveStock_insufficient() {
         when(inventoryService.reserveStock(any(ReservationRequest.class)))
-                .thenThrow(new InsufficientStockException(1L, 0, 5));
+                .thenThrow(new InsufficientStockException("1", 0, 5));
         var obs = new Capture<ReserveStockResponse>();
 
         grpcService.reserveStock(ReserveStockRequest.newBuilder().setOrderId("O").build(), obs);
@@ -178,7 +178,7 @@ class InventoryGrpcServiceTest {
     @DisplayName("reserveStock translates InventoryNotFoundException -> NOT_FOUND")
     void reserveStock_notFound() {
         when(inventoryService.reserveStock(any(ReservationRequest.class)))
-                .thenThrow(new InventoryNotFoundException(1L));
+                .thenThrow(new InventoryNotFoundException("1"));
         var obs = new Capture<ReserveStockResponse>();
 
         grpcService.reserveStock(ReserveStockRequest.newBuilder().setOrderId("O").build(), obs);

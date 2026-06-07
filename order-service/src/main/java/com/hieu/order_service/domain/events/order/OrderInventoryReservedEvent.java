@@ -8,16 +8,16 @@ import java.util.UUID;
 public record OrderInventoryReservedEvent(
         UUID eventId,
         Instant occurredOn,
-        Long orderId,
+        String orderId,
         String orderNumber,
         String reservationId
 ) implements DomainEvent {
 
     /** Convenience factory — generates eventId and occurredOn automatically. */
-    public OrderInventoryReservedEvent(Long orderId, String orderNumber, String reservationId) {
+    public OrderInventoryReservedEvent(String orderId, String orderNumber, String reservationId) {
         this(UUID.randomUUID(), Instant.now(), orderId, orderNumber, reservationId);
     }
 
     @Override
-    public String aggregateId() { return String.valueOf(orderId); }
+    public String aggregateId() { return orderId; }
 }

@@ -17,7 +17,7 @@ import java.util.UUID;
 public record OrderPlacedEvent(
         UUID eventId,
         Instant occurredOn,
-        Long orderId,
+        String orderId,
         String orderNumber,
         String userId,
         BigDecimal totalAmount,
@@ -37,7 +37,7 @@ public record OrderPlacedEvent(
     }
 
     /** Convenience factory — generates eventId and occurredOn automatically. */
-    public OrderPlacedEvent(Long orderId, String orderNumber, String userId,
+    public OrderPlacedEvent(String orderId, String orderNumber, String userId,
                             BigDecimal totalAmount, String paymentMethod,
                             AddressSnapshot shippingAddress, List<ItemSnapshot> items) {
         this(UUID.randomUUID(), Instant.now(),
@@ -45,7 +45,7 @@ public record OrderPlacedEvent(
     }
 
     @Override
-    public String aggregateId() { return String.valueOf(orderId); }
+    public String aggregateId() { return orderId; }
 
     /** Flat projection of the shipping address — avoids leaking the VO across services. */
     public record AddressSnapshot(String recipientName, String recipientPhone,
@@ -53,6 +53,6 @@ public record OrderPlacedEvent(
                                    String city, String country, String postalCode) {}
 
     /** Flat projection of an order item. */
-    public record ItemSnapshot(Long productId, String productName, Long variantId,
+    public record ItemSnapshot(String productId, String productName, String variantId,
                                 String variantSku, BigDecimal unitPrice, int quantity) {}
 }

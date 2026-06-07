@@ -8,8 +8,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,12 +28,12 @@ class InventoryServiceIT extends AbstractIntegrationTest {
     @Autowired InventoryRepository inventoryRepository;
     @Autowired StockRedisService stockRedisService;
 
-    private Long productId;
+    private String productId;
     private String sku;
 
     @BeforeEach
     void seedInventory() {
-        productId = Math.abs(UUID.randomUUID().getMostSignificantBits()) % 100_000 + 1;
+        productId = UUID.randomUUID().toString();
         sku = "SKU-IT-" + productId;
         // Ensure no duplicate productId (idempotent clean)
         inventoryRepository.findByProductId(productId)

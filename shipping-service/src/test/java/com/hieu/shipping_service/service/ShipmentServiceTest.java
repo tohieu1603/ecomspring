@@ -46,7 +46,7 @@ class ShipmentServiceTest {
         service = new ShipmentService(repo, events);
     }
 
-    private static ShipmentJpaEntity shipment(Long id, String userId, ShipmentStatus status) {
+    private static ShipmentJpaEntity shipment(String id, String userId, ShipmentStatus status) {
         var e = new ShipmentJpaEntity();
         e.setId(id);
         e.setOrderId("ORD-1");
@@ -76,7 +76,7 @@ class ShipmentServiceTest {
             when(repo.findByOrderId("ORD-1")).thenReturn(Optional.empty());
             when(repo.save(any(ShipmentJpaEntity.class))).thenAnswer(inv -> {
                 ShipmentJpaEntity e = inv.getArgument(0);
-                e.setId(7L);
+                e.setId("uuid-7");
                 return e;
             });
 
@@ -90,7 +90,7 @@ class ShipmentServiceTest {
         @Test
         @DisplayName("rejects a duplicate orderId")
         void create_duplicate() {
-            when(repo.findByOrderId("ORD-1")).thenReturn(Optional.of(shipment(1L, "u1", ShipmentStatus.PENDING)));
+            when(repo.findByOrderId("ORD-1")).thenReturn(Optional.of(shipment("uuid-1", "u1", ShipmentStatus.PENDING)));
 
             assertThatThrownBy(() -> service.createShipment(createRequest("GHTK", "Vietnam")))
                     .isInstanceOf(DuplicateShipmentException.class);
@@ -115,10 +115,10 @@ class ShipmentServiceTest {
         @Test
         @DisplayName("performs a legal transition and publishes a status-changed event")
         void update_legalTransition() {
-            when(repo.findById(1L)).thenReturn(Optional.of(shipment(1L, "u1", ShipmentStatus.PENDING)));
+            when(repo.findById("uuid-1")).thenReturn(Optional.of(shipment("uuid-1", "u1", ShipmentStatus.PENDING)));
             when(repo.save(any(ShipmentJpaEntity.class))).thenAnswer(inv -> inv.getArgument(0));
 
-            ShipmentDTO dto = service.updateStatus(1L, "PICKED_UP", "picked");
+            ShipmentDTO dto = service.updateStatus("uuid-1", "PICKED_UP", "picked");
 
             assertThat(dto.status()).isEqualTo("PICKED_UP");
             verify(events).publishEvent(any(ShipmentStatusChangedEvent.class));
@@ -127,9 +127,9 @@ class ShipmentServiceTest {
         @Test
         @DisplayName("rejects an illegal transition")
         void update_illegalTransition() {
-            when(repo.findById(1L)).thenReturn(Optional.of(shipment(1L, "u1", ShipmentStatus.PENDING)));
+            when(repo.findById("uuid-1")).thenReturn(Optional.of(shipment("uuid-1", "u1", ShipmentStatus.PENDING)));
 
-            assertThatThrownBy(() -> service.updateStatus(1L, "DELIVERED", null))
+            assertThatThrownBy(() -> service.updateStatus("uuid-1", "DELIVERED", null))
                     .isInstanceOf(InvalidShipmentStateException.class);
             verify(repo, never()).save(any());
             verify(events, never()).publishEvent(any());
@@ -138,9 +138,9 @@ class ShipmentServiceTest {
         @Test
         @DisplayName("rejects an unknown status string")
         void update_invalidStatus() {
-            when(repo.findById(1L)).thenReturn(Optional.of(shipment(1L, "u1", ShipmentStatus.PENDING)));
+            when(repo.findById("uuid-1")).thenReturn(Optional.of(shipment("uuid-1", "u1", ShipmentStatus.PENDING)));
 
-            assertThatThrownBy(() -> service.updateStatus(1L, "BOGUS", null))
+            assertThatThrownBy(() -> service.updateStatus("uuid-1", "BOGUS", null))
                     .isInstanceOf(IllegalArgumentException.class);
         }
     }
@@ -152,11 +152,11 @@ class ShipmentServiceTest {
         @Test
         @DisplayName("assigns carrier + tracking number on a non-terminal shipment")
         void assign_happyPath() {
-            when(repo.findById(1L)).thenReturn(Optional.of(shipment(1L, "u1", ShipmentStatus.IN_TRANSIT)));
+            when(repo.findById("uuid-1")).thenReturn(Optional.of(shipment("uuid-1", "u1", ShipmentStatus.IN_TRANSIT)));
             when(repo.findByTrackingNumber("TRACK-1")).thenReturn(Optional.empty());
             when(repo.save(any(ShipmentJpaEntity.class))).thenAnswer(inv -> inv.getArgument(0));
 
-            ShipmentDTO dto = service.assignTracking(1L, "GHTK", "TRACK-1");
+            ShipmentDTO dto = service.assignTracking("uuid-1", "GHTK", "TRACK-1");
 
             assertThat(dto.trackingNumber()).isEqualTo("TRACK-1");
             assertThat(dto.carrier()).isEqualTo("GHTK");
@@ -165,20 +165,20 @@ class ShipmentServiceTest {
         @Test
         @DisplayName("rejects assigning tracking to a terminal shipment")
         void assign_terminalState() {
-            when(repo.findById(1L)).thenReturn(Optional.of(shipment(1L, "u1", ShipmentStatus.DELIVERED)));
+            when(repo.findById("uuid-1")).thenReturn(Optional.of(shipment("uuid-1", "u1", ShipmentStatus.DELIVERED)));
 
-            assertThatThrownBy(() -> service.assignTracking(1L, "GHTK", "TRACK-1"))
+            assertThatThrownBy(() -> service.assignTracking("uuid-1", "GHTK", "TRACK-1"))
                     .isInstanceOf(IllegalStateException.class);
         }
 
         @Test
         @DisplayName("rejects a tracking number already used by another shipment")
         void assign_trackingTaken() {
-            when(repo.findById(1L)).thenReturn(Optional.of(shipment(1L, "u1", ShipmentStatus.IN_TRANSIT)));
+            when(repo.findById("uuid-1")).thenReturn(Optional.of(shipment("uuid-1", "u1", ShipmentStatus.IN_TRANSIT)));
             when(repo.findByTrackingNumber("TRACK-1"))
-                    .thenReturn(Optional.of(shipment(2L, "u1", ShipmentStatus.IN_TRANSIT)));
+                    .thenReturn(Optional.of(shipment("uuid-2", "u1", ShipmentStatus.IN_TRANSIT)));
 
-            assertThatThrownBy(() -> service.assignTracking(1L, "GHTK", "TRACK-1"))
+            assertThatThrownBy(() -> service.assignTracking("uuid-1", "GHTK", "TRACK-1"))
                     .isInstanceOf(IllegalArgumentException.class);
         }
     }
@@ -190,10 +190,10 @@ class ShipmentServiceTest {
         @Test
         @DisplayName("OUT_FOR_DELIVERY → DELIVERED sets actual date and emits two events")
         void delivered_happyPath() {
-            when(repo.findById(1L)).thenReturn(Optional.of(shipment(1L, "u1", ShipmentStatus.OUT_FOR_DELIVERY)));
+            when(repo.findById("uuid-1")).thenReturn(Optional.of(shipment("uuid-1", "u1", ShipmentStatus.OUT_FOR_DELIVERY)));
             when(repo.save(any(ShipmentJpaEntity.class))).thenAnswer(inv -> inv.getArgument(0));
 
-            ShipmentDTO dto = service.markDelivered(1L);
+            ShipmentDTO dto = service.markDelivered("uuid-1");
 
             assertThat(dto.status()).isEqualTo(ShipmentStatus.DELIVERED.name());
             assertThat(dto.actualDeliveryDate()).isNotNull();
@@ -204,9 +204,9 @@ class ShipmentServiceTest {
         @Test
         @DisplayName("rejects delivery from a non OUT_FOR_DELIVERY state")
         void delivered_illegalState() {
-            when(repo.findById(1L)).thenReturn(Optional.of(shipment(1L, "u1", ShipmentStatus.PENDING)));
+            when(repo.findById("uuid-1")).thenReturn(Optional.of(shipment("uuid-1", "u1", ShipmentStatus.PENDING)));
 
-            assertThatThrownBy(() -> service.markDelivered(1L))
+            assertThatThrownBy(() -> service.markDelivered("uuid-1"))
                     .isInstanceOf(InvalidShipmentStateException.class);
         }
     }
@@ -218,23 +218,23 @@ class ShipmentServiceTest {
         @Test
         @DisplayName("owner can read their shipment")
         void owner_allowed() {
-            when(repo.findById(1L)).thenReturn(Optional.of(shipment(1L, "u1", ShipmentStatus.PENDING)));
-            assertThat(service.getShipmentForUser(1L, "u1", false)).isNotNull();
+            when(repo.findById("uuid-1")).thenReturn(Optional.of(shipment("uuid-1", "u1", ShipmentStatus.PENDING)));
+            assertThat(service.getShipmentForUser("uuid-1", "u1", false)).isNotNull();
         }
 
         @Test
         @DisplayName("a different non-admin user is denied")
         void otherUser_denied() {
-            when(repo.findById(1L)).thenReturn(Optional.of(shipment(1L, "u1", ShipmentStatus.PENDING)));
-            assertThatThrownBy(() -> service.getShipmentForUser(1L, "u2", false))
+            when(repo.findById("uuid-1")).thenReturn(Optional.of(shipment("uuid-1", "u1", ShipmentStatus.PENDING)));
+            assertThatThrownBy(() -> service.getShipmentForUser("uuid-1", "u2", false))
                     .isInstanceOf(ShipmentAccessDeniedException.class);
         }
 
         @Test
         @DisplayName("an admin can read any shipment")
         void admin_allowed() {
-            when(repo.findById(1L)).thenReturn(Optional.of(shipment(1L, "u1", ShipmentStatus.PENDING)));
-            assertThat(service.getShipmentForUser(1L, "someone-else", true)).isNotNull();
+            when(repo.findById("uuid-1")).thenReturn(Optional.of(shipment("uuid-1", "u1", ShipmentStatus.PENDING)));
+            assertThat(service.getShipmentForUser("uuid-1", "someone-else", true)).isNotNull();
         }
     }
 }

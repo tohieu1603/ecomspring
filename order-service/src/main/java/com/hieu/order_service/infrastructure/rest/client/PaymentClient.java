@@ -43,7 +43,7 @@ public interface PaymentClient {
     /** Process a refund for an existing payment. */
     @PostMapping("/api/v1/payments/{paymentId}/process-refund")
     ApiResponse<Void> processRefund(
-            @PathVariable Long paymentId,
+            @PathVariable String paymentId,
             @RequestBody RefundRequest request);
 
     // ── DTOs ──
@@ -52,9 +52,9 @@ public interface PaymentClient {
             String orderId, BigDecimal amount, String currency,
             String method, String idempotencyKey) {}
 
-    record PaymentInitiated(Long paymentId, String qrCodeUrl, String payUrl) {}
+    record PaymentInitiated(String paymentId, String qrCodeUrl, String payUrl) {}
 
-    record Payment(Long id, String orderId, BigDecimal amount, String status) {}
+    record Payment(String id, String orderId, BigDecimal amount, String status) {}
 
     record RefundRequest(BigDecimal refundAmount, String reason) {}
 }

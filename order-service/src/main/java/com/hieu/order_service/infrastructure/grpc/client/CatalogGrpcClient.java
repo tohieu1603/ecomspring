@@ -40,7 +40,7 @@ public class CatalogGrpcClient {
         return stub.withDeadlineAfter(DEADLINE_MS, TimeUnit.MILLISECONDS);
     }
 
-    public Optional<ProductSnapshot> getProduct(Long productId) {
+    public Optional<ProductSnapshot> getProduct(String productId) {
         try {
             var resp = deadlined().getProduct(GetProductRequest.newBuilder().setProductId(productId).build());
             if (!resp.getFound()) return Optional.empty();
@@ -86,6 +86,6 @@ public class CatalogGrpcClient {
         try { return new BigDecimal(s); } catch (NumberFormatException e) { return BigDecimal.ZERO; }
     }
 
-    public record VariantSnapshot(Long id, String sku, BigDecimal price, int quantity, String status) {}
-    public record ProductSnapshot(Long id, String name, String status, List<VariantSnapshot> variants) {}
+    public record VariantSnapshot(String id, String sku, BigDecimal price, int quantity, String status) {}
+    public record ProductSnapshot(String id, String name, String status, List<VariantSnapshot> variants) {}
 }

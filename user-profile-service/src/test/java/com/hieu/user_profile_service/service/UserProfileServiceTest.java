@@ -61,7 +61,7 @@ class UserProfileServiceTest {
         return e;
     }
 
-    private static AddressJpaEntity address(Long id, UserProfileJpaEntity owner) {
+    private static AddressJpaEntity address(String id, UserProfileJpaEntity owner) {
         var a = new AddressJpaEntity();
         a.setId(id);
         a.setUserProfile(owner);
@@ -175,11 +175,11 @@ class UserProfileServiceTest {
         @Test
         @DisplayName("updateAddress sets the new default and applies fields")
         void update_setsDefault() {
-            var existing = address(5L, profile(USER));
-            when(addressRepo.findByIdAndUserProfile_UserId(5L, USER)).thenReturn(Optional.of(existing));
+            var existing = address("5", profile(USER));
+            when(addressRepo.findByIdAndUserProfile_UserId("5", USER)).thenReturn(Optional.of(existing));
             when(addressRepo.save(any(AddressJpaEntity.class))).thenAnswer(inv -> inv.getArgument(0));
 
-            AddressDTO dto = service.updateAddress(USER, 5L, addrRequest(true));
+            AddressDTO dto = service.updateAddress(USER, "5", addrRequest(true));
 
             assertThat(dto.isDefault()).isTrue();
             assertThat(dto.getLabel()).isEqualTo("Office");
@@ -189,8 +189,8 @@ class UserProfileServiceTest {
         @Test
         @DisplayName("updateAddress throws for an address the user does not own")
         void update_notFound() {
-            when(addressRepo.findByIdAndUserProfile_UserId(5L, USER)).thenReturn(Optional.empty());
-            assertThatThrownBy(() -> service.updateAddress(USER, 5L, addrRequest(false)))
+            when(addressRepo.findByIdAndUserProfile_UserId("5", USER)).thenReturn(Optional.empty());
+            assertThatThrownBy(() -> service.updateAddress(USER, "5", addrRequest(false)))
                     .isInstanceOf(AddressNotFoundException.class);
         }
 
@@ -198,11 +198,11 @@ class UserProfileServiceTest {
         @DisplayName("setDefaultAddress clears the previous default and marks the new one")
         void setDefault() {
             when(profileRepo.findById(USER)).thenReturn(Optional.of(profile(USER)));
-            var existing = address(5L, profile(USER));
-            when(addressRepo.findByIdAndUserProfile_UserId(5L, USER)).thenReturn(Optional.of(existing));
+            var existing = address("5", profile(USER));
+            when(addressRepo.findByIdAndUserProfile_UserId("5", USER)).thenReturn(Optional.of(existing));
             when(addressRepo.save(any(AddressJpaEntity.class))).thenAnswer(inv -> inv.getArgument(0));
 
-            AddressDTO dto = service.setDefaultAddress(USER, 5L);
+            AddressDTO dto = service.setDefaultAddress(USER, "5");
 
             assertThat(dto.isDefault()).isTrue();
             verify(addressRepo).clearDefaultForUser(USER);
@@ -211,10 +211,10 @@ class UserProfileServiceTest {
         @Test
         @DisplayName("deleteAddress removes the owned address")
         void delete() {
-            var existing = address(5L, profile(USER));
-            when(addressRepo.findByIdAndUserProfile_UserId(5L, USER)).thenReturn(Optional.of(existing));
+            var existing = address("5", profile(USER));
+            when(addressRepo.findByIdAndUserProfile_UserId("5", USER)).thenReturn(Optional.of(existing));
 
-            service.deleteAddress(USER, 5L);
+            service.deleteAddress(USER, "5");
 
             verify(addressRepo).delete(eq(existing));
         }

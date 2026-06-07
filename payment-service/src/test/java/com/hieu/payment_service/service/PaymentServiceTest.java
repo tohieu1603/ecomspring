@@ -49,7 +49,7 @@ class PaymentServiceTest {
         service = new PaymentService(repository, sepayQrService, momoPayUrlService, eventPublisher);
     }
 
-    private static PaymentJpaEntity payment(Long id, String userId, String status, BigDecimal amount) {
+    private static PaymentJpaEntity payment(String id, String userId, String status, BigDecimal amount) {
         var e = new PaymentJpaEntity();
         e.setId(id);
         e.setOrderId("ORD-1");
@@ -81,7 +81,7 @@ class PaymentServiceTest {
             when(repository.findByOrderIdWithLock("ORD-1")).thenReturn(Optional.empty());
             when(repository.save(any(PaymentJpaEntity.class))).thenAnswer(inv -> {
                 PaymentJpaEntity e = inv.getArgument(0);
-                e.setId(1L);
+                e.setId("1");
                 return e;
             });
             when(sepayQrService.generateQrUrl("ORD-1", BigDecimal.valueOf(100_000))).thenReturn("http://qr");
@@ -114,11 +114,11 @@ class PaymentServiceTest {
         @DisplayName("replays the existing payment for a known idempotency key")
         void initiate_idempotentReplay() {
             when(repository.findByIdempotencyKey("key-1"))
-                    .thenReturn(Optional.of(payment(9L, "u1", "PENDING", BigDecimal.valueOf(100_000))));
+                    .thenReturn(Optional.of(payment("9", "u1", "PENDING", BigDecimal.valueOf(100_000))));
 
             PaymentDTO dto = service.initiatePayment("u1", initRequest("SEPAY", "key-1"));
 
-            assertThat(dto.getId()).isEqualTo(9L);
+            assertThat(dto.getId()).isEqualTo("9");
             verify(repository, never()).save(any());
         }
 
@@ -126,7 +126,7 @@ class PaymentServiceTest {
         @DisplayName("rejects a duplicate order")
         void initiate_duplicateOrder() {
             when(repository.findByOrderIdWithLock("ORD-1"))
-                    .thenReturn(Optional.of(payment(2L, "u1", "PENDING", BigDecimal.valueOf(100_000))));
+                    .thenReturn(Optional.of(payment("2", "u1", "PENDING", BigDecimal.valueOf(100_000))));
 
             assertThatThrownBy(() -> service.initiatePayment("u1", initRequest("SEPAY", null)))
                     .isInstanceOf(DuplicatePaymentException.class);
@@ -151,10 +151,10 @@ class PaymentServiceTest {
         @Test
         @DisplayName("PENDING → PAID, records transaction and publishes a completed event")
         void confirm_happyPath() {
-            when(repository.findById(1L)).thenReturn(Optional.of(payment(1L, "u1", "PENDING", BigDecimal.valueOf(100_000))));
+            when(repository.findById("1")).thenReturn(Optional.of(payment("1", "u1", "PENDING", BigDecimal.valueOf(100_000))));
             when(repository.save(any(PaymentJpaEntity.class))).thenAnswer(inv -> inv.getArgument(0));
 
-            PaymentDTO dto = service.confirmPayment(1L, "u1", "tx-123");
+            PaymentDTO dto = service.confirmPayment("1", "u1", "tx-123");
 
             assertThat(dto.getStatus()).isEqualTo("PAID");
             assertThat(dto.getTransactionId()).isEqualTo("tx-123");
@@ -164,18 +164,18 @@ class PaymentServiceTest {
         @Test
         @DisplayName("rejects confirming a non-PENDING payment")
         void confirm_wrongState() {
-            when(repository.findById(1L)).thenReturn(Optional.of(payment(1L, "u1", "PAID", BigDecimal.valueOf(100_000))));
+            when(repository.findById("1")).thenReturn(Optional.of(payment("1", "u1", "PAID", BigDecimal.valueOf(100_000))));
 
-            assertThatThrownBy(() -> service.confirmPayment(1L, "u1", "tx"))
+            assertThatThrownBy(() -> service.confirmPayment("1", "u1", "tx"))
                     .isInstanceOf(InvalidPaymentStateException.class);
         }
 
         @Test
         @DisplayName("rejects confirming another user's payment")
         void confirm_accessDenied() {
-            when(repository.findById(1L)).thenReturn(Optional.of(payment(1L, "u1", "PENDING", BigDecimal.valueOf(100_000))));
+            when(repository.findById("1")).thenReturn(Optional.of(payment("1", "u1", "PENDING", BigDecimal.valueOf(100_000))));
 
-            assertThatThrownBy(() -> service.confirmPayment(1L, "intruder", "tx"))
+            assertThatThrownBy(() -> service.confirmPayment("1", "intruder", "tx"))
                     .isInstanceOf(PaymentAccessDeniedException.class);
         }
     }
@@ -187,18 +187,18 @@ class PaymentServiceTest {
         @Test
         @DisplayName("cancels a PENDING payment")
         void cancel_happyPath() {
-            when(repository.findById(1L)).thenReturn(Optional.of(payment(1L, "u1", "PENDING", BigDecimal.valueOf(100_000))));
+            when(repository.findById("1")).thenReturn(Optional.of(payment("1", "u1", "PENDING", BigDecimal.valueOf(100_000))));
             when(repository.save(any(PaymentJpaEntity.class))).thenAnswer(inv -> inv.getArgument(0));
 
-            assertThat(service.cancelPayment(1L, "u1").getStatus()).isEqualTo("CANCELLED");
+            assertThat(service.cancelPayment("1", "u1").getStatus()).isEqualTo("CANCELLED");
         }
 
         @Test
         @DisplayName("rejects cancelling a PAID payment")
         void cancel_wrongState() {
-            when(repository.findById(1L)).thenReturn(Optional.of(payment(1L, "u1", "PAID", BigDecimal.valueOf(100_000))));
+            when(repository.findById("1")).thenReturn(Optional.of(payment("1", "u1", "PAID", BigDecimal.valueOf(100_000))));
 
-            assertThatThrownBy(() -> service.cancelPayment(1L, "u1"))
+            assertThatThrownBy(() -> service.cancelPayment("1", "u1"))
                     .isInstanceOf(InvalidPaymentStateException.class);
         }
     }
@@ -210,20 +210,20 @@ class PaymentServiceTest {
         @Test
         @DisplayName("PAID → REFUND_REQUESTED")
         void request_happyPath() {
-            when(repository.findById(1L)).thenReturn(Optional.of(payment(1L, "u1", "PAID", BigDecimal.valueOf(100_000))));
+            when(repository.findById("1")).thenReturn(Optional.of(payment("1", "u1", "PAID", BigDecimal.valueOf(100_000))));
             when(repository.save(any(PaymentJpaEntity.class))).thenAnswer(inv -> inv.getArgument(0));
 
-            assertThat(service.requestRefund(1L, "u1", "changed mind").getStatus())
+            assertThat(service.requestRefund("1", "u1", "changed mind").getStatus())
                     .isEqualTo("REFUND_REQUESTED");
         }
 
         @Test
         @DisplayName("is idempotent when already REFUND_REQUESTED")
         void request_idempotent() {
-            when(repository.findById(1L))
-                    .thenReturn(Optional.of(payment(1L, "u1", "REFUND_REQUESTED", BigDecimal.valueOf(100_000))));
+            when(repository.findById("1"))
+                    .thenReturn(Optional.of(payment("1", "u1", "REFUND_REQUESTED", BigDecimal.valueOf(100_000))));
 
-            service.requestRefund(1L, "u1", "again");
+            service.requestRefund("1", "u1", "again");
 
             verify(repository, never()).save(any());
         }
@@ -231,9 +231,9 @@ class PaymentServiceTest {
         @Test
         @DisplayName("rejects refund request for a non-PAID payment")
         void request_wrongState() {
-            when(repository.findById(1L)).thenReturn(Optional.of(payment(1L, "u1", "PENDING", BigDecimal.valueOf(100_000))));
+            when(repository.findById("1")).thenReturn(Optional.of(payment("1", "u1", "PENDING", BigDecimal.valueOf(100_000))));
 
-            assertThatThrownBy(() -> service.requestRefund(1L, "u1", "x"))
+            assertThatThrownBy(() -> service.requestRefund("1", "u1", "x"))
                     .isInstanceOf(InvalidPaymentStateException.class);
         }
     }
@@ -245,11 +245,11 @@ class PaymentServiceTest {
         @Test
         @DisplayName("REFUND_REQUESTED → REFUNDED with a partial amount and a refunded event")
         void process_partialAmount() {
-            when(repository.findById(1L))
-                    .thenReturn(Optional.of(payment(1L, "u1", "REFUND_REQUESTED", BigDecimal.valueOf(100_000))));
+            when(repository.findById("1"))
+                    .thenReturn(Optional.of(payment("1", "u1", "REFUND_REQUESTED", BigDecimal.valueOf(100_000))));
             when(repository.save(any(PaymentJpaEntity.class))).thenAnswer(inv -> inv.getArgument(0));
 
-            PaymentDTO dto = service.processRefund(1L, BigDecimal.valueOf(40_000), "partial");
+            PaymentDTO dto = service.processRefund("1", BigDecimal.valueOf(40_000), "partial");
 
             assertThat(dto.getStatus()).isEqualTo("REFUNDED");
             assertThat(dto.getRefundAmount()).isEqualByComparingTo(BigDecimal.valueOf(40_000));
@@ -259,11 +259,11 @@ class PaymentServiceTest {
         @Test
         @DisplayName("defaults the refund amount to the full payment when none is supplied")
         void process_defaultsToFull() {
-            when(repository.findById(1L))
-                    .thenReturn(Optional.of(payment(1L, "u1", "REFUND_REQUESTED", BigDecimal.valueOf(100_000))));
+            when(repository.findById("1"))
+                    .thenReturn(Optional.of(payment("1", "u1", "REFUND_REQUESTED", BigDecimal.valueOf(100_000))));
             when(repository.save(any(PaymentJpaEntity.class))).thenAnswer(inv -> inv.getArgument(0));
 
-            PaymentDTO dto = service.processRefund(1L, null, null);
+            PaymentDTO dto = service.processRefund("1", null, null);
 
             assertThat(dto.getRefundAmount()).isEqualByComparingTo(BigDecimal.valueOf(100_000));
         }
@@ -271,20 +271,20 @@ class PaymentServiceTest {
         @Test
         @DisplayName("rejects a refund amount exceeding the original")
         void process_amountTooLarge() {
-            when(repository.findById(1L))
-                    .thenReturn(Optional.of(payment(1L, "u1", "REFUND_REQUESTED", BigDecimal.valueOf(100_000))));
+            when(repository.findById("1"))
+                    .thenReturn(Optional.of(payment("1", "u1", "REFUND_REQUESTED", BigDecimal.valueOf(100_000))));
 
-            assertThatThrownBy(() -> service.processRefund(1L, BigDecimal.valueOf(200_000), null))
+            assertThatThrownBy(() -> service.processRefund("1", BigDecimal.valueOf(200_000), null))
                     .isInstanceOf(IllegalArgumentException.class);
         }
 
         @Test
         @DisplayName("is idempotent when already REFUNDED")
         void process_idempotent() {
-            when(repository.findById(1L))
-                    .thenReturn(Optional.of(payment(1L, "u1", "REFUNDED", BigDecimal.valueOf(100_000))));
+            when(repository.findById("1"))
+                    .thenReturn(Optional.of(payment("1", "u1", "REFUNDED", BigDecimal.valueOf(100_000))));
 
-            service.processRefund(1L, BigDecimal.valueOf(50_000), null);
+            service.processRefund("1", BigDecimal.valueOf(50_000), null);
 
             verify(repository, never()).save(any());
         }
@@ -298,7 +298,7 @@ class PaymentServiceTest {
         @DisplayName("confirms a PENDING payment and publishes a completed event")
         void autoConfirm_pending() {
             when(repository.findByOrderIdWithLock("ORD-1"))
-                    .thenReturn(Optional.of(payment(1L, "u1", "PENDING", BigDecimal.valueOf(100_000))));
+                    .thenReturn(Optional.of(payment("1", "u1", "PENDING", BigDecimal.valueOf(100_000))));
             when(repository.save(any(PaymentJpaEntity.class))).thenAnswer(inv -> inv.getArgument(0));
 
             service.autoConfirmByOrderId("ORD-1", "sepay-tx");
@@ -310,7 +310,7 @@ class PaymentServiceTest {
         @DisplayName("is a no-op for an already non-PENDING payment")
         void autoConfirm_alreadyPaid() {
             when(repository.findByOrderIdWithLock("ORD-1"))
-                    .thenReturn(Optional.of(payment(1L, "u1", "PAID", BigDecimal.valueOf(100_000))));
+                    .thenReturn(Optional.of(payment("1", "u1", "PAID", BigDecimal.valueOf(100_000))));
 
             service.autoConfirmByOrderId("ORD-1", "sepay-tx");
 

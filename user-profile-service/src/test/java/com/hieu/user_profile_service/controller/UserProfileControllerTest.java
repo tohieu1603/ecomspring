@@ -45,7 +45,7 @@ class UserProfileControllerTest {
         return UserProfileDTO.builder().userId(userId).email(userId + "@x.com").build();
     }
 
-    private static AddressDTO addressDTO(Long id) {
+    private static AddressDTO addressDTO(String id) {
         return AddressDTO.builder().id(id).userId(USER).city("HCM").build();
     }
 
@@ -78,7 +78,7 @@ class UserProfileControllerTest {
     @Test
     @DisplayName("getMyAddresses returns the service list for the principal")
     void getMyAddresses() {
-        var list = List.of(addressDTO(1L), addressDTO(2L));
+        var list = List.of(addressDTO("1"), addressDTO("2"));
         when(service.getAddresses(USER)).thenReturn(list);
 
         List<AddressDTO> result = controller.getMyAddresses(principal(USER));
@@ -90,7 +90,7 @@ class UserProfileControllerTest {
     @DisplayName("createAddress returns 201 CREATED with the created address in the body")
     void createAddress_returns201() {
         var req = new UpsertAddressRequest();
-        var dto = addressDTO(99L);
+        var dto = addressDTO("99");
         when(service.createAddress(USER, req)).thenReturn(dto);
 
         ResponseEntity<AddressDTO> resp = controller.createAddress(principal(USER), req);
@@ -104,33 +104,33 @@ class UserProfileControllerTest {
     @DisplayName("updateAddress forwards userId, addressId and body")
     void updateAddress() {
         var req = new UpsertAddressRequest();
-        var dto = addressDTO(5L);
-        when(service.updateAddress(USER, 5L, req)).thenReturn(dto);
+        var dto = addressDTO("5");
+        when(service.updateAddress(USER, "5", req)).thenReturn(dto);
 
-        AddressDTO result = controller.updateAddress(principal(USER), 5L, req);
+        AddressDTO result = controller.updateAddress(principal(USER), "5", req);
 
         assertThat(result).isSameAs(dto);
-        verify(service).updateAddress(USER, 5L, req);
+        verify(service).updateAddress(USER, "5", req);
     }
 
     @Test
     @DisplayName("deleteAddress delegates to the service (NO_CONTENT is declared via @ResponseStatus)")
     void deleteAddress() {
-        controller.deleteAddress(principal(USER), 8L);
+        controller.deleteAddress(principal(USER), "8");
 
-        verify(service).deleteAddress(USER, 8L);
+        verify(service).deleteAddress(USER, "8");
     }
 
     @Test
     @DisplayName("setDefault forwards userId and addressId")
     void setDefault() {
-        var dto = addressDTO(3L);
-        when(service.setDefaultAddress(USER, 3L)).thenReturn(dto);
+        var dto = addressDTO("3");
+        when(service.setDefaultAddress(USER, "3")).thenReturn(dto);
 
-        AddressDTO result = controller.setDefault(principal(USER), 3L);
+        AddressDTO result = controller.setDefault(principal(USER), "3");
 
         assertThat(result).isSameAs(dto);
-        verify(service).setDefaultAddress(USER, 3L);
+        verify(service).setDefaultAddress(USER, "3");
     }
 
     @Test
@@ -160,12 +160,12 @@ class UserProfileControllerTest {
     @Test
     @DisplayName("getAddressInternal (no-auth saga endpoint) forwards both path variables")
     void getAddressInternal() {
-        var dto = addressDTO(11L);
-        when(service.getAddress("u-7", 11L)).thenReturn(dto);
+        var dto = addressDTO("11");
+        when(service.getAddress("u-7", "11")).thenReturn(dto);
 
-        AddressDTO result = controller.getAddressInternal("u-7", 11L);
+        AddressDTO result = controller.getAddressInternal("u-7", "11", principal("u-7"));
 
         assertThat(result).isSameAs(dto);
-        verify(service).getAddress(eq("u-7"), eq(11L));
+        verify(service).getAddress(eq("u-7"), eq("11"));
     }
 }

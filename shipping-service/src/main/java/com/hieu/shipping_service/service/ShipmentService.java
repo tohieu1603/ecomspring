@@ -77,7 +77,7 @@ public class ShipmentService {
     }
 
     @Transactional(readOnly = true)
-    public ShipmentDTO getShipmentForUser(Long id, String userId, boolean isAdmin) {
+    public ShipmentDTO getShipmentForUser(String id, String userId, boolean isAdmin) {
         var entity = findById(id);
         if (!isAdmin && !entity.getUserId().equals(userId)) {
             throw new ShipmentAccessDeniedException(id);
@@ -115,7 +115,7 @@ public class ShipmentService {
 
     /** ADMIN: update status — validates state machine. */
     @Transactional
-    public ShipmentDTO updateStatus(Long id, String newStatusStr, String notes) {
+    public ShipmentDTO updateStatus(String id, String newStatusStr, String notes) {
         var entity = findById(id);
         var current = ShipmentStatus.valueOf(entity.getStatus());
         var target  = parseStatus(newStatusStr);
@@ -138,7 +138,7 @@ public class ShipmentService {
 
     /** ADMIN: assign tracking number + carrier. */
     @Transactional
-    public ShipmentDTO assignTracking(Long id, String carrier, String trackingNumber) {
+    public ShipmentDTO assignTracking(String id, String carrier, String trackingNumber) {
         validateCarrier(carrier);
         var entity = findById(id);
         var current = ShipmentStatus.valueOf(entity.getStatus());
@@ -165,7 +165,7 @@ public class ShipmentService {
 
     /** ADMIN: set estimated delivery date. */
     @Transactional
-    public ShipmentDTO setEstimatedDelivery(Long id, Instant estimatedDate) {
+    public ShipmentDTO setEstimatedDelivery(String id, Instant estimatedDate) {
         var entity = findById(id);
         var current = ShipmentStatus.valueOf(entity.getStatus());
         if (current == ShipmentStatus.DELIVERED || current == ShipmentStatus.RETURNED
@@ -178,7 +178,7 @@ public class ShipmentService {
 
     /** ADMIN: OUT_FOR_DELIVERY → DELIVERED; sets actual_delivery_date. */
     @Transactional
-    public ShipmentDTO markDelivered(Long id) {
+    public ShipmentDTO markDelivered(String id) {
         var entity = findById(id);
         var current = ShipmentStatus.valueOf(entity.getStatus());
         if (!current.canTransitionTo(ShipmentStatus.DELIVERED)) {
@@ -218,7 +218,7 @@ public class ShipmentService {
 
     // --- helpers ---
 
-    private ShipmentJpaEntity findById(Long id) {
+    private ShipmentJpaEntity findById(String id) {
         return repo.findById(id).orElseThrow(() -> new ShipmentNotFoundException(id));
     }
 

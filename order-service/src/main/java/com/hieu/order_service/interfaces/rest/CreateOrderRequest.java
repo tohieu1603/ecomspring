@@ -9,6 +9,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
+
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -33,9 +34,9 @@ public record CreateOrderRequest(
         @Size(max = 50)            String voucherCode
 ) {
     public record ItemRequest(
-            @NotNull @Min(1) Long productId,
+            @NotBlank @Size(max = 36) String productId,
             @Size(max = 200) String productName,
-            @NotNull @Min(1) Long variantId,
+            @Size(max = 36) String variantId,
             @Size(max = 100) String variantSku,
             @Size(max = 500) String variantImage,
             @NotNull @DecimalMin("0") BigDecimal unitPrice,

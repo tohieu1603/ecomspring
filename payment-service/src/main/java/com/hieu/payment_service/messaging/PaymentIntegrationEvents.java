@@ -12,7 +12,7 @@ public final class PaymentIntegrationEvents {
     public record PaymentCompletedEvent(
             String eventId,
             Instant occurredOn,
-            Long paymentId,
+            String paymentId,
             String orderId,
             String userId,
             BigDecimal amount,
@@ -20,7 +20,7 @@ public final class PaymentIntegrationEvents {
             String method,
             String transactionId
     ) {
-        public static PaymentCompletedEvent of(Long paymentId, String orderId, String userId,
+        public static PaymentCompletedEvent of(String paymentId, String orderId, String userId,
                                                BigDecimal amount, String currency,
                                                String method, String transactionId) {
             return new PaymentCompletedEvent(
@@ -32,13 +32,13 @@ public final class PaymentIntegrationEvents {
     public record PaymentRefundedEvent(
             String eventId,
             Instant occurredOn,
-            Long paymentId,
+            String paymentId,
             String orderId,
             String userId,
             BigDecimal refundAmount,
             String currency
     ) {
-        public static PaymentRefundedEvent of(Long paymentId, String orderId, String userId,
+        public static PaymentRefundedEvent of(String paymentId, String orderId, String userId,
                                               BigDecimal refundAmount, String currency) {
             return new PaymentRefundedEvent(
                     UUID.randomUUID().toString(), Instant.now(),

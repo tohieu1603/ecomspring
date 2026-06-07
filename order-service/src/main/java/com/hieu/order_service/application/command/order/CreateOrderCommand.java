@@ -25,9 +25,9 @@ public record CreateOrderCommand(
 ) implements Command<OrderDTO> {
 
     public record ItemCmd(
-            Long productId,
+            String productId,
             String productName,
-            Long variantId,
+            String variantId,
             String variantSku,
             String variantImage,
             BigDecimal unitPrice,

@@ -21,7 +21,7 @@ public class OrderGrpcService extends OrderServiceGrpc.OrderServiceImplBase {
     @Override
     public void getOrder(GetOrderRequest request, StreamObserver<GetOrderResponse> responseObserver) {
         try {
-            var dto = getByIdHandler.handle(new GetOrderByIdInternalQuery(request.getOrderId()));
+            var dto = getByIdHandler.handle(new GetOrderByIdInternalQuery(request.getOrderId())); // now String
             responseObserver.onNext(buildResponse(dto));
         } catch (OrderNotFoundException e) {
             responseObserver.onNext(GetOrderResponse.newBuilder().setFound(false).build());
@@ -64,7 +64,7 @@ public class OrderGrpcService extends OrderServiceGrpc.OrderServiceImplBase {
         if (dto.items() != null) {
             dto.items().forEach(i -> builder.addItems(
                     OrderItemSnapshot.newBuilder()
-                            .setVariantId(i.variantId() != null ? i.variantId() : 0)
+                            .setVariantId(i.variantId() != null ? i.variantId() : "")
                             .setSku(i.variantSku() != null ? i.variantSku() : "")
                             .setQuantity(i.quantity())
                             .setUnitPrice(i.unitPrice().toPlainString())

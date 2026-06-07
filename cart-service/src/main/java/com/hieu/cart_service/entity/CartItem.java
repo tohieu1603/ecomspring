@@ -5,6 +5,7 @@ import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.UUID;
 
 /**
  * JPA entity representing a single cart line item (user × variant).
@@ -24,20 +25,20 @@ import java.time.Instant;
 public class CartItem {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(length = 36)
+    private String id;
 
     @Column(name = "user_id", nullable = false, length = 64)
     private String userId;
 
-    @Column(name = "product_id", nullable = false)
-    private Long productId;
+    @Column(name = "product_id", nullable = false, length = 36)
+    private String productId;
 
     @Column(name = "product_name", nullable = false)
     private String productName;
 
-    @Column(name = "variant_id", nullable = false)
-    private Long variantId;
+    @Column(name = "variant_id", nullable = false, length = 36)
+    private String variantId;
 
     @Column(name = "variant_sku", nullable = false, length = 64)
     private String variantSku;
@@ -63,6 +64,7 @@ public class CartItem {
 
     @PrePersist
     void prePersist() {
+        if (id == null) id = UUID.randomUUID().toString();
         var now = Instant.now();
         createdAt = now;
         updatedAt = now;

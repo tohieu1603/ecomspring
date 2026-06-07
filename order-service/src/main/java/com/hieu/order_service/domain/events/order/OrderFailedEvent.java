@@ -8,16 +8,16 @@ import java.util.UUID;
 public record OrderFailedEvent(
         UUID eventId,
         Instant occurredOn,
-        Long orderId,
+        String orderId,
         String orderNumber,
         String userId,
         String reason
 ) implements DomainEvent {
 
-    public OrderFailedEvent(Long orderId, String orderNumber, String userId, String reason) {
+    public OrderFailedEvent(String orderId, String orderNumber, String userId, String reason) {
         this(UUID.randomUUID(), Instant.now(), orderId, orderNumber, userId, reason);
     }
 
     @Override
-    public String aggregateId() { return String.valueOf(orderId); }
+    public String aggregateId() { return orderId; }
 }

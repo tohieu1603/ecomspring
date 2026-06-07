@@ -54,7 +54,7 @@ class InventoryServiceTest {
 
     private static InventoryEntity inventory(int quantity, int reserved) {
         return InventoryEntity.builder()
-                .id(1L).productId(100L).sku("SKU-1")
+                .id("1").productId("100").sku("SKU-1")
                 .quantity(quantity).reservedQuantity(reserved).minStockLevel(5)
                 .build();
     }
@@ -64,11 +64,11 @@ class InventoryServiceTest {
     void create_seedsRedis() {
         when(inventoryRepository.save(any(InventoryEntity.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        InventoryDTO dto = service.create(100L, "SKU-1", 50, 5);
+        InventoryDTO dto = service.create("100", "SKU-1", 50, 5);
 
-        assertThat(dto.getProductId()).isEqualTo(100L);
+        assertThat(dto.getProductId()).isEqualTo("100");
         assertThat(dto.getQuantity()).isEqualTo(50);
-        verify(redisService).setStock(eq(100L), eq(50));
+        verify(redisService).setStock(eq("100"), eq(50));
     }
 
     @Nested
@@ -82,10 +82,10 @@ class InventoryServiceTest {
                     .thenReturn(List.of(inventory(50, 10)));
             when(inventoryRepository.save(any(InventoryEntity.class))).thenAnswer(inv -> inv.getArgument(0));
 
-            InventoryDTO dto = service.adjustStock(100L, 20, "admin", "restock");
+            InventoryDTO dto = service.adjustStock("100", 20, "admin", "restock");
 
             assertThat(dto.getQuantity()).isEqualTo(70);
-            verify(redisService).invalidate(100L);
+            verify(redisService).invalidate("100");
             verify(movementRepository).save(any(StockMovement.class));
         }
 
@@ -96,7 +96,7 @@ class InventoryServiceTest {
                     .thenReturn(List.of(inventory(50, 10)));
             when(inventoryRepository.save(any(InventoryEntity.class))).thenAnswer(inv -> inv.getArgument(0));
 
-            InventoryDTO dto = service.adjustStock(100L, -20, "admin", "shrinkage");
+            InventoryDTO dto = service.adjustStock("100", -20, "admin", "shrinkage");
 
             assertThat(dto.getQuantity()).isEqualTo(30);
         }
@@ -107,7 +107,7 @@ class InventoryServiceTest {
             when(inventoryRepository.findAllByProductIdInWithLock(anyList()))
                     .thenReturn(List.of(inventory(50, 45)));
 
-            assertThatThrownBy(() -> service.adjustStock(100L, -10, "admin", "bad"))
+            assertThatThrownBy(() -> service.adjustStock("100", -10, "admin", "bad"))
                     .isInstanceOf(IllegalArgumentException.class);
             verify(inventoryRepository, never()).save(any());
         }
@@ -117,7 +117,7 @@ class InventoryServiceTest {
         void notFound() {
             when(inventoryRepository.findAllByProductIdInWithLock(anyList())).thenReturn(List.of());
 
-            assertThatThrownBy(() -> service.adjustStock(100L, 5, "admin", null))
+            assertThatThrownBy(() -> service.adjustStock("100", 5, "admin", null))
                     .isInstanceOf(InventoryNotFoundException.class);
         }
     }

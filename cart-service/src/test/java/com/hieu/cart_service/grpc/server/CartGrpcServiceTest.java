@@ -45,7 +45,7 @@ class CartGrpcServiceTest {
 
     private static CartItemDTO fullItem() {
         return new CartItemDTO(
-                7L, 10L, "Widget", 100L, "SKU-100", "img.png",
+                "7", "10", "Widget", "100", "SKU-100", "img.png",
                 new BigDecimal("12.50"), 3, new BigDecimal("37.50"), null, null);
     }
 
@@ -66,11 +66,11 @@ class CartGrpcServiceTest {
         assertThat(resp.getUserId()).isEqualTo("u1");
         assertThat(resp.getItemsList()).hasSize(1);
         var snap = resp.getItemsList().get(0);
-        assertThat(snap.getId()).isEqualTo(7L);
+        assertThat(snap.getId()).isEqualTo("7");
         assertThat(snap.getUserId()).isEqualTo("u1");
-        assertThat(snap.getProductId()).isEqualTo(10L);
+        assertThat(snap.getProductId()).isEqualTo("10");
         assertThat(snap.getProductName()).isEqualTo("Widget");
-        assertThat(snap.getVariantId()).isEqualTo(100L);
+        assertThat(snap.getVariantId()).isEqualTo("100");
         assertThat(snap.getVariantSku()).isEqualTo("SKU-100");
         assertThat(snap.getVariantImage()).isEqualTo("img.png");
         assertThat(snap.getUnitPrice()).isEqualTo("12.50");
@@ -90,10 +90,10 @@ class CartGrpcServiceTest {
         var captor = ArgumentCaptor.forClass(GetCartResponse.class);
         verify(getObserver).onNext(captor.capture());
         var snap = captor.getValue().getItemsList().get(0);
-        assertThat(snap.getId()).isZero();
-        assertThat(snap.getProductId()).isZero();
+        assertThat(snap.getId()).isEmpty();
+        assertThat(snap.getProductId()).isEmpty();
         assertThat(snap.getProductName()).isEmpty();
-        assertThat(snap.getVariantId()).isZero();
+        assertThat(snap.getVariantId()).isEmpty();
         assertThat(snap.getVariantSku()).isEmpty();
         assertThat(snap.getVariantImage()).isEmpty();
         assertThat(snap.getUnitPrice()).isEqualTo("0");

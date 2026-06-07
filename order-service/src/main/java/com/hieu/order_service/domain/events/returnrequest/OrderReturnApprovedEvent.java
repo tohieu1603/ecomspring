@@ -8,15 +8,15 @@ import java.util.UUID;
 public record OrderReturnApprovedEvent(
         UUID eventId,
         Instant occurredOn,
-        Long orderId,
-        Long returnRequestId,
+        String orderId,
+        String returnRequestId,
         String userId
 ) implements DomainEvent {
 
-    public OrderReturnApprovedEvent(Long orderId, Long returnRequestId, String userId) {
+    public OrderReturnApprovedEvent(String orderId, String returnRequestId, String userId) {
         this(UUID.randomUUID(), Instant.now(), orderId, returnRequestId, userId);
     }
 
     @Override
-    public String aggregateId() { return String.valueOf(orderId); }
+    public String aggregateId() { return orderId; }
 }

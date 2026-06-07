@@ -30,8 +30,8 @@ class InventoryEntityTest {
 
     static InventoryEntity anInventoryEntity(int quantity, int reserved) {
         return InventoryEntity.builder()
-                .id(1L)
-                .productId(100L)
+                .id("1")
+                .productId("100")
                 .sku("SKU-TEST-001")
                 .quantity(quantity)
                 .reservedQuantity(reserved)

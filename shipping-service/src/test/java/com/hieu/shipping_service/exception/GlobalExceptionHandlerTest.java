@@ -50,7 +50,7 @@ class GlobalExceptionHandlerTest {
     @Test
     @DisplayName("ShipmentNotFoundException -> 404 SHIPPING-7404")
     void notFound() {
-        var resp = handler.notFound(new ShipmentNotFoundException(5L), req);
+        var resp = handler.notFound(new ShipmentNotFoundException("5"), req);
         assertBody(resp, HttpStatus.NOT_FOUND, ErrorCode.SHIPMENT_NOT_FOUND.code());
         assertThat(resp.getBody().message()).contains("5");
     }
@@ -73,7 +73,7 @@ class GlobalExceptionHandlerTest {
     @Test
     @DisplayName("ShipmentAccessDeniedException -> 403 SHIPPING-7403")
     void accessDenied() {
-        var resp = handler.accessDenied(new ShipmentAccessDeniedException(3L), req);
+        var resp = handler.accessDenied(new ShipmentAccessDeniedException("3"), req);
         assertBody(resp, HttpStatus.FORBIDDEN, ErrorCode.SHIPPING_FORBIDDEN.code());
     }
 

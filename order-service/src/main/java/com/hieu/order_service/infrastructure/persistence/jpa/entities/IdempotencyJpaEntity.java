@@ -15,8 +15,8 @@ public class IdempotencyJpaEntity {
     @Column(name = "idempotency_key", length = 128)
     private String idempotencyKey;
 
-    @Column(name = "order_id")
-    private Long orderId;
+    @Column(name = "order_id", length = 36)
+    private String orderId;
 
     @Column(name = "status", nullable = false, length = 20)
     private String status;

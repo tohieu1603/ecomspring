@@ -41,7 +41,7 @@ public class OrderStateTransitioner {
      * skips the rest of the saga without holding stock.
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void applyVoucherDiscount(Long orderId, BigDecimal discountAmount) {
+    public void applyVoucherDiscount(String orderId, BigDecimal discountAmount) {
         var order = orderRepository.findById(OrderId.of(orderId))
                 .orElseThrow(() -> new OrderNotFoundException(orderId));
         order.applyDiscount(Money.of(discountAmount));
@@ -49,7 +49,7 @@ public class OrderStateTransitioner {
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void markInventoryReservedAndPaymentPending(Long orderId, String reservationId) {
+    public void markInventoryReservedAndPaymentPending(String orderId, String reservationId) {
         var order = orderRepository.findById(OrderId.of(orderId))
                 .orElseThrow(() -> new OrderNotFoundException(orderId));
         order.markInventoryReserved(ReservationId.of(reservationId));
@@ -58,7 +58,7 @@ public class OrderStateTransitioner {
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void markPaymentInitiated(Long orderId, Long paymentId) {
+    public void markPaymentInitiated(String orderId, String paymentId) {
         var order = orderRepository.findById(OrderId.of(orderId))
                 .orElseThrow(() -> new OrderNotFoundException(orderId));
         order.markPaymentInitiated(paymentId);
@@ -71,7 +71,7 @@ public class OrderStateTransitioner {
      * (inventory has its own idempotent retry semantics).
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void markFailedAndReleaseStock(Long orderId, String reason) {
+    public void markFailedAndReleaseStock(String orderId, String reason) {
         var order = orderRepository.findById(OrderId.of(orderId)).orElse(null);
         if (order == null) return;
         if (order.getReservationId() != null) {

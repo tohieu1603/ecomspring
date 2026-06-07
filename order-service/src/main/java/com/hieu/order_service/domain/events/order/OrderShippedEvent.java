@@ -8,17 +8,17 @@ import java.util.UUID;
 public record OrderShippedEvent(
         UUID eventId,
         Instant occurredOn,
-        Long orderId,
+        String orderId,
         String orderNumber,
         String userId,
-        Long shipmentId
+        String shipmentId
 ) implements DomainEvent {
 
     /** Convenience factory — generates eventId and occurredOn automatically. */
-    public OrderShippedEvent(Long orderId, String orderNumber, String userId, Long shipmentId) {
+    public OrderShippedEvent(String orderId, String orderNumber, String userId, String shipmentId) {
         this(UUID.randomUUID(), Instant.now(), orderId, orderNumber, userId, shipmentId);
     }
 
     @Override
-    public String aggregateId() { return String.valueOf(orderId); }
+    public String aggregateId() { return orderId; }
 }

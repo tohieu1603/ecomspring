@@ -105,7 +105,7 @@ public class PaymentService {
     }
 
     @Transactional(readOnly = true)
-    public PaymentDTO getPayment(Long id, String requestingUserId, boolean isAdmin) {
+    public PaymentDTO getPayment(String id, String requestingUserId, boolean isAdmin) {
         PaymentJpaEntity entity = findById(id);
         if (!isAdmin && !entity.getUserId().equals(requestingUserId)) {
             throw new PaymentAccessDeniedException(id);
@@ -116,7 +116,7 @@ public class PaymentService {
     @Transactional(readOnly = true)
     public PaymentDTO getPaymentByOrder(String orderId) {
         return toDTO(repository.findByOrderId(orderId)
-                .orElseThrow(() -> new PaymentNotFoundException(orderId)));
+                .orElseThrow(() -> PaymentNotFoundException.forOrder(orderId)));
     }
 
     @Transactional(readOnly = true)
@@ -134,7 +134,7 @@ public class PaymentService {
     }
 
     @Transactional
-    public PaymentDTO confirmPayment(Long id, String userId, String transactionId) {
+    public PaymentDTO confirmPayment(String id, String userId, String transactionId) {
         PaymentJpaEntity entity = findById(id);
         if (!entity.getUserId().equals(userId)) {
             throw new PaymentAccessDeniedException(id);
@@ -157,7 +157,7 @@ public class PaymentService {
     }
 
     @Transactional
-    public PaymentDTO cancelPayment(Long id, String userId) {
+    public PaymentDTO cancelPayment(String id, String userId) {
         PaymentJpaEntity entity = findById(id);
         if (!entity.getUserId().equals(userId)) {
             throw new PaymentAccessDeniedException(id);
@@ -172,7 +172,7 @@ public class PaymentService {
     }
 
     @Transactional
-    public PaymentDTO requestRefund(Long id, String userId, String reason) {
+    public PaymentDTO requestRefund(String id, String userId, String reason) {
         PaymentJpaEntity entity = findById(id);
         if (!entity.getUserId().equals(userId)) {
             throw new PaymentAccessDeniedException(id);
@@ -190,7 +190,7 @@ public class PaymentService {
     }
 
     @Transactional
-    public PaymentDTO processRefund(Long id, BigDecimal refundAmount, String reason) {
+    public PaymentDTO processRefund(String id, BigDecimal refundAmount, String reason) {
         PaymentJpaEntity entity = findById(id);
         if (REFUNDED.equals(entity.getStatus())) {
             return toDTO(entity); // idempotent
@@ -242,7 +242,7 @@ public class PaymentService {
 
     // ---- helpers ----
 
-    private PaymentJpaEntity findById(Long id) {
+    private PaymentJpaEntity findById(String id) {
         return repository.findById(id)
                 .orElseThrow(() -> new PaymentNotFoundException(id));
     }

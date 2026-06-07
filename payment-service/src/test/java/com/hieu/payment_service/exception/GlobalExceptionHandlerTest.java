@@ -44,7 +44,7 @@ class GlobalExceptionHandlerTest {
     @Test
     @DisplayName("PaymentNotFoundException -> 404 NOT_FOUND")
     void notFound() {
-        var ex = new PaymentNotFoundException(42L);
+        var ex = new PaymentNotFoundException("42");
 
         ResponseEntity<ErrorResponse> resp = handler.handleNotFound(ex, request);
 
@@ -96,7 +96,7 @@ class GlobalExceptionHandlerTest {
     @Test
     @DisplayName("PaymentAccessDeniedException -> 403 FORBIDDEN")
     void accessDenied() {
-        var ex = new PaymentAccessDeniedException(7L);
+        var ex = new PaymentAccessDeniedException("7");
 
         ResponseEntity<ErrorResponse> resp = handler.handleAccessDenied(ex, request);
 

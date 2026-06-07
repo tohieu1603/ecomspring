@@ -78,7 +78,7 @@ public class FlashSaleApplicationService {
     // -------------------------------------------------------------------------
 
     @Transactional(readOnly = true)
-    public FlashSaleDTO getSale(Long id) {
+    public FlashSaleDTO getSale(String id) {
         return toDTO(findById(id));
     }
 
@@ -95,7 +95,7 @@ public class FlashSaleApplicationService {
     }
 
     @Transactional(readOnly = true)
-    public AvailabilityResponse checkAvailability(Long id) {
+    public AvailabilityResponse checkAvailability(String id) {
         var entity = findById(id);
         var now = clock.instant();
         boolean statusActive = entity.getStatus() == FlashSaleStatus.ACTIVE;
@@ -121,7 +121,7 @@ public class FlashSaleApplicationService {
     // -------------------------------------------------------------------------
 
     @Transactional
-    public FlashSaleDTO activateSale(Long id) {
+    public FlashSaleDTO activateSale(String id) {
         var entity = findById(id);
         transition(entity, FlashSaleStatus.ACTIVE);
         var saved = repository.save(entity);
@@ -136,7 +136,7 @@ public class FlashSaleApplicationService {
     }
 
     @Transactional
-    public FlashSaleDTO endSale(Long id) {
+    public FlashSaleDTO endSale(String id) {
         var entity = findById(id);
         transition(entity, FlashSaleStatus.ENDED);
         var saved = repository.save(entity);
@@ -147,7 +147,7 @@ public class FlashSaleApplicationService {
     }
 
     @Transactional
-    public FlashSaleDTO cancelSale(Long id) {
+    public FlashSaleDTO cancelSale(String id) {
         var entity = findById(id);
         transition(entity, FlashSaleStatus.CANCELLED);
         return toDTO(repository.save(entity));
@@ -158,7 +158,7 @@ public class FlashSaleApplicationService {
     // -------------------------------------------------------------------------
 
     @Transactional
-    public ParticipateResponse participate(Long saleId, String userId, int quantity) {
+    public ParticipateResponse participate(String saleId, String userId, int quantity) {
         // 1. Pre-check with pessimistic read lock
         var sale = repository.findByIdWithReadLock(saleId)
                 .orElseThrow(() -> new FlashSaleNotFoundException(saleId));
@@ -235,7 +235,7 @@ public class FlashSaleApplicationService {
     // Helpers
     // -------------------------------------------------------------------------
 
-    private void assertSaleActive(FlashSaleJpaEntity sale, Long id, Instant now) {
+    private void assertSaleActive(FlashSaleJpaEntity sale, String id, Instant now) {
         if (sale.getStatus() != FlashSaleStatus.ACTIVE
                 || now.isBefore(sale.getStartTime())
                 || now.isAfter(sale.getEndTime())) {
@@ -250,7 +250,7 @@ public class FlashSaleApplicationService {
         entity.setStatus(target);
     }
 
-    private FlashSaleJpaEntity findById(Long id) {
+    private FlashSaleJpaEntity findById(String id) {
         return repository.findById(id).orElseThrow(() -> new FlashSaleNotFoundException(id));
     }
 

@@ -1,5 +1,5 @@
 CREATE TABLE flash_sales (
-  id             BIGSERIAL PRIMARY KEY,
+  id             VARCHAR(36)    PRIMARY KEY,
   product_id     VARCHAR(64)    NOT NULL,
   product_name   VARCHAR(255),
   original_price NUMERIC(19,2)  NOT NULL,
@@ -22,10 +22,10 @@ CREATE INDEX ix_flashsale_start   ON flash_sales(start_time);
 CREATE INDEX ix_flashsale_product ON flash_sales(product_id);
 
 CREATE TABLE flash_sale_participations (
-  id             BIGSERIAL PRIMARY KEY,
-  sale_id        BIGINT      NOT NULL REFERENCES flash_sales(id) ON DELETE CASCADE,
-  user_id        VARCHAR(64) NOT NULL,
-  quantity       INT         NOT NULL CHECK (quantity > 0),
+  id             VARCHAR(36)  PRIMARY KEY,
+  sale_id        VARCHAR(36)  NOT NULL REFERENCES flash_sales(id) ON DELETE CASCADE,
+  user_id        VARCHAR(64)  NOT NULL,
+  quantity       INT          NOT NULL CHECK (quantity > 0),
   participated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 

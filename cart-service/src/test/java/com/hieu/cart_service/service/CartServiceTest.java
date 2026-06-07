@@ -49,9 +49,9 @@ class CartServiceTest {
         service = new CartService(cartItemRepository, cacheService, Optional.<CatalogGrpcClient>empty());
     }
 
-    private static CartItem item(Long id, Long variantId, BigDecimal unitPrice, int qty) {
+    private static CartItem item(String id, String variantId, BigDecimal unitPrice, int qty) {
         return CartItem.builder()
-                .id(id).userId("u1").productId(10L).productName("Product")
+                .id(id).userId("u1").productId("10").productName("Product")
                 .variantId(variantId).variantSku("SKU-" + variantId)
                 .unitPrice(unitPrice).quantity(qty)
                 .build();
@@ -72,7 +72,7 @@ class CartServiceTest {
     void getCart_cacheMiss_computesTotals() {
         when(cacheService.getCart("u1")).thenReturn(null);
         when(cartItemRepository.findAllByUserId("u1"))
-                .thenReturn(List.of(item(1L, 100L, BigDecimal.valueOf(50_000), 2)));
+                .thenReturn(List.of(item("1", "100", BigDecimal.valueOf(50_000), 2)));
 
         CartDTO cart = service.getCart("u1");
 
@@ -85,12 +85,12 @@ class CartServiceTest {
     @DisplayName("removeItem deletes the line, evicts the cache and recomputes totals")
     void removeItem() {
         when(cartItemRepository.findAllByUserId("u1"))
-                .thenReturn(List.of(item(2L, 200L, BigDecimal.valueOf(30_000), 1)));
+                .thenReturn(List.of(item("2", "200", BigDecimal.valueOf(30_000), 1)));
 
-        CartDTO cart = service.removeItem("u1", 100L);
+        CartDTO cart = service.removeItem("u1", "100");
 
         assertThat(cart.totalAmount()).isEqualByComparingTo(BigDecimal.valueOf(30_000));
-        verify(cartItemRepository).deleteByUserIdAndVariantId("u1", 100L);
+        verify(cartItemRepository).deleteByUserIdAndVariantId("u1", "100");
         verify(cacheService).evictCart("u1");
     }
 
@@ -108,7 +108,7 @@ class CartServiceTest {
         CartDTO cached = new CartDTO("u1", List.of(), 0, BigDecimal.ZERO, List.of());
         when(cacheService.getIdempotentResult("k1")).thenReturn(cached);
 
-        CartDTO result = service.addItem("u1", new AddToCartRequest(10L, 100L, 1, "k1"));
+        CartDTO result = service.addItem("u1", new AddToCartRequest("10", "100", 1, "k1"));
 
         assertThat(result).isSameAs(cached);
         verifyNoInteractions(cartItemRepository);
@@ -117,7 +117,7 @@ class CartServiceTest {
     @Test
     @DisplayName("addItem fails with 503 when the catalog client is unavailable")
     void addItem_catalogUnavailable() {
-        assertThatThrownBy(() -> service.addItem("u1", new AddToCartRequest(10L, 100L, 1, null)))
+        assertThatThrownBy(() -> service.addItem("u1", new AddToCartRequest("10", "100", 1, null)))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode().value()).isEqualTo(503));
     }
@@ -127,19 +127,19 @@ class CartServiceTest {
     void updateItem_zeroDeletes() {
         when(cartItemRepository.findAllByUserId("u1")).thenReturn(List.of());
 
-        service.updateItem("u1", 100L, new UpdateCartItemRequest(0));
+        service.updateItem("u1", "100", new UpdateCartItemRequest(0));
 
-        verify(cartItemRepository).deleteByUserIdAndVariantId("u1", 100L);
+        verify(cartItemRepository).deleteByUserIdAndVariantId("u1", "100");
     }
 
     @Test
     @DisplayName("removeItemsByProduct deletes by product and evicts every affected user")
     void removeItemsByProduct() {
-        when(cartItemRepository.findUserIdsByProductId(10L)).thenReturn(List.of("u1", "u2"));
+        when(cartItemRepository.findUserIdsByProductId("10")).thenReturn(List.of("u1", "u2"));
 
-        service.removeItemsByProduct(10L);
+        service.removeItemsByProduct("10");
 
-        verify(cartItemRepository).deleteAllByProductId(10L);
+        verify(cartItemRepository).deleteAllByProductId("10");
         verify(cacheService).evictCart("u1");
         verify(cacheService).evictCart("u2");
     }

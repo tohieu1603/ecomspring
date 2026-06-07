@@ -48,36 +48,36 @@ class InventoryControllerTest {
         controller = new InventoryController(inventoryService);
     }
 
-    private static InventoryDTO dto(long productId) {
-        return InventoryDTO.builder().id(1L).productId(productId).sku("SKU-" + productId)
+    private static InventoryDTO dto(String productId) {
+        return InventoryDTO.builder().id("1").productId(productId).sku("SKU-" + productId)
                 .quantity(10).reservedQuantity(0).availableQuantity(10).build();
     }
 
     @Test
     @DisplayName("create returns 201 CREATED with the service DTO")
     void create_returns201() {
-        var req = new CreateInventoryRequest(50L, "SKU-50", 100, 10);
-        when(inventoryService.create(50L, "SKU-50", 100, 10)).thenReturn(dto(50L));
+        var req = new CreateInventoryRequest("50", "SKU-50", 100, 10);
+        when(inventoryService.create("50", "SKU-50", 100, 10)).thenReturn(dto("50"));
 
         ResponseEntity<InventoryDTO> resp = controller.create(req);
 
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        assertThat(resp.getBody().getProductId()).isEqualTo(50L);
+        assertThat(resp.getBody().getProductId()).isEqualTo("50");
     }
 
     @Test
     @DisplayName("getByProductId returns 200 OK")
     void getByProductId_returns200() {
-        when(inventoryService.getByProductId(7L)).thenReturn(dto(7L));
-        ResponseEntity<InventoryDTO> resp = controller.getByProductId(7L);
+        when(inventoryService.getByProductId("7")).thenReturn(dto("7"));
+        ResponseEntity<InventoryDTO> resp = controller.getByProductId("7");
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(resp.getBody().getProductId()).isEqualTo(7L);
+        assertThat(resp.getBody().getProductId()).isEqualTo("7");
     }
 
     @Test
     @DisplayName("getBySku returns 200 OK")
     void getBySku_returns200() {
-        when(inventoryService.getBySku("SKU-7")).thenReturn(dto(7L));
+        when(inventoryService.getBySku("SKU-7")).thenReturn(dto("7"));
         ResponseEntity<InventoryDTO> resp = controller.getBySku("SKU-7");
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(resp.getBody().getSku()).isEqualTo("SKU-7");
@@ -86,7 +86,7 @@ class InventoryControllerTest {
     @Test
     @DisplayName("getAll forwards page/size and returns the PageDTO")
     void getAll_returnsPage() {
-        var pageDto = new PageDTO<>(List.of(dto(1L)), 2, 25, 51L, 3);
+        var pageDto = new PageDTO<>(List.of(dto("1")), 2, 25, 51L, 3);
         when(inventoryService.getAll(2, 25)).thenReturn(pageDto);
 
         ResponseEntity<PageDTO<InventoryDTO>> resp = controller.getAll(2, 25);
@@ -99,7 +99,7 @@ class InventoryControllerTest {
     @Test
     @DisplayName("reserve returns 200 OK with the ReservationResult")
     void reserve_returns200() {
-        var req = new ReservationRequest("O-1", List.of(new ReservationRequest.ReservationItem(1L, 2)));
+        var req = new ReservationRequest("O-1", List.of(new ReservationRequest.ReservationItem("1", 2)));
         when(inventoryService.reserveStock(req)).thenReturn(ReservationResult.success("O-1"));
 
         ResponseEntity<ReservationResult> resp = controller.reserve(req);
@@ -131,13 +131,13 @@ class InventoryControllerTest {
     @Test
     @DisplayName("adjustStock: numeric delta + String note + principal -> actor=principal.toString()")
     void adjustStock_numericDelta_principalActor() {
-        when(inventoryService.adjustStock(eq(7L), deltaCaptor.capture(),
-                actorCaptor.capture(), noteCaptor.capture())).thenReturn(dto(7L));
+        when(inventoryService.adjustStock(eq("7"), deltaCaptor.capture(),
+                actorCaptor.capture(), noteCaptor.capture())).thenReturn(dto("7"));
         Map<String, Object> body = new HashMap<>();
         body.put("delta", 25);            // Number branch
         body.put("note", "restock");      // String branch
 
-        ResponseEntity<InventoryDTO> resp = controller.adjustStock(7L, body, "user-42");
+        ResponseEntity<InventoryDTO> resp = controller.adjustStock("7", body, "user-42");
 
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(deltaCaptor.getValue()).isEqualTo(25);
@@ -148,12 +148,12 @@ class InventoryControllerTest {
     @Test
     @DisplayName("adjustStock: String delta is parsed; null principal -> actor defaults to ADMIN")
     void adjustStock_stringDelta_defaultActor() {
-        when(inventoryService.adjustStock(eq(7L), deltaCaptor.capture(),
-                actorCaptor.capture(), noteCaptor.capture())).thenReturn(dto(7L));
+        when(inventoryService.adjustStock(eq("7"), deltaCaptor.capture(),
+                actorCaptor.capture(), noteCaptor.capture())).thenReturn(dto("7"));
         Map<String, Object> body = new HashMap<>();
         body.put("delta", "-15");         // String -> Integer.parseInt branch
 
-        ResponseEntity<InventoryDTO> resp = controller.adjustStock(7L, body, null);
+        ResponseEntity<InventoryDTO> resp = controller.adjustStock("7", body, null);
 
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(deltaCaptor.getValue()).isEqualTo(-15);
@@ -164,13 +164,13 @@ class InventoryControllerTest {
     @Test
     @DisplayName("adjustStock: non-String note (e.g. number) is dropped to null")
     void adjustStock_nonStringNoteDropped() {
-        when(inventoryService.adjustStock(eq(7L), deltaCaptor.capture(),
-                actorCaptor.capture(), noteCaptor.capture())).thenReturn(dto(7L));
+        when(inventoryService.adjustStock(eq("7"), deltaCaptor.capture(),
+                actorCaptor.capture(), noteCaptor.capture())).thenReturn(dto("7"));
         Map<String, Object> body = new HashMap<>();
         body.put("delta", 5);
         body.put("note", 999);            // not a String
 
-        controller.adjustStock(7L, body, "actorX");
+        controller.adjustStock("7", body, "actorX");
 
         assertThat(noteCaptor.getValue()).isNull();
         assertThat(actorCaptor.getValue()).isEqualTo("actorX");

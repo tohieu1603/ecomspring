@@ -10,14 +10,14 @@ import java.util.UUID;
 public record ShipmentStatusChangedEvent(
         String eventId,
         Instant occurredOn,
-        Long shipmentId,
+        String shipmentId,
         String orderId,
         String userId,
         String oldStatus,
         String newStatus,
         String trackingNumber
 ) {
-    public static ShipmentStatusChangedEvent of(Long shipmentId, String orderId, String userId,
+    public static ShipmentStatusChangedEvent of(String shipmentId, String orderId, String userId,
                                                  String oldStatus, String newStatus,
                                                  String trackingNumber) {
         return new ShipmentStatusChangedEvent(

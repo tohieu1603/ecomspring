@@ -49,7 +49,7 @@ public class InventoryGrpcClient {
         log.debug("gRPC reserveStock: orderId={}, items={}", orderId, items.size());
         var builder = ReserveStockRequest.newBuilder().setOrderId(orderId);
         items.forEach(i -> builder.addItems(ReserveItem.newBuilder()
-                .setProductId(i.productId())
+                .setProductId(i.productId())   // String after proto migration
                 .setQuantity(i.quantity())
                 .build()));
         try {
@@ -88,7 +88,7 @@ public class InventoryGrpcClient {
         }
     }
 
-    public boolean checkStock(Long productId, int quantity) {
+    public boolean checkStock(String productId, int quantity) {
         try {
             CheckStockResponse resp = deadlined().checkStock(CheckStockRequest.newBuilder()
                     .setProductId(productId).setQuantity(quantity).build());
@@ -100,5 +100,5 @@ public class InventoryGrpcClient {
     }
 
     /** Input record so saga callers don't depend on generated proto types. */
-    public record ReserveItemInput(Long productId, int quantity) {}
+    public record ReserveItemInput(String productId, int quantity) {}
 }

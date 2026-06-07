@@ -30,7 +30,7 @@ class GlobalExceptionHandlerTest {
     @Test
     @DisplayName("FlashSaleNotFoundException -> 404 NOT_FOUND")
     void notFound() {
-        var ex = new FlashSaleNotFoundException(7L);
+        var ex = new FlashSaleNotFoundException("7");
 
         ResponseEntity<ApiResponse<Void>> resp = handler.handleNotFound(ex);
 
@@ -44,7 +44,7 @@ class GlobalExceptionHandlerTest {
     @Test
     @DisplayName("InsufficientSlotsException -> 409 CONFLICT INSUFFICIENT_SLOTS")
     void insufficient() {
-        var ex = new InsufficientSlotsException(3L);
+        var ex = new InsufficientSlotsException("3");
 
         ResponseEntity<ApiResponse<Void>> resp = handler.handleInsufficient(ex);
 
@@ -56,7 +56,7 @@ class GlobalExceptionHandlerTest {
     @Test
     @DisplayName("SaleNotActiveException -> 422 UNPROCESSABLE_ENTITY SALE_NOT_ACTIVE")
     void notActive() {
-        var ex = new SaleNotActiveException(5L);
+        var ex = new SaleNotActiveException("5");
 
         ResponseEntity<ApiResponse<Void>> resp = handler.handleNotActive(ex);
 
@@ -67,7 +67,7 @@ class GlobalExceptionHandlerTest {
     @Test
     @DisplayName("UserQuotaExceededException -> 409 CONFLICT QUOTA_EXCEEDED")
     void quotaExceeded() {
-        var ex = new UserQuotaExceededException("u1", 5L, 2);
+        var ex = new UserQuotaExceededException("u1", "5", 2);
 
         ResponseEntity<ApiResponse<Void>> resp = handler.handleQuotaExceeded(ex);
 
@@ -79,7 +79,7 @@ class GlobalExceptionHandlerTest {
     @Test
     @DisplayName("InvalidStateTransitionException -> 409 CONFLICT INVALID_STATE")
     void invalidTransition() {
-        var ex = new InvalidStateTransitionException(5L, FlashSaleStatus.ENDED, FlashSaleStatus.ACTIVE);
+        var ex = new InvalidStateTransitionException("5", FlashSaleStatus.ENDED, FlashSaleStatus.ACTIVE);
 
         ResponseEntity<ApiResponse<Void>> resp = handler.handleInvalidTransition(ex);
 

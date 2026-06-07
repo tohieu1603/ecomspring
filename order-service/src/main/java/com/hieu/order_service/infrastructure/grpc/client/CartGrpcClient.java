@@ -41,7 +41,7 @@ public class CartGrpcClient {
             if (resp.getItemsCount() == 0) throw new EmptyCartException("Cart is empty for user " + userId);
             return resp.getItemsList().stream()
                     .map(i -> new CartItemSnapshot(
-                            i.getProductId(), i.getProductName(), i.getVariantId(),
+                            i.getProductId(), i.getProductName(), i.getVariantId(),  // now String
                             i.getVariantSku(), i.getVariantImage(), i.getUnitPrice(), i.getQuantity()))
                     .toList();
         } catch (EmptyCartException e) {
@@ -64,7 +64,7 @@ public class CartGrpcClient {
     }
 
     /** Flat projection — saga converts these into OrderItems via the Order aggregate factory. */
-    public record CartItemSnapshot(Long productId, String productName, Long variantId,
+    public record CartItemSnapshot(String productId, String productName, String variantId,
                                     String variantSku, String variantImage,
                                     String unitPrice, int quantity) {}
 }

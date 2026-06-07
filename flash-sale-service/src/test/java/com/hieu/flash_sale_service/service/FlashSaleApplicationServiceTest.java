@@ -38,7 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -79,7 +79,7 @@ class FlashSaleApplicationServiceTest {
     private static FlashSaleJpaEntity sale(FlashSaleStatus status, Instant start, Instant end,
                                            int total, int reserved, int maxPerUser) {
         var e = new FlashSaleJpaEntity();
-        e.setId(1L);
+        e.setId("1");
         e.setProductId("p1");
         e.setProductName("Product One");
         e.setOriginalPrice(BigDecimal.valueOf(100));
@@ -117,7 +117,7 @@ class FlashSaleApplicationServiceTest {
                     BigDecimal.valueOf(100), BigDecimal.valueOf(80));
             when(repository.save(any(FlashSaleJpaEntity.class))).thenAnswer(inv -> {
                 FlashSaleJpaEntity e = inv.getArgument(0);
-                e.setId(42L);
+                e.setId("42");
                 return e;
             });
 
@@ -176,10 +176,10 @@ class FlashSaleApplicationServiceTest {
         @Test
         @DisplayName("uses the Redis counter when present")
         void availability_redisValue() {
-            when(repository.findById(1L)).thenReturn(Optional.of(activeSale(10, 3, 5)));
-            when(slotRedisService.getRemaining(1L)).thenReturn(7);
+            when(repository.findById("1")).thenReturn(Optional.of(activeSale(10, 3, 5)));
+            when(slotRedisService.getRemaining("1")).thenReturn(7);
 
-            AvailabilityResponse resp = service.checkAvailability(1L);
+            AvailabilityResponse resp = service.checkAvailability("1");
 
             assertThat(resp.available()).isTrue();
             assertThat(resp.remainingSlots()).isEqualTo(7);
@@ -189,10 +189,10 @@ class FlashSaleApplicationServiceTest {
         @Test
         @DisplayName("falls back to total-reserved when Redis is empty")
         void availability_dbFallback() {
-            when(repository.findById(1L)).thenReturn(Optional.of(activeSale(10, 4, 5)));
-            when(slotRedisService.getRemaining(1L)).thenReturn(null);
+            when(repository.findById("1")).thenReturn(Optional.of(activeSale(10, 4, 5)));
+            when(slotRedisService.getRemaining("1")).thenReturn(null);
 
-            AvailabilityResponse resp = service.checkAvailability(1L);
+            AvailabilityResponse resp = service.checkAvailability("1");
 
             assertThat(resp.remainingSlots()).isEqualTo(6);
             assertThat(resp.available()).isTrue();
@@ -203,10 +203,10 @@ class FlashSaleApplicationServiceTest {
         void availability_notActive() {
             var scheduled = sale(FlashSaleStatus.SCHEDULED,
                     NOW.minus(1, ChronoUnit.HOURS), NOW.plus(1, ChronoUnit.HOURS), 10, 0, 5);
-            when(repository.findById(1L)).thenReturn(Optional.of(scheduled));
-            when(slotRedisService.getRemaining(1L)).thenReturn(10);
+            when(repository.findById("1")).thenReturn(Optional.of(scheduled));
+            when(slotRedisService.getRemaining("1")).thenReturn(10);
 
-            AvailabilityResponse resp = service.checkAvailability(1L);
+            AvailabilityResponse resp = service.checkAvailability("1");
 
             assertThat(resp.available()).isFalse();
             assertThat(resp.reason()).contains("SCHEDULED");
@@ -215,8 +215,8 @@ class FlashSaleApplicationServiceTest {
         @Test
         @DisplayName("throws when the sale does not exist")
         void availability_notFound() {
-            when(repository.findById(99L)).thenReturn(Optional.empty());
-            assertThatThrownBy(() -> service.checkAvailability(99L))
+            when(repository.findById("99")).thenReturn(Optional.empty());
+            assertThatThrownBy(() -> service.checkAvailability("99"))
                     .isInstanceOf(FlashSaleNotFoundException.class);
         }
     }
@@ -230,13 +230,13 @@ class FlashSaleApplicationServiceTest {
         void activate_happyPath() {
             var scheduled = sale(FlashSaleStatus.SCHEDULED,
                     NOW.plus(1, ChronoUnit.HOURS), NOW.plus(2, ChronoUnit.HOURS), 10, 0, 5);
-            when(repository.findById(1L)).thenReturn(Optional.of(scheduled));
+            when(repository.findById("1")).thenReturn(Optional.of(scheduled));
             when(repository.save(any(FlashSaleJpaEntity.class))).thenAnswer(inv -> inv.getArgument(0));
 
-            FlashSaleDTO dto = service.activateSale(1L);
+            FlashSaleDTO dto = service.activateSale("1");
 
             assertThat(dto.status()).isEqualTo(FlashSaleStatus.ACTIVE);
-            verify(slotRedisService).seed(eq(1L), eq(10));
+            verify(slotRedisService).seed(eq("1"), eq(10));
             verify(eventPublisher).publishEvent(any(FlashSaleStartedEvent.class));
         }
 
@@ -245,9 +245,9 @@ class FlashSaleApplicationServiceTest {
         void activate_illegalTransition() {
             var ended = sale(FlashSaleStatus.ENDED,
                     NOW.minus(2, ChronoUnit.HOURS), NOW.minus(1, ChronoUnit.HOURS), 10, 10, 5);
-            when(repository.findById(1L)).thenReturn(Optional.of(ended));
+            when(repository.findById("1")).thenReturn(Optional.of(ended));
 
-            assertThatThrownBy(() -> service.activateSale(1L))
+            assertThatThrownBy(() -> service.activateSale("1"))
                     .isInstanceOf(InvalidStateTransitionException.class);
             verify(eventPublisher, never()).publishEvent(any());
         }
@@ -260,18 +260,18 @@ class FlashSaleApplicationServiceTest {
         @Test
         @DisplayName("reserves slots, records participation and emits a reserved event")
         void participate_happyPath() {
-            when(repository.findByIdWithReadLock(1L)).thenReturn(Optional.of(activeSale(10, 0, 5)));
-            when(repository.findByIdWithWriteLock(1L)).thenReturn(Optional.of(activeSale(10, 0, 5)));
-            when(participationRepo.sumQuantityBySaleIdAndUserId(1L, "u1")).thenReturn(0);
-            when(slotRedisService.reserveSlots(1L, 2)).thenReturn(8L);
+            when(repository.findByIdWithReadLock("1")).thenReturn(Optional.of(activeSale(10, 0, 5)));
+            when(repository.findByIdWithWriteLock("1")).thenReturn(Optional.of(activeSale(10, 0, 5)));
+            when(participationRepo.sumQuantityBySaleIdAndUserId("1", "u1")).thenReturn(0);
+            when(slotRedisService.reserveSlots("1", 2)).thenReturn(8L);
             var saved = new FlashSaleParticipation();
-            saved.setId(100L);
+            saved.setId("100");
             when(participationRepo.save(any(FlashSaleParticipation.class))).thenReturn(saved);
 
-            ParticipateResponse resp = service.participate(1L, "u1", 2);
+            ParticipateResponse resp = service.participate("1", "u1", 2);
 
             assertThat(resp.success()).isTrue();
-            assertThat(resp.participationId()).isEqualTo(100L);
+            assertThat(resp.participationId()).isEqualTo("100");
             assertThat(resp.remainingSlots()).isEqualTo(8);
             verify(eventPublisher).publishEvent(any(FlashSaleSlotReservedEvent.class));
         }
@@ -279,39 +279,39 @@ class FlashSaleApplicationServiceTest {
         @Test
         @DisplayName("on a Redis cache miss, seeds from DB then retries the reservation")
         void participate_cacheMissThenSeed() {
-            when(repository.findByIdWithReadLock(1L)).thenReturn(Optional.of(activeSale(10, 0, 5)));
-            when(repository.findByIdWithWriteLock(1L)).thenReturn(Optional.of(activeSale(10, 0, 5)));
-            when(participationRepo.sumQuantityBySaleIdAndUserId(1L, "u1")).thenReturn(0);
-            when(slotRedisService.reserveSlots(1L, 2)).thenReturn(-1L, 5L); // miss, then success
+            when(repository.findByIdWithReadLock("1")).thenReturn(Optional.of(activeSale(10, 0, 5)));
+            when(repository.findByIdWithWriteLock("1")).thenReturn(Optional.of(activeSale(10, 0, 5)));
+            when(participationRepo.sumQuantityBySaleIdAndUserId("1", "u1")).thenReturn(0);
+            when(slotRedisService.reserveSlots("1", 2)).thenReturn(-1L, 5L); // miss, then success
             var saved = new FlashSaleParticipation();
-            saved.setId(101L);
+            saved.setId("101");
             when(participationRepo.save(any(FlashSaleParticipation.class))).thenReturn(saved);
 
-            ParticipateResponse resp = service.participate(1L, "u1", 2);
+            ParticipateResponse resp = service.participate("1", "u1", 2);
 
             assertThat(resp.remainingSlots()).isEqualTo(5);
-            verify(slotRedisService).seedIfAbsent(eq(1L), eq(10));
+            verify(slotRedisService).seedIfAbsent(eq("1"), eq(10));
         }
 
         @Test
         @DisplayName("rejects when the per-user quota would be exceeded")
         void participate_quotaExceeded() {
-            when(repository.findByIdWithReadLock(1L)).thenReturn(Optional.of(activeSale(10, 0, 2)));
-            when(participationRepo.sumQuantityBySaleIdAndUserId(1L, "u1")).thenReturn(2);
+            when(repository.findByIdWithReadLock("1")).thenReturn(Optional.of(activeSale(10, 0, 2)));
+            when(participationRepo.sumQuantityBySaleIdAndUserId("1", "u1")).thenReturn(2);
 
-            assertThatThrownBy(() -> service.participate(1L, "u1", 2))
+            assertThatThrownBy(() -> service.participate("1", "u1", 2))
                     .isInstanceOf(UserQuotaExceededException.class);
-            verify(slotRedisService, never()).reserveSlots(anyLong(), anyInt());
+            verify(slotRedisService, never()).reserveSlots(anyString(), anyInt());
         }
 
         @Test
         @DisplayName("rejects when there are insufficient slots")
         void participate_insufficientSlots() {
-            when(repository.findByIdWithReadLock(1L)).thenReturn(Optional.of(activeSale(10, 0, 5)));
-            when(participationRepo.sumQuantityBySaleIdAndUserId(1L, "u1")).thenReturn(0);
-            when(slotRedisService.reserveSlots(1L, 2)).thenReturn(0L);
+            when(repository.findByIdWithReadLock("1")).thenReturn(Optional.of(activeSale(10, 0, 5)));
+            when(participationRepo.sumQuantityBySaleIdAndUserId("1", "u1")).thenReturn(0);
+            when(slotRedisService.reserveSlots("1", 2)).thenReturn(0L);
 
-            assertThatThrownBy(() -> service.participate(1L, "u1", 2))
+            assertThatThrownBy(() -> service.participate("1", "u1", 2))
                     .isInstanceOf(InsufficientSlotsException.class);
         }
 
@@ -320,9 +320,9 @@ class FlashSaleApplicationServiceTest {
         void participate_notActive() {
             var scheduled = sale(FlashSaleStatus.SCHEDULED,
                     NOW.plus(1, ChronoUnit.HOURS), NOW.plus(2, ChronoUnit.HOURS), 10, 0, 5);
-            when(repository.findByIdWithReadLock(1L)).thenReturn(Optional.of(scheduled));
+            when(repository.findByIdWithReadLock("1")).thenReturn(Optional.of(scheduled));
 
-            assertThatThrownBy(() -> service.participate(1L, "u1", 2))
+            assertThatThrownBy(() -> service.participate("1", "u1", 2))
                     .isInstanceOf(SaleNotActiveException.class);
         }
     }

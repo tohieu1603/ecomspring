@@ -1,10 +1,10 @@
 -- V1: cart_items table
 CREATE TABLE IF NOT EXISTS cart_items (
-    id           BIGSERIAL PRIMARY KEY,
+    id           VARCHAR(36)     PRIMARY KEY,
     user_id      VARCHAR(64)     NOT NULL,
-    product_id   BIGINT          NOT NULL,
+    product_id   VARCHAR(36)     NOT NULL,
     product_name VARCHAR(255)    NOT NULL,
-    variant_id   BIGINT          NOT NULL,
+    variant_id   VARCHAR(36)     NOT NULL,
     variant_sku  VARCHAR(64)     NOT NULL,
     variant_image VARCHAR(1024),
     unit_price   NUMERIC(19, 2)  NOT NULL,

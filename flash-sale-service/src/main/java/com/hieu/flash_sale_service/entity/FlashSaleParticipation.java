@@ -21,11 +21,11 @@ import java.time.Instant;
 public class FlashSaleParticipation {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(length = 36)
+    private String id;
 
-    @Column(name = "sale_id", nullable = false)
-    private Long saleId;
+    @Column(name = "sale_id", nullable = false, length = 36)
+    private String saleId;
 
     @Column(name = "user_id", nullable = false, length = 64)
     private String userId;
@@ -38,6 +38,7 @@ public class FlashSaleParticipation {
 
     @PrePersist
     void prePersist() {
+        if (this.id == null) this.id = java.util.UUID.randomUUID().toString();
         this.participatedAt = Instant.now();
     }
 }

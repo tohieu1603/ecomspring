@@ -6,7 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 /** Repository for per-user participation records. */
-public interface FlashSaleParticipationRepository extends JpaRepository<FlashSaleParticipation, Long> {
+public interface FlashSaleParticipationRepository extends JpaRepository<FlashSaleParticipation, String> {
 
     /**
      * Returns total quantity claimed by a user in a sale.
@@ -14,5 +14,5 @@ public interface FlashSaleParticipationRepository extends JpaRepository<FlashSal
      */
     @Query("SELECT COALESCE(SUM(p.quantity), 0) FROM FlashSaleParticipation p " +
            "WHERE p.saleId = :saleId AND p.userId = :userId")
-    int sumQuantityBySaleIdAndUserId(@Param("saleId") Long saleId, @Param("userId") String userId);
+    int sumQuantityBySaleIdAndUserId(@Param("saleId") String saleId, @Param("userId") String userId);
 }

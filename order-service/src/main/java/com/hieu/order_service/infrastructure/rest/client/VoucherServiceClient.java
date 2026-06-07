@@ -44,16 +44,14 @@ public class VoucherServiceClient {
      * @throws ServiceUnavailableException on transport failures
      */
     public BigDecimal validateAndApply(String code, BigDecimal orderAmount, String userId,
-                                       Long orderId, List<Long> productIds, String authToken) {
+                                       String orderId, List<String> productIds, String authToken) {
         try {
-            // Server-side DTO uses String types for orderId + productIds — encode here so
-            // we don't depend on the server's Jackson coercion config.
             List<String> productIdStrings = (productIds == null || productIds.isEmpty())
                     ? List.of()
-                    : productIds.stream().map(String::valueOf).toList();
+                    : productIds;
 
             var req = new VoucherClient.ValidateRequest(
-                    code, orderAmount, userId, String.valueOf(orderId), productIdStrings);
+                    code, orderAmount, userId, orderId, productIdStrings);
 
             var resp = voucherClient.validate(req);
             if (resp == null || resp.data() == null || resp.data().discountAmount() == null) {
@@ -76,9 +74,9 @@ public class VoucherServiceClient {
      * is recoverable because voucher-service also consumes {@code order.cancelled}
      * from Kafka for eventual cleanup.
      */
-    public void release(String code, Long orderId) {
+    public void release(String code, String orderId) {
         try {
-            voucherClient.release(new VoucherClient.ReleaseRequest(code, String.valueOf(orderId)));
+            voucherClient.release(new VoucherClient.ReleaseRequest(code, orderId));
             log.info("Released voucher {} for order {}", code, orderId);
         } catch (ServiceUnavailableException | FeignException e) {
             // Compensation must NOT throw — both the ErrorDecoder's wrapped exception

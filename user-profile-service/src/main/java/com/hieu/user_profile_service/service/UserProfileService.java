@@ -63,7 +63,7 @@ public class UserProfileService {
     }
 
     @Transactional(readOnly = true)
-    public AddressDTO getAddress(String userId, Long addressId) {
+    public AddressDTO getAddress(String userId, String addressId) {
         return addressRepo.findByIdAndUserProfile_UserId(addressId, userId)
                 .map(this::toAddressDTO)
                 .orElseThrow(() -> new AddressNotFoundException(addressId));
@@ -84,7 +84,7 @@ public class UserProfileService {
     }
 
     @Transactional
-    public AddressDTO updateAddress(String userId, Long addressId, UpsertAddressRequest req) {
+    public AddressDTO updateAddress(String userId, String addressId, UpsertAddressRequest req) {
         AddressJpaEntity addr = findAddress(userId, addressId);
         if (req.isDefault()) {
             addressRepo.clearDefaultForUser(userId);
@@ -94,13 +94,13 @@ public class UserProfileService {
     }
 
     @Transactional
-    public void deleteAddress(String userId, Long addressId) {
+    public void deleteAddress(String userId, String addressId) {
         AddressJpaEntity addr = findAddress(userId, addressId);
         addressRepo.delete(addr);
     }
 
     @Transactional
-    public AddressDTO setDefaultAddress(String userId, Long addressId) {
+    public AddressDTO setDefaultAddress(String userId, String addressId) {
         findProfile(userId); // ensure profile exists
         addressRepo.clearDefaultForUser(userId);
         AddressJpaEntity addr = findAddress(userId, addressId);
@@ -133,7 +133,7 @@ public class UserProfileService {
         });
     }
 
-    private AddressJpaEntity findAddress(String userId, Long addressId) {
+    private AddressJpaEntity findAddress(String userId, String addressId) {
         return addressRepo.findByIdAndUserProfile_UserId(addressId, userId)
                 .orElseThrow(() -> new AddressNotFoundException(addressId));
     }

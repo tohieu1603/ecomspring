@@ -8,7 +8,7 @@ import java.util.UUID;
 public record OrderCancelledEvent(
         UUID eventId,
         Instant occurredOn,
-        Long orderId,
+        String orderId,
         String orderNumber,
         String userId,
         String reason,
@@ -16,10 +16,10 @@ public record OrderCancelledEvent(
 ) implements DomainEvent {
 
     /** Convenience factory — generates eventId and occurredOn automatically. */
-    public OrderCancelledEvent(Long orderId, String orderNumber, String userId, String reason, String voucherCode) {
+    public OrderCancelledEvent(String orderId, String orderNumber, String userId, String reason, String voucherCode) {
         this(UUID.randomUUID(), Instant.now(), orderId, orderNumber, userId, reason, voucherCode);
     }
 
     @Override
-    public String aggregateId() { return String.valueOf(orderId); }
+    public String aggregateId() { return orderId; }
 }

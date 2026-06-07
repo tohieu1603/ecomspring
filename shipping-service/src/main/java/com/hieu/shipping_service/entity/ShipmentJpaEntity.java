@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.Instant;
+import java.util.UUID;
 
 /**
  * JPA entity for {@code shipments} table.
@@ -28,8 +29,8 @@ import java.time.Instant;
 public class ShipmentJpaEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(length = 36)
+    private String id;
 
     @Column(name = "order_id", nullable = false, unique = true, length = 64)
     private String orderId;
@@ -88,6 +89,7 @@ public class ShipmentJpaEntity {
 
     @PrePersist
     void prePersist() {
+        if (this.id == null) this.id = UUID.randomUUID().toString();
         var now = Instant.now();
         this.createdAt = now;
         this.updatedAt = now;

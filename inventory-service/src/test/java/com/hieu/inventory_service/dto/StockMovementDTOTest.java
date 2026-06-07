@@ -21,8 +21,8 @@ class StockMovementDTOTest {
     void mapsAllFields() {
         Instant now = Instant.parse("2026-06-04T10:15:30Z");
         StockMovement m = StockMovement.builder()
-                .id(11L)
-                .productId(100L)
+                .id("11")
+                .productId("100")
                 .sku("SKU-100")
                 .delta(-5)
                 .quantityBefore(50)
@@ -37,8 +37,8 @@ class StockMovementDTOTest {
 
         StockMovementDTO dto = StockMovementDTO.from(m);
 
-        assertThat(dto.id()).isEqualTo(11L);
-        assertThat(dto.productId()).isEqualTo(100L);
+        assertThat(dto.id()).isEqualTo("11");
+        assertThat(dto.productId()).isEqualTo("100");
         assertThat(dto.sku()).isEqualTo("SKU-100");
         assertThat(dto.delta()).isEqualTo(-5);
         assertThat(dto.quantityBefore()).isEqualTo(50);
@@ -55,7 +55,7 @@ class StockMovementDTOTest {
     @DisplayName("null Reason maps to a null reason string (no NPE)")
     void nullReasonMapsToNull() {
         StockMovement m = StockMovement.builder()
-                .id(1L).productId(1L).sku("S").delta(0)
+                .id("1").productId("1").sku("S").delta(0)
                 .quantityBefore(0).quantityAfter(0).reservedAfter(0)
                 .reason(null)
                 .build();
@@ -70,7 +70,7 @@ class StockMovementDTOTest {
     void everyReasonRendered() {
         for (StockMovement.Reason r : StockMovement.Reason.values()) {
             StockMovement m = StockMovement.builder()
-                    .id(1L).productId(1L).sku("S").delta(0)
+                    .id("1").productId("1").sku("S").delta(0)
                     .quantityBefore(0).quantityAfter(0).reservedAfter(0)
                     .reason(r).build();
             assertThat(StockMovementDTO.from(m).reason()).isEqualTo(r.name());

@@ -155,7 +155,7 @@ class UserProfileGrpcServiceTest {
 
         private static AddressJpaEntity address() {
             var a = new AddressJpaEntity();
-            a.setId(55L);
+            a.setId("55");
             a.setRecipientName("Bob");
             a.setRecipientPhone("0911");
             a.setStreet("12 Main");
@@ -170,19 +170,19 @@ class UserProfileGrpcServiceTest {
         @Test
         @DisplayName("found by (addressId, userId) -> maps all fields with found=true")
         void found() {
-            when(addressRepo.findByIdAndUserProfile_UserId(55L, "u-1"))
+            when(addressRepo.findByIdAndUserProfile_UserId("55", "u-1"))
                     .thenReturn(Optional.of(address()));
             @SuppressWarnings("unchecked")
             StreamObserver<GetAddressResponse> obs = org.mockito.Mockito.mock(StreamObserver.class);
 
-            grpc.getAddress(GetAddressRequest.newBuilder().setUserId("u-1").setAddressId(55L).build(), obs);
+            grpc.getAddress(GetAddressRequest.newBuilder().setUserId("u-1").setAddressId("55").build(), obs);
 
             ArgumentCaptor<GetAddressResponse> captor = ArgumentCaptor.forClass(GetAddressResponse.class);
             verify(obs).onNext(captor.capture());
             verify(obs).onCompleted();
             GetAddressResponse r = captor.getValue();
             assertThat(r.getFound()).isTrue();
-            assertThat(r.getId()).isEqualTo(55L);
+            assertThat(r.getId()).isEqualTo("55");
             assertThat(r.getRecipientName()).isEqualTo("Bob");
             assertThat(r.getRecipientPhone()).isEqualTo("0911");
             assertThat(r.getStreet()).isEqualTo("12 Main");
@@ -197,7 +197,7 @@ class UserProfileGrpcServiceTest {
         @DisplayName("null optional address fields coerce to empty strings")
         void nullFieldsCoerced() {
             var a = new AddressJpaEntity();
-            a.setId(56L);
+            a.setId("56");
             a.setRecipientName("Cy");
             a.setRecipientPhone("0922");
             a.setStreet("9 Side");
@@ -206,11 +206,11 @@ class UserProfileGrpcServiceTest {
             a.setWard(null);
             a.setDistrict(null);
             a.setPostalCode(null);
-            when(addressRepo.findByIdAndUserProfile_UserId(56L, "u-1")).thenReturn(Optional.of(a));
+            when(addressRepo.findByIdAndUserProfile_UserId("56", "u-1")).thenReturn(Optional.of(a));
             @SuppressWarnings("unchecked")
             StreamObserver<GetAddressResponse> obs = org.mockito.Mockito.mock(StreamObserver.class);
 
-            grpc.getAddress(GetAddressRequest.newBuilder().setUserId("u-1").setAddressId(56L).build(), obs);
+            grpc.getAddress(GetAddressRequest.newBuilder().setUserId("u-1").setAddressId("56").build(), obs);
 
             ArgumentCaptor<GetAddressResponse> captor = ArgumentCaptor.forClass(GetAddressResponse.class);
             verify(obs).onNext(captor.capture());
@@ -223,17 +223,17 @@ class UserProfileGrpcServiceTest {
         @Test
         @DisplayName("not found -> found=false and id defaults to 0")
         void notFound() {
-            when(addressRepo.findByIdAndUserProfile_UserId(99L, "u-1")).thenReturn(Optional.empty());
+            when(addressRepo.findByIdAndUserProfile_UserId("99", "u-1")).thenReturn(Optional.empty());
             @SuppressWarnings("unchecked")
             StreamObserver<GetAddressResponse> obs = org.mockito.Mockito.mock(StreamObserver.class);
 
-            grpc.getAddress(GetAddressRequest.newBuilder().setUserId("u-1").setAddressId(99L).build(), obs);
+            grpc.getAddress(GetAddressRequest.newBuilder().setUserId("u-1").setAddressId("99").build(), obs);
 
             ArgumentCaptor<GetAddressResponse> captor = ArgumentCaptor.forClass(GetAddressResponse.class);
             verify(obs).onNext(captor.capture());
             verify(obs).onCompleted();
             assertThat(captor.getValue().getFound()).isFalse();
-            assertThat(captor.getValue().getId()).isZero();
+            assertThat(captor.getValue().getId()).isEmpty();
         }
     }
 }

@@ -12,7 +12,7 @@ import java.util.Optional;
 
 /** Data access for {@link StockReservationRecord}. */
 @Repository
-public interface StockReservationRepository extends JpaRepository<StockReservationRecord, Long> {
+public interface StockReservationRepository extends JpaRepository<StockReservationRecord, String> {
 
     Optional<StockReservationRecord> findByOrderId(String orderId);
 

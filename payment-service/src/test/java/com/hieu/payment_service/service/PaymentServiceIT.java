@@ -108,7 +108,7 @@ class PaymentServiceIT extends AbstractIntegrationTest {
     void processRefund_idempotent() {
         String orderId = "ORD-" + UUID.randomUUID();
         PaymentDTO pending = paymentService.initiatePayment("user-1", buildRequest(orderId));
-        Long paymentId = pending.getId();
+        String paymentId = pending.getId();
 
         // Manually set to REFUND_REQUESTED via repo
         paymentRepository.findById(paymentId).ifPresent(e -> {

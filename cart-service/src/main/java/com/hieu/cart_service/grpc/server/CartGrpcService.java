@@ -41,11 +41,11 @@ public class CartGrpcService extends CartServiceGrpc.CartServiceImplBase {
             // Modernization: delegate to CartService to hit Redis cache + catalog revalidation.
             var cartDTO = cartService.getCart(request.getUserId());
             var snapshots = cartDTO.items().stream().map(item -> CartItemSnapshot.newBuilder()
-                    .setId(item.id() != null ? item.id() : 0L)
+                    .setId(item.id() != null ? item.id() : "")
                     .setUserId(request.getUserId())
-                    .setProductId(item.productId() != null ? item.productId() : 0L)
+                    .setProductId(item.productId() != null ? item.productId() : "")
                     .setProductName(nz(item.productName()))
-                    .setVariantId(item.variantId() != null ? item.variantId() : 0L)
+                    .setVariantId(item.variantId() != null ? item.variantId() : "")
                     .setVariantSku(nz(item.variantSku()))
                     .setVariantImage(nz(item.variantImage()))
                     .setUnitPrice(item.unitPrice() != null ? item.unitPrice().toPlainString() : "0")

@@ -5,7 +5,7 @@ import java.time.Instant;
 import java.util.List;
 
 public record OrderDTO(
-        Long id,
+        String id,
         String orderNumber,
         String userId,
         String status,
@@ -25,9 +25,9 @@ public record OrderDTO(
         String postalCode,
         String notes,
         String paymentMethod,
-        Long paymentId,
+        String paymentId,
         String reservationId,
-        Long shipmentId,
+        String shipmentId,
         String failureReason,
         Instant createdAt,
         Instant updatedAt,

@@ -6,8 +6,8 @@ import jakarta.validation.constraints.NotNull;
 
 /** Request body for POST /api/cart/items. */
 public record AddToCartRequest(
-        @NotNull Long productId,
-        @NotNull Long variantId,
+        @NotNull String productId,
+        @NotNull String variantId,
         @NotNull @Min(1) @Max(999) Integer quantity,
         String idempotencyKey
 ) {}

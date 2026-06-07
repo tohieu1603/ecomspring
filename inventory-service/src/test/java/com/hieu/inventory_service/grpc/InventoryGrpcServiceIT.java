@@ -30,11 +30,11 @@ class InventoryGrpcServiceIT extends AbstractIntegrationTest {
     @Autowired InventoryGrpcService grpcService;
     @Autowired InventoryService inventoryService;
 
-    private Long productId;
+    private String productId;
 
     @BeforeEach
     void seedInventory() {
-        productId = Math.abs(UUID.randomUUID().getMostSignificantBits()) % 100_000 + 1;
+        productId = UUID.randomUUID().toString();
         String sku = "SKU-GRPC-INV-" + productId;
         inventoryService.create(productId, sku, 100, 10);
     }

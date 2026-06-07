@@ -36,7 +36,7 @@ public class CatalogEventListener {
                 return;
             }
             for (JsonNode v : variants) {
-                long variantId = v.path("variantId").asLong();
+                String variantId = v.path("variantId").asText();
                 String sku = v.path("sku").asText();
                 int qty = v.path("quantity").asInt(0);
                 if (inventoryRepository.existsByProductId(variantId)) {

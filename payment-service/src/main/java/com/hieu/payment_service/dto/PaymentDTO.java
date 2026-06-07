@@ -10,7 +10,7 @@ import java.time.Instant;
 @Builder
 public class PaymentDTO {
 
-    private Long id;
+    private String id;
     private String orderId;
     private String userId;
     private BigDecimal amount;

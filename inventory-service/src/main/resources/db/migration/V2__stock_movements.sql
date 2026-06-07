@@ -3,8 +3,8 @@
 -- but we still want to keep the history. Keeps the table append-only.
 
 CREATE TABLE stock_movements (
-  id           BIGSERIAL PRIMARY KEY,
-  product_id   BIGINT       NOT NULL,
+  id           VARCHAR(36)  PRIMARY KEY,
+  product_id   VARCHAR(36)  NOT NULL,
   sku          VARCHAR(64)  NOT NULL,
   delta        INT          NOT NULL,
   quantity_before INT       NOT NULL,

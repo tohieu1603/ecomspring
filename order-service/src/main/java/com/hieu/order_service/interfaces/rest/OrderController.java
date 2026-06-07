@@ -125,7 +125,7 @@ public class OrderController {
     }
 
     @GetMapping("/{id}")
-    public OrderDTO getById(@PathVariable Long id, @AuthenticationPrincipal AuthenticatedUser user) {
+    public OrderDTO getById(@PathVariable String id, @AuthenticationPrincipal AuthenticatedUser user) {
         var isAdmin = user.roles().contains(ROLE_ADMIN);
         return getOrderByIdHandler.handle(new GetOrderByIdQuery(id, user.userId(), isAdmin));
     }
@@ -162,7 +162,7 @@ public class OrderController {
     }
 
     @GetMapping("/{id}/internal")
-    public OrderDTO getInternal(@PathVariable Long id,
+    public OrderDTO getInternal(@PathVariable String id,
                                 @RequestHeader(value = "X-Internal-Token", required = false) String token) {
         boolean valid = internalToken != null && !internalToken.isBlank()
                 && token != null
@@ -176,7 +176,7 @@ public class OrderController {
     }
 
     @DeleteMapping("/{id}")
-    public OrderDTO cancelOrder(@PathVariable Long id, @RequestBody Map<String, String> body,
+    public OrderDTO cancelOrder(@PathVariable String id, @RequestBody Map<String, String> body,
                                 @AuthenticationPrincipal AuthenticatedUser user) {
         var isAdmin = user.roles().contains(ROLE_ADMIN);
         return cancelOrderHandler.handle(new CancelOrderCommand(id, body.get("reason"), user.userId(), isAdmin));
@@ -189,28 +189,28 @@ public class OrderController {
      */
     @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/{id}/confirm")
-    public OrderDTO adminConfirm(@PathVariable Long id) {
+    public OrderDTO adminConfirm(@PathVariable String id) {
         return adminOrderActionHandler.apply(id,
                 com.hieu.order_service.application.handler.order.AdminOrderActionHandler.Action.CONFIRM, null);
     }
 
     @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/{id}/ship")
-    public OrderDTO adminShip(@PathVariable Long id, @RequestBody(required = false) Map<String, Object> body) {
-        Long shipmentId = null;
+    public OrderDTO adminShip(@PathVariable String id, @RequestBody(required = false) Map<String, Object> body) {
+        String shipmentId = null;
         if (body != null && body.get("shipmentId") != null) {
-            shipmentId = Long.valueOf(body.get("shipmentId").toString());
+            shipmentId = body.get("shipmentId").toString();
         }
         // Fallback: synthesize a placeholder shipmentId from the order id so the
         // admin can still mark SHIPPED in dev when shipping-service isn't wired.
-        if (shipmentId == null) shipmentId = id * 1_000L + System.currentTimeMillis() % 1000;
+        if (shipmentId == null) shipmentId = java.util.UUID.randomUUID().toString();
         return adminOrderActionHandler.apply(id,
                 com.hieu.order_service.application.handler.order.AdminOrderActionHandler.Action.SHIP, shipmentId);
     }
 
     @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/{id}/deliver")
-    public OrderDTO adminDeliver(@PathVariable Long id) {
+    public OrderDTO adminDeliver(@PathVariable String id) {
         return adminOrderActionHandler.apply(id,
                 com.hieu.order_service.application.handler.order.AdminOrderActionHandler.Action.DELIVER, null);
     }
@@ -265,7 +265,7 @@ public class OrderController {
 
     @GetMapping("/user/{userId}/purchased/{productId}")
     @PreAuthorize("hasRole('ADMIN')")
-    public Boolean hasUserPurchased(@PathVariable String userId, @PathVariable Long productId) {
+    public Boolean hasUserPurchased(@PathVariable String userId, @PathVariable String productId) {
         return hasUserPurchasedProductHandler.handle(new HasUserPurchasedProductQuery(userId, productId));
     }
 }
