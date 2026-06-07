@@ -18,54 +18,54 @@ public final class ProductIntegrationEvents {
     public record ProductCreated(
             UUID eventId,
             Instant occurredOn,
-            Long productId,
+            String productId,
             String name,
             String slug,
             String description,
             String brand,
             String status,
             String thumbnail,
-            Long categoryId,
+            String categoryId,
             String createdBy,
             List<VariantSnapshot> variants
     ) {}
 
     public record ProductUpdated(
             UUID eventId, Instant occurredOn,
-            Long productId, String name, String slug, String updatedBy
+            String productId, String name, String slug, String updatedBy
     ) {}
 
     public record ProductStatusChanged(
             UUID eventId, Instant occurredOn,
-            Long productId, String oldStatus, String newStatus, String updatedBy
+            String productId, String oldStatus, String newStatus, String updatedBy
     ) {}
 
     public record ProductDeleted(
             UUID eventId, Instant occurredOn,
-            Long productId, List<Long> variantIds, String deletedBy
+            String productId, List<String> variantIds, String deletedBy
     ) {}
 
     public record VariantAdded(
             UUID eventId, Instant occurredOn,
-            Long productId, Long variantId, String sku, BigDecimal price, int quantity, String createdBy
+            String productId, String variantId, String sku, BigDecimal price, int quantity, String createdBy
     ) {}
 
     public record VariantRemoved(
             UUID eventId, Instant occurredOn,
-            Long productId, Long variantId, String sku, String deletedBy
+            String productId, String variantId, String sku, String deletedBy
     ) {}
 
     public record VariantStockChanged(
             UUID eventId, Instant occurredOn,
-            Long productId, Long variantId, String sku,
+            String productId, String variantId, String sku,
             int oldQuantity, int newQuantity, int delta, String updatedBy
     ) {}
 
     public record VariantPriceChanged(
             UUID eventId, Instant occurredOn,
-            Long productId, Long variantId, String sku,
+            String productId, String variantId, String sku,
             BigDecimal oldPrice, BigDecimal newPrice, BigDecimal newSalePrice, String updatedBy
     ) {}
 
-    public record VariantSnapshot(Long variantId, String sku, BigDecimal price, int quantity) {}
+    public record VariantSnapshot(String variantId, String sku, BigDecimal price, int quantity) {}
 }

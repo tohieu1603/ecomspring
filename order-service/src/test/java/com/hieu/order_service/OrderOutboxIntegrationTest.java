@@ -116,7 +116,7 @@ class OrderOutboxIntegrationTest {
     private CreateOrderCommand buildOrderCmd() {
         int seq = SEQ.incrementAndGet();
         var item = new CreateOrderCommand.ItemCmd(
-                (long) seq, "Product " + seq, (long) seq, "SKU-OUT-" + seq, null,
+                String.valueOf(seq), "Product " + seq, String.valueOf(seq), "SKU-OUT-" + seq, null,
                 new BigDecimal("10.00"), 1
         );
         return new CreateOrderCommand(
@@ -207,7 +207,7 @@ class OrderOutboxIntegrationTest {
         createOrderHandler.buildAndSave(buildOrderCmd());
         var events = outboxRepo.findAll();
         assertThat(events).hasSize(1);
-        Long eventId = events.get(0).getId();
+        String eventId = events.get(0).getId();
 
         if (outboxPoller == null) {
             // Poller disabled — row remains PENDING, nothing to assert on retry

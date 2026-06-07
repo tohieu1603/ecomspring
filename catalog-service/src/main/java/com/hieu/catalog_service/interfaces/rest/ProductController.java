@@ -61,14 +61,14 @@ public class ProductController {
             @RequestParam(required = false) String cursor,
             @RequestParam(defaultValue = "20") int limit,
             @RequestParam(required = false) String sort,
-            @RequestParam(required = false) Long categoryId) {
+            @RequestParam(required = false) String categoryId) {
         return ResponseEntity.ok(listProducts.handle(
                 new ListProductsQuery(cursor, limit, sort, categoryId)));
     }
 
     @Operation(summary = "Get product by id")
     @GetMapping("/{id}")
-    public ResponseEntity<ProductDTO> byId(@PathVariable Long id) {
+    public ResponseEntity<ProductDTO> byId(@PathVariable String id) {
         return ResponseEntity.ok(getById.handle(new GetProductByIdQuery(id)));
     }
 
@@ -86,7 +86,7 @@ public class ProductController {
         var variants = req.variants().stream()
             .map(v -> new CreateProductCommand.VariantCmd(
                 v.sku(), v.price(), v.cost(), v.salePrice(), v.image(), v.weight(), v.quantity(),
-                v.attrs() == null ? List.of() : v.attrs().stream()
+                v.attrs() == null ? List.<CreateProductCommand.AttrCmd>of() : v.attrs().stream()
                     .map(a -> new CreateProductCommand.AttrCmd(a.attrId(), a.attrValId(), a.valText()))
                     .toList()))
             .toList();
@@ -99,7 +99,7 @@ public class ProductController {
     @Operation(summary = "Update product core fields (admin)")
     @PatchMapping("/{id}")
     @PreAuthorize(WRITE)
-    public ResponseEntity<ProductDTO> update(@PathVariable Long id,
+    public ResponseEntity<ProductDTO> update(@PathVariable String id,
                                               @Valid @RequestBody UpdateProductRequest req,
                                               @AuthenticationPrincipal AuthenticatedUser user) {
         return ResponseEntity.ok(updateProduct.handle(
@@ -109,7 +109,7 @@ public class ProductController {
     @Operation(summary = "Update product images (admin)")
     @PatchMapping("/{id}/images")
     @PreAuthorize(WRITE)
-    public ResponseEntity<ProductDTO> updateImages(@PathVariable Long id,
+    public ResponseEntity<ProductDTO> updateImages(@PathVariable String id,
                                                     @Valid @RequestBody UpdateImagesRequest req,
                                                     @AuthenticationPrincipal AuthenticatedUser user) {
         return ResponseEntity.ok(updateImages.handle(
@@ -119,7 +119,7 @@ public class ProductController {
     @Operation(summary = "Update product SEO metadata (admin)")
     @PatchMapping("/{id}/seo")
     @PreAuthorize(WRITE)
-    public ResponseEntity<ProductDTO> updateSeo(@PathVariable Long id,
+    public ResponseEntity<ProductDTO> updateSeo(@PathVariable String id,
                                                   @Valid @RequestBody UpdateSeoRequest req,
                                                   @AuthenticationPrincipal AuthenticatedUser user) {
         return ResponseEntity.ok(updateSeo.handle(
@@ -129,7 +129,7 @@ public class ProductController {
     @Operation(summary = "Change product status (activate / deactivate / draft) (admin)")
     @PostMapping("/{id}/status/{transition}")
     @PreAuthorize(WRITE)
-    public ResponseEntity<Void> changeStatus(@PathVariable Long id,
+    public ResponseEntity<Void> changeStatus(@PathVariable String id,
                                               @PathVariable Transition transition,
                                               @AuthenticationPrincipal AuthenticatedUser user) {
         changeStatus.handle(new ChangeProductStatusCommand(id, transition, user.userId()));
@@ -139,7 +139,7 @@ public class ProductController {
     @Operation(summary = "Soft-delete product (admin)")
     @DeleteMapping("/{id}")
     @PreAuthorize(WRITE)
-    public ResponseEntity<Void> delete(@PathVariable Long id,
+    public ResponseEntity<Void> delete(@PathVariable String id,
                                         @AuthenticationPrincipal AuthenticatedUser user) {
         deleteProduct.handle(new DeleteProductCommand(id, user.userId()));
         return ResponseEntity.noContent().build();

@@ -67,7 +67,7 @@ class CatalogServiceIntegrationTest extends AbstractIntegrationTest {
         var dto = createProductHandler.handle(cmd);
 
         assertThat(dto).isNotNull();
-        assertThat(dto.id()).isPositive();
+        assertThat(dto.id()).isNotBlank();
         assertThat(dto.slug()).isNotBlank();
         // Default status is DRAFT (activate=false)
         assertThat(dto.status()).isEqualTo(ProductStatus.DRAFT.name());

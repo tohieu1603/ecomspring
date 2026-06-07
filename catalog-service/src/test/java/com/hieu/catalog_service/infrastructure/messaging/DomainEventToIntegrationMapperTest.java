@@ -47,9 +47,9 @@ class DomainEventToIntegrationMapperTest {
         @Test
         @DisplayName("ProductCreatedEvent → catalog.product-created with variant snapshots")
         void productCreated() {
-            var variant = new ProductCreatedEvent.VariantInfo(10L, "SKU-1", new BigDecimal("9.99"), 5);
-            var event = new ProductCreatedEvent(1L, "Tee", "tee", "desc", "Brand", "DRAFT",
-                "thumb.png", 99L, "admin", List.of(variant));
+            var variant = new ProductCreatedEvent.VariantInfo("10", "SKU-1", new BigDecimal("9.99"), 5);
+            var event = new ProductCreatedEvent("1", "Tee", "tee", "desc", "Brand", "DRAFT",
+                "thumb.png", "99", "admin", List.of(variant));
 
             var routed = mapper.map(event);
 
@@ -59,17 +59,17 @@ class DomainEventToIntegrationMapperTest {
             var payload = (ProductIntegrationEvents.ProductCreated) routed.payload();
             assertThat(payload.eventId()).isEqualTo(event.eventId());
             assertThat(payload.occurredOn()).isEqualTo(event.occurredOn());
-            assertThat(payload.productId()).isEqualTo(1L);
+            assertThat(payload.productId()).isEqualTo("1");
             assertThat(payload.name()).isEqualTo("Tee");
             assertThat(payload.slug()).isEqualTo("tee");
             assertThat(payload.description()).isEqualTo("desc");
             assertThat(payload.brand()).isEqualTo("Brand");
             assertThat(payload.status()).isEqualTo("DRAFT");
             assertThat(payload.thumbnail()).isEqualTo("thumb.png");
-            assertThat(payload.categoryId()).isEqualTo(99L);
+            assertThat(payload.categoryId()).isEqualTo("99");
             assertThat(payload.createdBy()).isEqualTo("admin");
             assertThat(payload.variants()).singleElement().satisfies(v -> {
-                assertThat(v.variantId()).isEqualTo(10L);
+                assertThat(v.variantId()).isEqualTo("10");
                 assertThat(v.sku()).isEqualTo("SKU-1");
                 assertThat(v.price()).isEqualByComparingTo("9.99");
                 assertThat(v.quantity()).isEqualTo(5);
@@ -79,14 +79,14 @@ class DomainEventToIntegrationMapperTest {
         @Test
         @DisplayName("ProductUpdatedEvent → catalog.product-updated")
         void productUpdated() {
-            var event = new ProductUpdatedEvent(2L, "New", "new-slug", "editor");
+            var event = new ProductUpdatedEvent("2", "New", "new-slug", "editor");
 
             var routed = mapper.map(event);
 
             assertThat(routed.topic()).isEqualTo(KafkaTopics.PRODUCT_UPDATED);
             assertThat(routed.key()).isEqualTo("2");
             var payload = (ProductIntegrationEvents.ProductUpdated) routed.payload();
-            assertThat(payload.productId()).isEqualTo(2L);
+            assertThat(payload.productId()).isEqualTo("2");
             assertThat(payload.name()).isEqualTo("New");
             assertThat(payload.slug()).isEqualTo("new-slug");
             assertThat(payload.updatedBy()).isEqualTo("editor");
@@ -95,7 +95,7 @@ class DomainEventToIntegrationMapperTest {
         @Test
         @DisplayName("ProductStatusChangedEvent → maps enum status names")
         void productStatusChanged() {
-            var event = new ProductStatusChangedEvent(3L, ProductStatus.DRAFT, ProductStatus.ACTIVE, "editor");
+            var event = new ProductStatusChangedEvent("3", ProductStatus.DRAFT, ProductStatus.ACTIVE, "editor");
 
             var routed = mapper.map(event);
 
@@ -110,15 +110,15 @@ class DomainEventToIntegrationMapperTest {
         @Test
         @DisplayName("ProductDeletedEvent → carries variant ids")
         void productDeleted() {
-            var event = new ProductDeletedEvent(4L, List.of(11L, 12L), "admin");
+            var event = new ProductDeletedEvent("4", List.of("11", "12"), "admin");
 
             var routed = mapper.map(event);
 
             assertThat(routed.topic()).isEqualTo(KafkaTopics.PRODUCT_DELETED);
             assertThat(routed.key()).isEqualTo("4");
             var payload = (ProductIntegrationEvents.ProductDeleted) routed.payload();
-            assertThat(payload.productId()).isEqualTo(4L);
-            assertThat(payload.variantIds()).containsExactly(11L, 12L);
+            assertThat(payload.productId()).isEqualTo("4");
+            assertThat(payload.variantIds()).containsExactly("11", "12");
             assertThat(payload.deletedBy()).isEqualTo("admin");
         }
     }
@@ -130,15 +130,15 @@ class DomainEventToIntegrationMapperTest {
         @Test
         @DisplayName("VariantAddedEvent → catalog.variant-added")
         void variantAdded() {
-            var event = new VariantAddedEvent(5L, 50L, "SKU-A", new BigDecimal("12.50"), 7, "admin");
+            var event = new VariantAddedEvent("5", "50", "SKU-A", new BigDecimal("12.50"), 7, "admin");
 
             var routed = mapper.map(event);
 
             assertThat(routed.topic()).isEqualTo(KafkaTopics.VARIANT_ADDED);
             assertThat(routed.key()).isEqualTo("5");
             var payload = (ProductIntegrationEvents.VariantAdded) routed.payload();
-            assertThat(payload.productId()).isEqualTo(5L);
-            assertThat(payload.variantId()).isEqualTo(50L);
+            assertThat(payload.productId()).isEqualTo("5");
+            assertThat(payload.variantId()).isEqualTo("50");
             assertThat(payload.sku()).isEqualTo("SKU-A");
             assertThat(payload.price()).isEqualByComparingTo("12.50");
             assertThat(payload.quantity()).isEqualTo(7);
@@ -148,14 +148,14 @@ class DomainEventToIntegrationMapperTest {
         @Test
         @DisplayName("VariantRemovedEvent → catalog.variant-removed")
         void variantRemoved() {
-            var event = new VariantRemovedEvent(6L, 60L, "SKU-B", "admin");
+            var event = new VariantRemovedEvent("6", "60", "SKU-B", "admin");
 
             var routed = mapper.map(event);
 
             assertThat(routed.topic()).isEqualTo(KafkaTopics.VARIANT_REMOVED);
             assertThat(routed.key()).isEqualTo("6");
             var payload = (ProductIntegrationEvents.VariantRemoved) routed.payload();
-            assertThat(payload.variantId()).isEqualTo(60L);
+            assertThat(payload.variantId()).isEqualTo("60");
             assertThat(payload.sku()).isEqualTo("SKU-B");
             assertThat(payload.deletedBy()).isEqualTo("admin");
         }
@@ -163,7 +163,7 @@ class DomainEventToIntegrationMapperTest {
         @Test
         @DisplayName("VariantStockChangedEvent → computes delta")
         void variantStockChanged() {
-            var event = new VariantStockChangedEvent(7L, 70L, "SKU-C", 10, 3, "system");
+            var event = new VariantStockChangedEvent("7", "70", "SKU-C", 10, 3, "system");
 
             var routed = mapper.map(event);
 
@@ -179,7 +179,7 @@ class DomainEventToIntegrationMapperTest {
         @Test
         @DisplayName("VariantPriceChangedEvent → maps old/new/sale prices")
         void variantPriceChanged() {
-            var event = new VariantPriceChangedEvent(8L, 80L, "SKU-D",
+            var event = new VariantPriceChangedEvent("8", "80", "SKU-D",
                 new BigDecimal("20.00"), new BigDecimal("18.00"), new BigDecimal("15.00"), "admin");
 
             var routed = mapper.map(event);
@@ -200,23 +200,23 @@ class DomainEventToIntegrationMapperTest {
         @Test
         @DisplayName("CategoryCreatedEvent → catalog.category-created")
         void categoryCreated() {
-            var event = new CategoryCreatedEvent(9L, "Shoes", 1L, "admin");
+            var event = new CategoryCreatedEvent("9", "Shoes", "1", "admin");
 
             var routed = mapper.map(event);
 
             assertThat(routed.topic()).isEqualTo(KafkaTopics.CATEGORY_CREATED);
             assertThat(routed.key()).isEqualTo("9");
             var payload = (CategoryIntegrationEvents.CategoryCreated) routed.payload();
-            assertThat(payload.categoryId()).isEqualTo(9L);
+            assertThat(payload.categoryId()).isEqualTo("9");
             assertThat(payload.name()).isEqualTo("Shoes");
-            assertThat(payload.parentId()).isEqualTo(1L);
+            assertThat(payload.parentId()).isEqualTo("1");
             assertThat(payload.createdBy()).isEqualTo("admin");
         }
 
         @Test
         @DisplayName("CategoryUpdatedEvent → catalog.category-updated")
         void categoryUpdated() {
-            var event = new CategoryUpdatedEvent(10L, "Boots", null, "editor");
+            var event = new CategoryUpdatedEvent("10", "Boots", null, "editor");
 
             var routed = mapper.map(event);
 
@@ -231,14 +231,14 @@ class DomainEventToIntegrationMapperTest {
         @Test
         @DisplayName("CategoryDeletedEvent → catalog.category-deleted")
         void categoryDeleted() {
-            var event = new CategoryDeletedEvent(11L, "admin");
+            var event = new CategoryDeletedEvent("11", "admin");
 
             var routed = mapper.map(event);
 
             assertThat(routed.topic()).isEqualTo(KafkaTopics.CATEGORY_DELETED);
             assertThat(routed.key()).isEqualTo("11");
             var payload = (CategoryIntegrationEvents.CategoryDeleted) routed.payload();
-            assertThat(payload.categoryId()).isEqualTo(11L);
+            assertThat(payload.categoryId()).isEqualTo("11");
             assertThat(payload.deletedBy()).isEqualTo("admin");
         }
     }
@@ -250,14 +250,14 @@ class DomainEventToIntegrationMapperTest {
         @Test
         @DisplayName("AttrCreatedEvent → maps enum type name")
         void attrCreated() {
-            var event = new AttrCreatedEvent(12L, "COLOR", "Color", AttrType.SELECT);
+            var event = new AttrCreatedEvent("12", "COLOR", "Color", AttrType.SELECT);
 
             var routed = mapper.map(event);
 
             assertThat(routed.topic()).isEqualTo(KafkaTopics.ATTR_CREATED);
             assertThat(routed.key()).isEqualTo("12");
             var payload = (AttrIntegrationEvents.AttrCreated) routed.payload();
-            assertThat(payload.attrId()).isEqualTo(12L);
+            assertThat(payload.attrId()).isEqualTo("12");
             assertThat(payload.code()).isEqualTo("COLOR");
             assertThat(payload.name()).isEqualTo("Color");
             assertThat(payload.type()).isEqualTo("SELECT");
@@ -266,28 +266,28 @@ class DomainEventToIntegrationMapperTest {
         @Test
         @DisplayName("AttrUpdatedEvent → catalog.attr-updated")
         void attrUpdated() {
-            var event = new AttrUpdatedEvent(13L, "Colour");
+            var event = new AttrUpdatedEvent("13", "Colour");
 
             var routed = mapper.map(event);
 
             assertThat(routed.topic()).isEqualTo(KafkaTopics.ATTR_UPDATED);
             assertThat(routed.key()).isEqualTo("13");
             var payload = (AttrIntegrationEvents.AttrUpdated) routed.payload();
-            assertThat(payload.attrId()).isEqualTo(13L);
+            assertThat(payload.attrId()).isEqualTo("13");
             assertThat(payload.name()).isEqualTo("Colour");
         }
 
         @Test
         @DisplayName("AttrDeletedEvent → catalog.attr-deleted")
         void attrDeleted() {
-            var event = new AttrDeletedEvent(14L);
+            var event = new AttrDeletedEvent("14");
 
             var routed = mapper.map(event);
 
             assertThat(routed.topic()).isEqualTo(KafkaTopics.ATTR_DELETED);
             assertThat(routed.key()).isEqualTo("14");
             var payload = (AttrIntegrationEvents.AttrDeleted) routed.payload();
-            assertThat(payload.attrId()).isEqualTo(14L);
+            assertThat(payload.attrId()).isEqualTo("14");
         }
     }
 

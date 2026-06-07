@@ -44,7 +44,7 @@ class OrderSagaOrchestratorIT extends AbstractIntegrationTest {
         var cmd = new CreateOrderCommand(
                 userId,
                 List.of(new CreateOrderCommand.ItemCmd(
-                        (long) s, "Product " + s, (long) s, "SKU-SAGA-" + s, null,
+                        String.valueOf(s), "Product " + s, String.valueOf(s), "SKU-SAGA-" + s, null,
                         BigDecimal.valueOf(100_000), 1)),
                 "Nguyen Van A", "0901234567",
                 "123 Le Loi", "Ben Thanh", "District 1", "HCMC", "VN", "70000",

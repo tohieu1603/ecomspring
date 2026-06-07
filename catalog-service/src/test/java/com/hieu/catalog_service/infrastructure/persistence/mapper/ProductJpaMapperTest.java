@@ -39,7 +39,7 @@ class ProductJpaMapperTest {
 
     private final ProductJpaMapper mapper = new ProductJpaMapper(JsonMapper.builder().build());
 
-    private static Variant variant(Long id, Long productId, String sku, String price, Long version,
+    private static Variant variant(String id, String productId, String sku, String price, Long version,
                                    List<VariantAttr> attrs) {
         return Variant.reconstitute(
             id != null ? VariantId.of(id) : null,
@@ -49,12 +49,12 @@ class ProductJpaMapperTest {
             VariantStatus.ACTIVE, version, attrs);
     }
 
-    private static Product product(Long id, List<Variant> variants) {
+    private static Product product(String id, List<Variant> variants) {
         Instant now = Instant.parse("2024-01-01T00:00:00Z");
         return Product.reconstitute(
             id != null ? ProductId.of(id) : null,
             "Cool Tee", Slug.of("cool-tee"), "A nice tee",
-            CategoryId.of(99L), "Brand", "thumb.png",
+            CategoryId.of("99"), "Brand", "thumb.png",
             List.of("a.png", "b.png"), ProductStatus.ACTIVE,
             "Meta Title", "Meta Desc", "kw1,kw2",
             now, now, "creator", "updater", 3L, variants);
@@ -67,14 +67,14 @@ class ProductJpaMapperTest {
         @Test
         @DisplayName("maps all scalar fields and serialises images to JSON")
         void mapsScalars() {
-            var p = product(1L, List.of(variant(10L, 1L, "SKU-1", "9.99", 1L, List.of())));
+            var p = product("1", List.of(variant("10", "1", "SKU-1", "9.99", 1L, List.of())));
 
             ProductJpaEntity e = mapper.toJpa(p, null);
 
             assertThat(e.getName()).isEqualTo("Cool Tee");
             assertThat(e.getSlug()).isEqualTo("cool-tee");
             assertThat(e.getDescription()).isEqualTo("A nice tee");
-            assertThat(e.getCategoryId()).isEqualTo(99L);
+            assertThat(e.getCategoryId()).isEqualTo("99");
             assertThat(e.getBrand()).isEqualTo("Brand");
             assertThat(e.getThumbnail()).isEqualTo("thumb.png");
             assertThat(e.getImages()).isEqualTo("[\"a.png\",\"b.png\"]");
@@ -90,7 +90,7 @@ class ProductJpaMapperTest {
         @DisplayName("null category and empty images → null columns")
         void nullCategoryAndEmptyImages() {
             Instant now = Instant.now();
-            var p = Product.reconstitute(ProductId.of(2L), "X", Slug.of("x"), null,
+            var p = Product.reconstitute(ProductId.of("2"), "X", Slug.of("x"), null,
                 null, null, null, List.of(), ProductStatus.DRAFT,
                 null, null, null, now, now, "c", "c", null, List.of());
 
@@ -104,12 +104,12 @@ class ProductJpaMapperTest {
         @DisplayName("reuses existing entity instance (in-place update) when provided")
         void reusesExistingEntity() {
             var existing = new ProductJpaEntity();
-            existing.setId(5L);
+            existing.setId("5");
 
-            ProductJpaEntity e = mapper.toJpa(product(5L, List.of(variant(10L, 5L, "SKU-1", "9.99", 1L, List.of()))), existing);
+            ProductJpaEntity e = mapper.toJpa(product("5", List.of(variant("10", "5", "SKU-1", "9.99", 1L, List.of()))), existing);
 
             assertThat(e).isSameAs(existing);
-            assertThat(e.getId()).isEqualTo(5L);
+            assertThat(e.getId()).isEqualTo("5");
         }
     }
 
@@ -120,7 +120,7 @@ class ProductJpaMapperTest {
         @Test
         @DisplayName("new variant (null id) becomes a fresh entity wired to the product")
         void insertsNewVariant() {
-            var p = product(1L, List.of(variant(null, null, "SKU-NEW", "5.00", null, List.of())));
+            var p = product("1", List.of(variant(null, null, "SKU-NEW", "5.00", null, List.of())));
 
             ProductJpaEntity e = mapper.toJpa(p, null);
 
@@ -136,15 +136,15 @@ class ProductJpaMapperTest {
         @DisplayName("existing variant id is matched and the same entity instance is mutated in place")
         void updatesExistingVariantInPlace() {
             var existing = new ProductJpaEntity();
-            existing.setId(1L);
+            existing.setId("1");
             var existingVariant = new VariantJpaEntity();
-            existingVariant.setId(10L);
+            existingVariant.setId("10");
             existingVariant.setSku("OLD");
             existingVariant.setPrice(new BigDecimal("1.00"));
             existingVariant.setProduct(existing);
             existing.getVariants().add(existingVariant);
 
-            var p = product(1L, List.of(variant(10L, 1L, "SKU-UPDATED", "7.77", 1L, List.of())));
+            var p = product("1", List.of(variant("10", "1", "SKU-UPDATED", "7.77", 1L, List.of())));
             ProductJpaEntity e = mapper.toJpa(p, existing);
 
             assertThat(e.getVariants()).singleElement().satisfies(v -> {
@@ -158,13 +158,13 @@ class ProductJpaMapperTest {
         @DisplayName("variant absent from domain is dropped from the managed collection (orphan removal)")
         void removesMissingVariant() {
             var existing = new ProductJpaEntity();
-            existing.setId(1L);
-            var keep = new VariantJpaEntity();   keep.setId(10L); keep.setSku("KEEP"); keep.setProduct(existing);
-            var drop = new VariantJpaEntity();   drop.setId(11L); drop.setSku("DROP"); drop.setProduct(existing);
+            existing.setId("1");
+            var keep = new VariantJpaEntity();   keep.setId("10"); keep.setSku("KEEP"); keep.setProduct(existing);
+            var drop = new VariantJpaEntity();   drop.setId("11"); drop.setSku("DROP"); drop.setProduct(existing);
             existing.getVariants().add(keep);
             existing.getVariants().add(drop);
 
-            var p = product(1L, List.of(variant(10L, 1L, "KEEP", "9.99", 1L, List.of())));
+            var p = product("1", List.of(variant("10", "1", "KEEP", "9.99", 1L, List.of())));
             ProductJpaEntity e = mapper.toJpa(p, existing);
 
             assertThat(e.getVariants()).extracting(VariantJpaEntity::getSku).containsExactly("KEEP");
@@ -173,17 +173,17 @@ class ProductJpaMapperTest {
         @Test
         @DisplayName("variant attrs are mapped and wired to the variant entity")
         void mapsVariantAttrs() {
-            var attr = VariantAttr.create(AttrId.of(7L), "COLOR", "Color", 3L, "Red");
-            var p = product(1L, List.of(variant(null, null, "SKU-A", "5.00", null, List.of(attr))));
+            var attr = VariantAttr.create(AttrId.of("7"), "COLOR", "Color", "3", "Red");
+            var p = product("1", List.of(variant(null, null, "SKU-A", "5.00", null, List.of(attr))));
 
             ProductJpaEntity e = mapper.toJpa(p, null);
 
             VariantJpaEntity v = e.getVariants().get(0);
             assertThat(v.getAttrs()).singleElement().satisfies(a -> {
-                assertThat(a.getAttrId()).isEqualTo(7L);
+                assertThat(a.getAttrId()).isEqualTo("7");
                 assertThat(a.getAttrCode()).isEqualTo("COLOR");
                 assertThat(a.getAttrName()).isEqualTo("Color");
-                assertThat(a.getValId()).isEqualTo(3L);
+                assertThat(a.getValId()).isEqualTo("3");
                 assertThat(a.getValText()).isEqualTo("Red");
                 assertThat(a.getVariant()).isSameAs(v);
             });
@@ -197,23 +197,23 @@ class ProductJpaMapperTest {
         @Test
         @DisplayName("round-trips a product with a variant (toJpa → toDomain preserves fields)")
         void roundTrip() {
-            var attr = VariantAttr.reconstitute(2L, AttrId.of(7L), "COLOR", "Color", 3L, "Red");
-            var original = product(1L, List.of(variant(10L, 1L, "SKU-1", "19.99", 1L, List.of(attr))));
+            var attr = VariantAttr.reconstitute("2", AttrId.of("7"), "COLOR", "Color", "3", "Red");
+            var original = product("1", List.of(variant("10", "1", "SKU-1", "19.99", 1L, List.of(attr))));
 
             ProductJpaEntity e = mapper.toJpa(original, null);
-            e.setId(1L);
+            e.setId("1");
             // toJpa builds fresh child entities without ids; reconstitute() requires non-null
             // ids, so simulate the post-flush id assignment before reading back.
             VariantJpaEntity ve = e.getVariants().get(0);
-            ve.setId(10L);
-            ve.getAttrs().get(0).setId(2L);
+            ve.setId("10");
+            ve.getAttrs().get(0).setId("2");
             // toDomainVariant reads e.getProduct().getId() — the reconcile already wired it.
             Product back = mapper.toDomain(e);
 
-            assertThat(back.getId().value()).isEqualTo(1L);
+            assertThat(back.getId().value()).isEqualTo("1");
             assertThat(back.getName()).isEqualTo("Cool Tee");
             assertThat(back.getSlug().value()).isEqualTo("cool-tee");
-            assertThat(back.getCategoryId().value()).isEqualTo(99L);
+            assertThat(back.getCategoryId().value()).isEqualTo("99");
             assertThat(back.getStatus()).isEqualTo(ProductStatus.ACTIVE);
             assertThat(back.getImages()).containsExactly("a.png", "b.png");
             assertThat(back.getVariants()).singleElement().satisfies(v -> {
@@ -230,7 +230,7 @@ class ProductJpaMapperTest {
         @DisplayName("null/blank images column → empty list")
         void nullImagesDeserialiseToEmptyList() {
             var e = new ProductJpaEntity();
-            e.setId(1L);
+            e.setId("1");
             e.setName("X");
             e.setSlug("x");
             e.setStatus("DRAFT");
@@ -249,17 +249,17 @@ class ProductJpaMapperTest {
         @Test
         @DisplayName("back-fills product id, variant id and variant-attr id by sku/code match")
         void backfillsIds() {
-            var attr = VariantAttr.create(AttrId.of(7L), "COLOR", "Color", 3L, "Red");
+            var attr = VariantAttr.create(AttrId.of("7"), "COLOR", "Color", "3", "Red");
             var aggregate = product(null, List.of(variant(null, null, "SKU-1", "5.00", null, List.of(attr))));
 
             var saved = new ProductJpaEntity();
-            saved.setId(100L);
+            saved.setId("100");
             var savedVariant = new VariantJpaEntity();
-            savedVariant.setId(200L);
+            savedVariant.setId("200");
             savedVariant.setSku("SKU-1");
             savedVariant.setProduct(saved);
             var savedAttr = new VariantAttrJpaEntity();
-            savedAttr.setId(300L);
+            savedAttr.setId("300");
             savedAttr.setAttrCode("COLOR");
             savedAttr.setVariant(savedVariant);
             savedVariant.getAttrs().add(savedAttr);
@@ -267,11 +267,11 @@ class ProductJpaMapperTest {
 
             mapper.syncGeneratedIds(aggregate, saved);
 
-            assertThat(aggregate.getId().value()).isEqualTo(100L);
+            assertThat(aggregate.getId().value()).isEqualTo("100");
             Variant v = aggregate.getVariants().get(0);
-            assertThat(v.getId().value()).isEqualTo(200L);
-            assertThat(v.getProductId().value()).isEqualTo(100L);
-            assertThat(v.getAttrs().get(0).getId()).isEqualTo(300L);
+            assertThat(v.getId().value()).isEqualTo("200");
+            assertThat(v.getProductId().value()).isEqualTo("100");
+            assertThat(v.getAttrs().get(0).getId()).isEqualTo("300");
         }
 
         @Test
@@ -279,12 +279,12 @@ class ProductJpaMapperTest {
         void unmatchedVariantSkipped() {
             var aggregate = product(null, List.of(variant(null, null, "SKU-UNMATCHED", "5.00", null, List.of())));
             var saved = new ProductJpaEntity();
-            saved.setId(100L);
+            saved.setId("100");
             // no variants in saved
 
             mapper.syncGeneratedIds(aggregate, saved);
 
-            assertThat(aggregate.getId().value()).isEqualTo(100L);
+            assertThat(aggregate.getId().value()).isEqualTo("100");
             assertThat(aggregate.getVariants().get(0).getId()).isNull();
         }
     }

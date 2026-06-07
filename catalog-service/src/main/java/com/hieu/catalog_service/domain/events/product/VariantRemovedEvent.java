@@ -8,17 +8,17 @@ import java.util.Objects;
 @Getter
 public final class VariantRemovedEvent extends DomainEvent {
 
-    private final Long productId;
-    private final Long variantId;
+    private final String productId;
+    private final String variantId;
     private final String sku;
     private final String deletedBy;
 
-    public VariantRemovedEvent(Long productId, Long variantId, String sku, String deletedBy) {
+    public VariantRemovedEvent(String productId, String variantId, String sku, String deletedBy) {
         this.productId = Objects.requireNonNull(productId, "productId");
         this.variantId = Objects.requireNonNull(variantId, "variantId");
         this.sku = Objects.requireNonNull(sku, "sku");
         this.deletedBy = deletedBy;
     }
 
-    @Override public String aggregateId() { return String.valueOf(productId); }
+    @Override public String aggregateId() { return productId; }
 }

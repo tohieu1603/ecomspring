@@ -22,12 +22,16 @@ class OrderTest {
     @Test
     @DisplayName("class loads + JUnit discovers @Nested tests")
     void smokeTest_classDiscovered() {
-        // Nếu tới được đây tức là JUnit có thể instantiate test class.
-        // assertThat(this).isNotNull() được tự thực hiện ngầm.
     }
 
-
-    static final String USER_UUID = "11111111-1111-1111-1111-111111111111";
+    static final String USER_UUID  = "11111111-1111-1111-1111-111111111111";
+    static final String PROD_ID_1  = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
+    static final String PROD_ID_2  = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
+    static final String ORDER_ID_1 = "00000000-0000-0000-0000-000000000001";
+    static final String ORDER_ID_2 = "00000000-0000-0000-0000-000000000002";
+    static final String ORDER_ID_99 = "00000000-0000-0000-0000-000000000099";
+    static final String SHIPMENT_1 = "00000000-0000-0000-0000-000000000011";
+    static final String SHIPMENT_99 = "00000000-0000-0000-0000-000000000099";
 
     /** Minimal placed order: 1 item, id assigned. */
     static Order aPlacedOrder() {
@@ -39,10 +43,10 @@ class OrderTest {
                 new ShippingAddress("123 Le Loi", "Ben Thanh", "District 1", "Ho Chi Minh", "VN", "70000"),
                 "COD", null, null, "idem-1", USER_UUID);
         o.addItem(OrderItem.create(
-                ProductId.of(1L), ProductName.of("Product A"),
-                10L, "SKU-001", null,
+                ProductId.of(PROD_ID_1), ProductName.of("Product A"),
+                null, "SKU-001", null,
                 Money.of(BigDecimal.valueOf(100_000)), Quantity.of(2)));
-        o.assignId(1L);
+        o.assignId(ORDER_ID_1);
         return o;
     }
 
@@ -55,10 +59,10 @@ class OrderTest {
                 new ShippingAddress("123 Le Loi", "Ben Thanh", "District 1", "Ho Chi Minh", "VN", "70000"),
                 "COD", null, voucherCode, "idem-2", USER_UUID);
         o.addItem(OrderItem.create(
-                ProductId.of(1L), ProductName.of("Product A"),
-                10L, "SKU-001", null,
+                ProductId.of(PROD_ID_1), ProductName.of("Product A"),
+                null, "SKU-001", null,
                 Money.of(BigDecimal.valueOf(500_000)), Quantity.of(2)));
-        o.assignId(2L);
+        o.assignId(ORDER_ID_2);
         return o;
     }
 
@@ -121,9 +125,9 @@ class OrderTest {
             order.markPaymentPending();
             order.markPaymentCompleted();
             order.confirm();
-            order.markShipped(99L);
+            order.markShipped(SHIPMENT_99);
             assertThat(order.getStatus()).isEqualTo(OrderStatus.SHIPPED);
-            assertThat(order.getShipmentId()).isEqualTo(99L);
+            assertThat(order.getShipmentId()).isEqualTo(SHIPMENT_99);
         }
 
         @Test
@@ -133,7 +137,7 @@ class OrderTest {
             order.markPaymentPending();
             order.markPaymentCompleted();
             order.confirm();
-            order.markShipped(99L);
+            order.markShipped(SHIPMENT_99);
             order.markDelivered();
             assertThat(order.getStatus()).isEqualTo(OrderStatus.DELIVERED);
             assertThat(order.getDeliveredAt()).isNotNull();
@@ -154,7 +158,7 @@ class OrderTest {
             o.markPaymentPending();
             o.markPaymentCompleted();
             o.confirm();
-            o.markShipped(1L);
+            o.markShipped(SHIPMENT_1);
             o.markDelivered();
 
             assertThatThrownBy(() -> o.cancel("quá muộn"))
@@ -201,12 +205,12 @@ class OrderTest {
                     RecipientName.of("A"), RecipientPhone.of("0900000001"),
                     new ShippingAddress("s", "w", "d", "c", "VN", "70000"),
                     "COD", null, null, "idem-rc", USER_UUID);
-            o.assignId(99L);
+            o.assignId(ORDER_ID_99);
 
-            o.addItem(OrderItem.create(ProductId.of(1L), ProductName.of("P1"),
-                    1L, "S1", null, Money.of(BigDecimal.valueOf(200_000)), Quantity.of(1)));
-            o.addItem(OrderItem.create(ProductId.of(2L), ProductName.of("P2"),
-                    2L, "S2", null, Money.of(BigDecimal.valueOf(300_000)), Quantity.of(2)));
+            o.addItem(OrderItem.create(ProductId.of(PROD_ID_1), ProductName.of("P1"),
+                    null, "S1", null, Money.of(BigDecimal.valueOf(200_000)), Quantity.of(1)));
+            o.addItem(OrderItem.create(ProductId.of(PROD_ID_2), ProductName.of("P2"),
+                    null, "S2", null, Money.of(BigDecimal.valueOf(300_000)), Quantity.of(2)));
             // subtotal = 200_000 + 600_000 = 800_000, no discount/shipping
             assertThat(o.getSubtotalAmount().amount())
                     .isEqualByComparingTo(BigDecimal.valueOf(800_000));

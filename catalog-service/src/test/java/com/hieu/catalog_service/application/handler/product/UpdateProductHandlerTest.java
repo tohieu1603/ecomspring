@@ -41,22 +41,22 @@ class UpdateProductHandlerTest {
     @InjectMocks UpdateProductHandler handler;
 
     private final ProductDTO dummyDto = new ProductDTO(
-            1L, "x", "x", null, null, null, null, List.of(), "DRAFT",
+            "1", "x", "x", null, null, null, null, List.of(), "DRAFT",
             null, null, null, null, null, 0, false, List.of(),
             null, null, "tester", "tester", null);
 
     /** A persisted product (id assigned) so update() can register its event. */
     private Product persistedProduct() {
         Product p = Product.create("Old Name", "old desc", null, "OldBrand", "creator");
-        p.assignId(ProductId.of(1L));
+        p.assignId(ProductId.of("1"));
         return p;
     }
 
     @Test
     @DisplayName("product not found → ProductNotFoundException, nothing saved")
     void update_productNotFound_throws() {
-        when(productRepository.findByIdWithVariants(ProductId.of(99L))).thenReturn(Optional.empty());
-        var cmd = new UpdateProductCommand(99L, "New", null, null, null, "tester");
+        when(productRepository.findByIdWithVariants(ProductId.of("99"))).thenReturn(Optional.empty());
+        var cmd = new UpdateProductCommand("99", "New", null, null, null, "tester");
 
         assertThatThrownBy(() -> handler.handle(cmd))
                 .isInstanceOf(ProductNotFoundException.class);
@@ -68,9 +68,9 @@ class UpdateProductHandlerTest {
     @DisplayName("categoryId set but missing → CategoryNotFoundException, nothing saved")
     void update_unknownCategory_throws() {
         var product = persistedProduct();
-        when(productRepository.findByIdWithVariants(ProductId.of(1L))).thenReturn(Optional.of(product));
-        when(categoryRepository.existsById(CategoryId.of(5L))).thenReturn(false);
-        var cmd = new UpdateProductCommand(1L, "New", null, 5L, null, "tester");
+        when(productRepository.findByIdWithVariants(ProductId.of("1"))).thenReturn(Optional.of(product));
+        when(categoryRepository.existsById(CategoryId.of("5"))).thenReturn(false);
+        var cmd = new UpdateProductCommand("1", "New", null, "5", null, "tester");
 
         assertThatThrownBy(() -> handler.handle(cmd))
                 .isInstanceOf(CategoryNotFoundException.class);
@@ -81,17 +81,17 @@ class UpdateProductHandlerTest {
     @DisplayName("valid update with known category → applies change, saves, publishes events")
     void update_happyPath_savesAndPublishes() {
         var product = persistedProduct();
-        when(productRepository.findByIdWithVariants(ProductId.of(1L))).thenReturn(Optional.of(product));
-        when(categoryRepository.existsById(CategoryId.of(5L))).thenReturn(true);
+        when(productRepository.findByIdWithVariants(ProductId.of("1"))).thenReturn(Optional.of(product));
+        when(categoryRepository.existsById(CategoryId.of("5"))).thenReturn(true);
         when(productRepository.save(product)).thenReturn(product);
         when(mapper.toDto(product)).thenReturn(dummyDto);
-        var cmd = new UpdateProductCommand(1L, "New Name", "new desc", 5L, "NewBrand", "editor");
+        var cmd = new UpdateProductCommand("1", "New Name", "new desc", "5", "NewBrand", "editor");
 
         var result = handler.handle(cmd);
 
         assertThat(result).isSameAs(dummyDto);
         assertThat(product.getName()).isEqualTo("New Name");
-        assertThat(product.getCategoryId()).isEqualTo(CategoryId.of(5L));
+        assertThat(product.getCategoryId()).isEqualTo(CategoryId.of("5"));
         verify(productRepository).save(product);
         verify(eventPublisher).publishEventsOf(product);
     }
@@ -100,12 +100,12 @@ class UpdateProductHandlerTest {
     @DisplayName("null categoryId → category repo not consulted, update still applied")
     void update_nullCategory_skipsCategoryCheck() {
         var product = persistedProduct();
-        when(productRepository.findByIdWithVariants(ProductId.of(1L))).thenReturn(Optional.of(product));
+        when(productRepository.findByIdWithVariants(ProductId.of("1"))).thenReturn(Optional.of(product));
         when(productRepository.save(product)).thenReturn(product);
         when(mapper.toDto(product)).thenReturn(dummyDto);
         // categoryRepository stubs intentionally absent — STRICT_STUBS proves it isn't touched.
         lenient().when(categoryRepository.existsById(any())).thenReturn(true);
-        var cmd = new UpdateProductCommand(1L, "Renamed", null, null, null, "editor");
+        var cmd = new UpdateProductCommand("1", "Renamed", null, null, null, "editor");
 
         handler.handle(cmd);
 

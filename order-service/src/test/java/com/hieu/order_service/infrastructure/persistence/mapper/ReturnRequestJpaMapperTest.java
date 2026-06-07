@@ -18,10 +18,10 @@ class ReturnRequestJpaMapperTest {
     private final ReturnRequestJpaMapper mapper = new ReturnRequestJpaMapper();
     private static final String USER = UUID.randomUUID().toString();
 
-    private ReturnRequest reconstitute(Long id, RefundAmount refund) {
+    private ReturnRequest reconstitute(String id, RefundAmount refund) {
         return ReturnRequest.reconstitute(
                 ReturnRequestId.of(id),
-                OrderId.of(55L),
+                OrderId.of("00000000-0000-0000-0000-000000000055"),
                 UserId.of(USER),
                 ReturnReason.of("defective"),
                 ReturnType.REFUND,
@@ -36,12 +36,12 @@ class ReturnRequestJpaMapperTest {
     @Test
     @DisplayName("toJpa maps every field including refund amount")
     void toJpa_mapsAllFields() {
-        var rr = reconstitute(10L, RefundAmount.of(new BigDecimal("99.50")));
+        var rr = reconstitute("00000000-0000-0000-0000-000000000010", RefundAmount.of(new BigDecimal("99.50")));
 
         var e = mapper.toJpa(rr);
 
-        assertThat(e.getId()).isEqualTo(10L);
-        assertThat(e.getOrderId()).isEqualTo(55L);
+        assertThat(e.getId()).isEqualTo("00000000-0000-0000-0000-000000000010");
+        assertThat(e.getOrderId()).isEqualTo("00000000-0000-0000-0000-000000000055");
         assertThat(e.getUserId()).isEqualTo(USER);
         assertThat(e.getReason()).isEqualTo("defective");
         assertThat(e.getReturnType()).isEqualTo("REFUND");
@@ -56,7 +56,7 @@ class ReturnRequestJpaMapperTest {
     @Test
     @DisplayName("toJpa maps a null refund amount to a null column")
     void toJpa_nullRefund() {
-        var e = mapper.toJpa(reconstitute(10L, null));
+        var e = mapper.toJpa(reconstitute("00000000-0000-0000-0000-000000000010", null));
 
         assertThat(e.getRefundAmount()).isNull();
     }
@@ -64,12 +64,12 @@ class ReturnRequestJpaMapperTest {
     @Test
     @DisplayName("toDomain rebuilds the aggregate with refund amount")
     void toDomain_withRefund() {
-        var e = mapper.toJpa(reconstitute(10L, RefundAmount.of(new BigDecimal("12.00"))));
+        var e = mapper.toJpa(reconstitute("00000000-0000-0000-0000-000000000010", RefundAmount.of(new BigDecimal("12.00"))));
 
         var domain = mapper.toDomain(e);
 
-        assertThat(domain.getId().value()).isEqualTo(10L);
-        assertThat(domain.getOrderId().value()).isEqualTo(55L);
+        assertThat(domain.getId().value()).isEqualTo("00000000-0000-0000-0000-000000000010");
+        assertThat(domain.getOrderId().value()).isEqualTo("00000000-0000-0000-0000-000000000055");
         assertThat(domain.getUserId().value()).isEqualTo(USER);
         assertThat(domain.getReason().value()).isEqualTo("defective");
         assertThat(domain.getReturnType()).isEqualTo(ReturnType.REFUND);
@@ -81,7 +81,7 @@ class ReturnRequestJpaMapperTest {
     @Test
     @DisplayName("toDomain maps a null refund column to a null value object")
     void toDomain_nullRefund() {
-        var e = mapper.toJpa(reconstitute(10L, null));
+        var e = mapper.toJpa(reconstitute("00000000-0000-0000-0000-000000000010", null));
 
         var domain = mapper.toDomain(e);
 
@@ -91,11 +91,11 @@ class ReturnRequestJpaMapperTest {
     @Test
     @DisplayName("round trip preserves the aggregate")
     void roundTrip() {
-        var original = reconstitute(33L, RefundAmount.of(new BigDecimal("7.25")));
+        var original = reconstitute("00000000-0000-0000-0000-000000000033", RefundAmount.of(new BigDecimal("7.25")));
 
         var back = mapper.toDomain(mapper.toJpa(original));
 
-        assertThat(back.getId().value()).isEqualTo(33L);
+        assertThat(back.getId().value()).isEqualTo("00000000-0000-0000-0000-000000000033");
         assertThat(back.getAdminNote()).isEqualTo(original.getAdminNote());
         assertThat(back.getRefundAmount().amount()).isEqualByComparingTo("7.25");
     }
@@ -103,15 +103,15 @@ class ReturnRequestJpaMapperTest {
     @Test
     @DisplayName("syncGeneratedIds copies the DB id onto the aggregate")
     void syncGeneratedIds() {
-        var rr = ReturnRequest.create(OrderId.of(1L), UserId.of(USER),
+        var rr = ReturnRequest.create(OrderId.of("00000000-0000-0000-0000-000000000001"), UserId.of(USER),
                 ReturnReason.of("r"), ReturnType.EXCHANGE, null);
         assertThat(rr.getId()).isNull();
 
         var saved = new ReturnRequestJpaEntity();
-        saved.setId(4242L);
+        saved.setId("00000000-0000-0000-0000-000000004242");
 
         mapper.syncGeneratedIds(rr, saved);
 
-        assertThat(rr.getId().value()).isEqualTo(4242L);
+        assertThat(rr.getId().value()).isEqualTo("00000000-0000-0000-0000-000000004242");
     }
 }

@@ -14,20 +14,20 @@ import java.util.Objects;
 @Getter
 public final class ProductCreatedEvent extends DomainEvent {
 
-    private final Long productId;
+    private final String productId;
     private final String name;
     private final String slug;
     private final String description;
     private final String brand;
     private final String status;
     private final String thumbnail;
-    private final Long categoryId;
+    private final String categoryId;
     private final String createdBy;
     private final List<VariantInfo> variants;
 
-    public ProductCreatedEvent(Long productId, String name, String slug,
+    public ProductCreatedEvent(String productId, String name, String slug,
                                String description, String brand, String status, String thumbnail,
-                               Long categoryId,
+                               String categoryId,
                                String createdBy, List<VariantInfo> variants) {
         this.productId = Objects.requireNonNull(productId, "productId");
         this.name = Objects.requireNonNull(name, "name");
@@ -41,8 +41,8 @@ public final class ProductCreatedEvent extends DomainEvent {
         this.variants = List.copyOf(Objects.requireNonNullElse(variants, List.of()));
     }
 
-    @Override public String aggregateId() { return String.valueOf(productId); }
+    @Override public String aggregateId() { return productId; }
 
     /** Flat projection of a variant — only what downstream consumers need. */
-    public record VariantInfo(Long variantId, String sku, BigDecimal price, int quantity) {}
+    public record VariantInfo(String variantId, String sku, BigDecimal price, int quantity) {}
 }

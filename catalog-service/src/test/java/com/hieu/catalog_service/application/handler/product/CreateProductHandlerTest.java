@@ -55,7 +55,7 @@ class CreateProductHandlerTest {
     @InjectMocks CreateProductHandler handler;
 
     private final ProductDTO dummyDto = new ProductDTO(
-            1L, "x", "x", null, null, null, null, List.of(), "DRAFT",
+            "1", "x", "x", null, null, null, null, List.of(), "DRAFT",
             null, null, null, null, null, 0, false, List.of(),
             null, null, "tester", "tester", null);
 
@@ -75,12 +75,13 @@ class CreateProductHandlerTest {
     /** Assign sequential ids the way the JPA adapter would after a flush. */
     private static void persist(Product p) {
         if (p.getId() == null) {
-            p.assignId(com.hieu.catalog_service.domain.model.product.valueobject.ProductId.of(1L));
+            p.assignId(com.hieu.catalog_service.domain.model.product.valueobject.ProductId.of("1"));
         }
-        long vid = 100L;
+        String[] variantIds = {"100", "101", "102", "103", "104", "105"};
+        int vi = 0;
         for (var v : p.getVariants()) {
             if (v.getId() == null) {
-                v.assignId(com.hieu.catalog_service.domain.model.product.valueobject.VariantId.of(vid++));
+                v.assignId(com.hieu.catalog_service.domain.model.product.valueobject.VariantId.of(variantIds[vi++]));
             }
         }
     }
@@ -92,16 +93,16 @@ class CreateProductHandlerTest {
                 new BigDecimal("0.5"), 10, attrs);
     }
 
-    private static CreateProductCommand command(String name, Long categoryId, List<VariantCmd> variants) {
+    private static CreateProductCommand command(String name, String categoryId, List<VariantCmd> variants) {
         return new CreateProductCommand(name, "desc", categoryId, "Brand",
                 null, null, null, null, null, variants, false, "tester");
     }
 
-    private static Attr selectAttr(long id, AttrVal... vals) {
+    private static Attr selectAttr(String id, AttrVal... vals) {
         return Attr.reconstitute(AttrId.of(id), "COLOR", "Colour", AttrType.SELECT, 0, List.of(vals));
     }
 
-    private static Attr textAttr(long id) {
+    private static Attr textAttr(String id) {
         return Attr.reconstitute(AttrId.of(id), "MATERIAL", "Material", AttrType.TEXT, 0, List.of());
     }
 
@@ -168,8 +169,8 @@ class CreateProductHandlerTest {
     @Test
     @DisplayName("categoryId set but not found → CategoryNotFoundException")
     void create_unknownCategory_throws() {
-        var cmd = command("Cat Prod", 7L, List.of(variant("SKU-1", List.of())));
-        when(categoryRepository.existsById(CategoryId.of(7L))).thenReturn(false);
+        var cmd = command("Cat Prod", "7", List.of(variant("SKU-1", List.of())));
+        when(categoryRepository.existsById(CategoryId.of("7"))).thenReturn(false);
 
         assertThatThrownBy(() -> handler.handle(cmd))
                 .isInstanceOf(CategoryNotFoundException.class);
@@ -181,10 +182,10 @@ class CreateProductHandlerTest {
     @Test
     @DisplayName("SELECT attr without attrValId → ValidationException")
     void create_selectAttrMissingValId_throws() {
-        var attr = selectAttr(5L, AttrVal.reconstitute(50L, 5L, "Red", "RED", 0));
+        var attr = selectAttr("5", AttrVal.reconstitute("50", "5", "Red", "RED", 0));
         var cmd = command("Sel Prod", null,
-                List.of(variant("SKU-1", List.of(new AttrCmd(5L, null, null)))));
-        when(attrRepository.findAllByIdsWithValues(List.of(5L))).thenReturn(List.of(attr));
+                List.of(variant("SKU-1", List.of(new AttrCmd("5", null, null)))));
+        when(attrRepository.findAllByIdsWithValues(List.of("5"))).thenReturn(List.of(attr));
 
         assertThatThrownBy(() -> handler.handle(cmd))
                 .isInstanceOf(ValidationException.class)
@@ -194,10 +195,10 @@ class CreateProductHandlerTest {
     @Test
     @DisplayName("SELECT attr with unknown attrValId → AttrValNotFoundException")
     void create_selectAttrUnknownValId_throws() {
-        var attr = selectAttr(5L, AttrVal.reconstitute(50L, 5L, "Red", "RED", 0));
+        var attr = selectAttr("5", AttrVal.reconstitute("50", "5", "Red", "RED", 0));
         var cmd = command("Sel Prod", null,
-                List.of(variant("SKU-1", List.of(new AttrCmd(5L, 999L, null)))));
-        when(attrRepository.findAllByIdsWithValues(List.of(5L))).thenReturn(List.of(attr));
+                List.of(variant("SKU-1", List.of(new AttrCmd("5", "999", null)))));
+        when(attrRepository.findAllByIdsWithValues(List.of("5"))).thenReturn(List.of(attr));
 
         assertThatThrownBy(() -> handler.handle(cmd))
                 .isInstanceOf(AttrValNotFoundException.class);
@@ -206,10 +207,10 @@ class CreateProductHandlerTest {
     @Test
     @DisplayName("TEXT attr with blank valText → ValidationException")
     void create_textAttrBlank_throws() {
-        var attr = textAttr(8L);
+        var attr = textAttr("8");
         var cmd = command("Text Prod", null,
-                List.of(variant("SKU-1", List.of(new AttrCmd(8L, null, "   ")))));
-        when(attrRepository.findAllByIdsWithValues(List.of(8L))).thenReturn(List.of(attr));
+                List.of(variant("SKU-1", List.of(new AttrCmd("8", null, "   ")))));
+        when(attrRepository.findAllByIdsWithValues(List.of("8"))).thenReturn(List.of(attr));
 
         assertThatThrownBy(() -> handler.handle(cmd))
                 .isInstanceOf(ValidationException.class)
@@ -220,8 +221,8 @@ class CreateProductHandlerTest {
     @DisplayName("referenced attrId not loaded → AttrNotFoundException")
     void create_unknownAttr_throws() {
         var cmd = command("Bad Attr Prod", null,
-                List.of(variant("SKU-1", List.of(new AttrCmd(42L, 1L, null)))));
-        when(attrRepository.findAllByIdsWithValues(List.of(42L))).thenReturn(List.of());
+                List.of(variant("SKU-1", List.of(new AttrCmd("42", "1", null)))));
+        when(attrRepository.findAllByIdsWithValues(List.of("42"))).thenReturn(List.of());
 
         assertThatThrownBy(() -> handler.handle(cmd))
                 .isInstanceOf(AttrNotFoundException.class);
@@ -230,11 +231,11 @@ class CreateProductHandlerTest {
     @Test
     @DisplayName("valid SELECT + TEXT attrs resolve and product is saved")
     void create_validAttrs_saves() {
-        var sel = selectAttr(5L, AttrVal.reconstitute(50L, 5L, "Red", "RED", 0));
-        var txt = textAttr(8L);
+        var sel = selectAttr("5", AttrVal.reconstitute("50", "5", "Red", "RED", 0));
+        var txt = textAttr("8");
         var cmd = command("Multi Attr", null, List.of(
-                variant("SKU-1", List.of(new AttrCmd(5L, 50L, null), new AttrCmd(8L, null, "Cotton")))));
-        when(attrRepository.findAllByIdsWithValues(List.of(5L, 8L))).thenReturn(List.of(sel, txt));
+                variant("SKU-1", List.of(new AttrCmd("5", "50", null), new AttrCmd("8", null, "Cotton")))));
+        when(attrRepository.findAllByIdsWithValues(List.of("5", "8"))).thenReturn(List.of(sel, txt));
         when(productRepository.existsBySlug(any())).thenReturn(false);
         when(productRepository.existsBySku(any())).thenReturn(false);
 

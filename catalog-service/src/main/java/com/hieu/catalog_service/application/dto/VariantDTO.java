@@ -4,8 +4,8 @@ import java.math.BigDecimal;
 import java.util.List;
 
 public record VariantDTO(
-        Long id,
-        Long productId,
+        String id,
+        String productId,
         String sku,
         BigDecimal price,
         BigDecimal cost,

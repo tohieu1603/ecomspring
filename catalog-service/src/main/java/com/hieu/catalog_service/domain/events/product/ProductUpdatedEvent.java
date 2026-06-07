@@ -8,17 +8,17 @@ import java.util.Objects;
 @Getter
 public final class ProductUpdatedEvent extends DomainEvent {
 
-    private final Long productId;
+    private final String productId;
     private final String name;
     private final String slug;
     private final String updatedBy;
 
-    public ProductUpdatedEvent(Long productId, String name, String slug, String updatedBy) {
+    public ProductUpdatedEvent(String productId, String name, String slug, String updatedBy) {
         this.productId = Objects.requireNonNull(productId, "productId");
         this.name = Objects.requireNonNull(name, "name");
         this.slug = Objects.requireNonNull(slug, "slug");
         this.updatedBy = updatedBy;
     }
 
-    @Override public String aggregateId() { return String.valueOf(productId); }
+    @Override public String aggregateId() { return productId; }
 }

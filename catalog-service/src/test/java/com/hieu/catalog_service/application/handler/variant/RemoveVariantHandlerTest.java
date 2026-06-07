@@ -42,25 +42,25 @@ class RemoveVariantHandlerTest {
 
     @InjectMocks RemoveVariantHandler handler;
 
-    private static Variant variant(long id, String sku) {
-        return Variant.reconstitute(VariantId.of(id), ProductId.of(1L), Sku.of(sku),
+    private static Variant variant(String id, String sku) {
+        return Variant.reconstitute(VariantId.of(id), ProductId.of("1"), Sku.of(sku),
                 Money.of(new BigDecimal("10.00")), null, null, null, new BigDecimal("0.5"),
                 Quantity.of(5), VariantStatus.ACTIVE, null, List.of());
     }
 
     /** Persisted ACTIVE product with two variants (so one can be removed). */
     private static Product productWithTwoVariants() {
-        return Product.reconstitute(ProductId.of(1L), "Prod", Slug.of("prod"), "desc",
+        return Product.reconstitute(ProductId.of("1"), "Prod", Slug.of("prod"), "desc",
                 null, "Brand", null, List.of(), ProductStatus.ACTIVE,
                 null, null, null, Instant.now(), Instant.now(),
-                "creator", "creator", 0L, List.of(variant(100L, "SKU-1"), variant(200L, "SKU-2")));
+                "creator", "creator", 0L, List.of(variant("100", "SKU-1"), variant("200", "SKU-2")));
     }
 
     @Test
     @DisplayName("product not found → ProductNotFoundException, nothing saved")
     void remove_productNotFound_throws() {
-        when(productRepository.findByIdWithVariants(ProductId.of(1L))).thenReturn(Optional.empty());
-        var cmd = new RemoveVariantCommand(1L, 100L, "tester");
+        when(productRepository.findByIdWithVariants(ProductId.of("1"))).thenReturn(Optional.empty());
+        var cmd = new RemoveVariantCommand("1", "100", "tester");
 
         assertThatThrownBy(() -> handler.handle(cmd))
                 .isInstanceOf(ProductNotFoundException.class);
@@ -72,8 +72,8 @@ class RemoveVariantHandlerTest {
     @DisplayName("unknown variant id → IllegalArgumentException from aggregate, nothing saved")
     void remove_unknownVariant_throws() {
         var product = productWithTwoVariants();
-        when(productRepository.findByIdWithVariants(ProductId.of(1L))).thenReturn(Optional.of(product));
-        var cmd = new RemoveVariantCommand(1L, 999L, "tester");
+        when(productRepository.findByIdWithVariants(ProductId.of("1"))).thenReturn(Optional.of(product));
+        var cmd = new RemoveVariantCommand("1", "999", "tester");
 
         assertThatThrownBy(() -> handler.handle(cmd))
                 .isInstanceOf(IllegalArgumentException.class);
@@ -83,12 +83,12 @@ class RemoveVariantHandlerTest {
     @Test
     @DisplayName("last variant of ACTIVE product → IllegalStateException, nothing saved")
     void remove_lastVariantOfActive_throws() {
-        Product product = Product.reconstitute(ProductId.of(1L), "Prod", Slug.of("prod"), "desc",
+        Product product = Product.reconstitute(ProductId.of("1"), "Prod", Slug.of("prod"), "desc",
                 null, "Brand", null, List.of(), ProductStatus.ACTIVE,
                 null, null, null, Instant.now(), Instant.now(),
-                "creator", "creator", 0L, List.of(variant(100L, "SKU-1")));
-        when(productRepository.findByIdWithVariants(ProductId.of(1L))).thenReturn(Optional.of(product));
-        var cmd = new RemoveVariantCommand(1L, 100L, "tester");
+                "creator", "creator", 0L, List.of(variant("100", "SKU-1")));
+        when(productRepository.findByIdWithVariants(ProductId.of("1"))).thenReturn(Optional.of(product));
+        var cmd = new RemoveVariantCommand("1", "100", "tester");
 
         assertThatThrownBy(() -> handler.handle(cmd))
                 .isInstanceOf(IllegalStateException.class);
@@ -99,14 +99,14 @@ class RemoveVariantHandlerTest {
     @DisplayName("valid removal → variant gone, saved, events published, returns null")
     void remove_happyPath() {
         var product = productWithTwoVariants();
-        when(productRepository.findByIdWithVariants(ProductId.of(1L))).thenReturn(Optional.of(product));
+        when(productRepository.findByIdWithVariants(ProductId.of("1"))).thenReturn(Optional.of(product));
         when(productRepository.save(product)).thenReturn(product);
-        var cmd = new RemoveVariantCommand(1L, 100L, "tester");
+        var cmd = new RemoveVariantCommand("1", "100", "tester");
 
         var result = handler.handle(cmd);
 
         assertThat(result).isNull();
-        assertThat(product.getVariants()).noneMatch(v -> v.getId().equals(VariantId.of(100L)));
+        assertThat(product.getVariants()).noneMatch(v -> v.getId().equals(VariantId.of("100")));
         assertThat(product.getVariants()).hasSize(1);
         verify(productRepository).save(product);
         verify(eventPublisher).publishEventsOf(product);

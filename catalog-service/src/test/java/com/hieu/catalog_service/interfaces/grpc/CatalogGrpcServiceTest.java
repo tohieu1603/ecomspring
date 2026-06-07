@@ -63,11 +63,11 @@ class CatalogGrpcServiceTest {
     }
 
     private static VariantAttrDTO attr() {
-        return new VariantAttrDTO(1L, 7L, "COLOR", "Color", 3L, "Red");
+        return new VariantAttrDTO("1", "7", "COLOR", "Color", "3", "Red");
     }
 
     private static VariantDTO variant() {
-        return new VariantDTO(10L, 1L, "SKU-1", new BigDecimal("19.99"), null,
+        return new VariantDTO("10", "1", "SKU-1", new BigDecimal("19.99"), null,
             new BigDecimal("15.00"), new BigDecimal("15.00"), "img.png",
             new BigDecimal("1.5"), 8, "ACTIVE", true, List.of(attr()));
     }
@@ -79,18 +79,18 @@ class CatalogGrpcServiceTest {
         @Test
         @DisplayName("found → found=true and product (+nested variant/attr) mapped to proto")
         void found() {
-            var dto = new ProductDTO(1L, "Tee", "tee", "desc", 99L, "Brand", "thumb.png",
+            var dto = new ProductDTO("1", "Tee", "tee", "desc", "99", "Brand", "thumb.png",
                 List.of("a.png"), "ACTIVE", null, null, null,
                 new BigDecimal("15.00"), new BigDecimal("19.99"), 8, true,
                 List.of(variant()), null, null, "creator", "updater", 2L);
-            when(getProductById.handle(new GetProductByIdQuery(1L))).thenReturn(dto);
+            when(getProductById.handle(new GetProductByIdQuery("1"))).thenReturn(dto);
 
             var holder = new AtomicReference<GetProductResponse>();
-            service.getProduct(GetProductRequest.newBuilder().setProductId(1L).build(), capture(holder));
+            service.getProduct(GetProductRequest.newBuilder().setProductId("1").build(), capture(holder));
 
             GetProductResponse resp = holder.get();
             assertThat(resp.getFound()).isTrue();
-            assertThat(resp.getProduct().getId()).isEqualTo(1L);
+            assertThat(resp.getProduct().getId()).isEqualTo("1");
             assertThat(resp.getProduct().getName()).isEqualTo("Tee");
             assertThat(resp.getProduct().getStatus()).isEqualTo("ACTIVE");
             assertThat(resp.getProduct().getVariantsCount()).isEqualTo(1);
@@ -101,18 +101,18 @@ class CatalogGrpcServiceTest {
         }
 
         @Test
-        @DisplayName("null categoryId and null nullable strings map to 0L / empty string")
+        @DisplayName("null categoryId and null nullable strings map to empty string")
         void nullFieldsCoalesced() {
-            var dto = new ProductDTO(2L, null, null, null, null, null, null,
+            var dto = new ProductDTO("2", null, null, null, null, null, null,
                 List.of(), null, null, null, null, null, null, 0, false,
                 List.of(), null, null, null, null, null);
-            when(getProductById.handle(new GetProductByIdQuery(2L))).thenReturn(dto);
+            when(getProductById.handle(new GetProductByIdQuery("2"))).thenReturn(dto);
 
             var holder = new AtomicReference<GetProductResponse>();
-            service.getProduct(GetProductRequest.newBuilder().setProductId(2L).build(), capture(holder));
+            service.getProduct(GetProductRequest.newBuilder().setProductId("2").build(), capture(holder));
 
             var product = holder.get().getProduct();
-            assertThat(product.getCategoryId()).isZero();
+            assertThat(product.getCategoryId()).isEmpty();
             assertThat(product.getName()).isEmpty();
             assertThat(product.getStatus()).isEmpty();
         }
@@ -120,11 +120,11 @@ class CatalogGrpcServiceTest {
         @Test
         @DisplayName("ProductNotFoundException → found=false (no gRPC error)")
         void notFound() {
-            when(getProductById.handle(new GetProductByIdQuery(404L)))
-                .thenThrow(new ProductNotFoundException(404L));
+            when(getProductById.handle(new GetProductByIdQuery("404")))
+                .thenThrow(new ProductNotFoundException("404"));
 
             var holder = new AtomicReference<GetProductResponse>();
-            service.getProduct(GetProductRequest.newBuilder().setProductId(404L).build(), capture(holder));
+            service.getProduct(GetProductRequest.newBuilder().setProductId("404").build(), capture(holder));
 
             assertThat(holder.get().getFound()).isFalse();
         }
@@ -132,11 +132,11 @@ class CatalogGrpcServiceTest {
         @Test
         @DisplayName("unexpected exception → swallowed, found=false")
         void unexpectedError() {
-            when(getProductById.handle(new GetProductByIdQuery(5L)))
+            when(getProductById.handle(new GetProductByIdQuery("5")))
                 .thenThrow(new RuntimeException("boom"));
 
             var holder = new AtomicReference<GetProductResponse>();
-            service.getProduct(GetProductRequest.newBuilder().setProductId(5L).build(), capture(holder));
+            service.getProduct(GetProductRequest.newBuilder().setProductId("5").build(), capture(holder));
 
             assertThat(holder.get().getFound()).isFalse();
         }
@@ -156,8 +156,8 @@ class CatalogGrpcServiceTest {
 
             GetVariantBySkuResponse resp = holder.get();
             assertThat(resp.getFound()).isTrue();
-            assertThat(resp.getVariant().getId()).isEqualTo(10L);
-            assertThat(resp.getVariant().getProductId()).isEqualTo(1L);
+            assertThat(resp.getVariant().getId()).isEqualTo("10");
+            assertThat(resp.getVariant().getProductId()).isEqualTo("1");
             assertThat(resp.getVariant().getSku()).isEqualTo("SKU-1");
             assertThat(resp.getVariant().getPrice()).isEqualTo("19.99");
             assertThat(resp.getVariant().getSalePrice()).isEqualTo("15.00");
@@ -165,7 +165,7 @@ class CatalogGrpcServiceTest {
         }
 
         @Test
-        @DisplayName("null id/productId/salePrice coalesce to 0L / empty string")
+        @DisplayName("null id/productId/salePrice coalesce to empty string")
         void nullFieldsCoalesced() {
             var dto = new VariantDTO(null, null, "SKU-X", new BigDecimal("5.00"), null, null,
                 new BigDecimal("5.00"), null, null, 0, "OUT_OF_STOCK", false, null);
@@ -175,8 +175,8 @@ class CatalogGrpcServiceTest {
             service.getVariantBySku(GetVariantBySkuRequest.newBuilder().setSku("SKU-X").build(), capture(holder));
 
             var v = holder.get().getVariant();
-            assertThat(v.getId()).isZero();
-            assertThat(v.getProductId()).isZero();
+            assertThat(v.getId()).isEmpty();
+            assertThat(v.getProductId()).isEmpty();
             assertThat(v.getSalePrice()).isEmpty();
             assertThat(v.getAttrsCount()).isZero();
         }

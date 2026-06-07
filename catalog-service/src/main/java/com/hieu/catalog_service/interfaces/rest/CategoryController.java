@@ -43,7 +43,7 @@ public class CategoryController {
 
     @Operation(summary = "Get category by id")
     @GetMapping("/{id}")
-    public ResponseEntity<CategoryDTO> byId(@PathVariable Long id) {
+    public ResponseEntity<CategoryDTO> byId(@PathVariable String id) {
         return ResponseEntity.ok(getById.handle(new GetCategoryByIdQuery(id)));
     }
 
@@ -59,7 +59,7 @@ public class CategoryController {
     @Operation(summary = "Update category (admin)")
     @PatchMapping("/{id}")
     @PreAuthorize(WRITE)
-    public ResponseEntity<CategoryDTO> update(@PathVariable Long id,
+    public ResponseEntity<CategoryDTO> update(@PathVariable String id,
                                                 @Valid @RequestBody CategoryRequest req,
                                                 @AuthenticationPrincipal AuthenticatedUser user) {
         return ResponseEntity.ok(update.handle(new UpdateCategoryCommand(
@@ -69,7 +69,7 @@ public class CategoryController {
     @Operation(summary = "Soft-delete category (admin)")
     @DeleteMapping("/{id}")
     @PreAuthorize(WRITE)
-    public ResponseEntity<Void> delete(@PathVariable Long id,
+    public ResponseEntity<Void> delete(@PathVariable String id,
                                         @AuthenticationPrincipal AuthenticatedUser user) {
         delete.handle(new DeleteCategoryCommand(id, user.userId()));
         return ResponseEntity.noContent().build();

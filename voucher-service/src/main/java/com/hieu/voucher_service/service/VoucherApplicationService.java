@@ -75,7 +75,7 @@ public class VoucherApplicationService {
     }
 
     @Transactional(readOnly = true)
-    public VoucherDTO getVoucher(Long id) {
+    public VoucherDTO getVoucher(String id) {
         return toDTO(findById(id));
     }
 
@@ -96,7 +96,7 @@ public class VoucherApplicationService {
     }
 
     @Transactional
-    public VoucherDTO updateVoucher(Long id, UpdateVoucherRequest req) {
+    public VoucherDTO updateVoucher(String id, UpdateVoucherRequest req) {
         VoucherJpaEntity entity = findById(id);
 
         if (req.getType() != null) entity.setType(req.getType());
@@ -115,7 +115,7 @@ public class VoucherApplicationService {
     }
 
     @Transactional
-    public VoucherDTO deactivateVoucher(Long id) {
+    public VoucherDTO deactivateVoucher(String id) {
         VoucherJpaEntity entity = findById(id);
         entity.setActive(false);
         VoucherJpaEntity saved = voucherRepository.save(entity);
@@ -213,7 +213,7 @@ public class VoucherApplicationService {
 
     // --- private helpers ---
 
-    private VoucherJpaEntity findById(Long id) {
+    private VoucherJpaEntity findById(String id) {
         return voucherRepository.findById(id)
                 .orElseThrow(() -> new VoucherNotFoundException(id));
     }

@@ -14,7 +14,7 @@ import java.time.Instant;
 import java.util.Optional;
 
 @Repository
-public interface VoucherJpaRepository extends JpaRepository<VoucherJpaEntity, Long> {
+public interface VoucherJpaRepository extends JpaRepository<VoucherJpaEntity, String> {
 
     Optional<VoucherJpaEntity> findByCode(String code);
 

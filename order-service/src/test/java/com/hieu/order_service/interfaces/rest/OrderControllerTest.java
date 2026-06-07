@@ -70,7 +70,7 @@ class OrderControllerTest {
     }
 
     private static OrderDTO sampleDto() {
-        return new OrderDTO(1L, "ORD-20240101-000001", "user-1", "CONFIRMED", List.of(),
+        return new OrderDTO("00000000-0000-0000-0000-000000000001", "ORD-20240101-000001", "user-1", "CONFIRMED", List.of(),
                 BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO,
                 null, "R", "0901234567", "s", "w", "d", "c", "Vietnam", null,
                 null, "COD", null, null, null, null,
@@ -86,7 +86,7 @@ class OrderControllerTest {
     void getById_admin() {
         when(getOrderByIdHandler.handle(any())).thenReturn(DTO);
 
-        controller.getById(5L, user("ROLE_ADMIN"));
+        controller.getById("00000000-0000-0000-0000-000000000005", user("ROLE_ADMIN"));
 
         var captor = ArgumentCaptor.forClass(GetOrderByIdQuery.class);
         verify(getOrderByIdHandler).handle(captor.capture());
@@ -100,7 +100,7 @@ class OrderControllerTest {
     void getById_nonAdmin() {
         when(getOrderByIdHandler.handle(any())).thenReturn(DTO);
 
-        controller.getById(5L, user("ROLE_USER"));
+        controller.getById("00000000-0000-0000-0000-000000000005", user("ROLE_USER"));
 
         var captor = ArgumentCaptor.forClass(GetOrderByIdQuery.class);
         verify(getOrderByIdHandler).handle(captor.capture());
@@ -124,7 +124,7 @@ class OrderControllerTest {
     void cancelOrder_forwardsReasonAndAdmin() {
         when(cancelOrderHandler.handle(any())).thenReturn(DTO);
 
-        controller.cancelOrder(9L, Map.of("reason", "changed mind"), user("ROLE_USER"));
+        controller.cancelOrder("00000000-0000-0000-0000-000000000009", Map.of("reason", "changed mind"), user("ROLE_USER"));
 
         var captor = ArgumentCaptor.forClass(CancelOrderCommand.class);
         verify(cancelOrderHandler).handle(captor.capture());
@@ -186,7 +186,7 @@ class OrderControllerTest {
     @Test
     @DisplayName("getInternal rejects a wrong X-Internal-Token")
     void getInternal_wrongToken() {
-        assertThatThrownBy(() -> controller.getInternal(1L, "nope"))
+        assertThatThrownBy(() -> controller.getInternal("00000000-0000-0000-0000-000000000001", "nope"))
                 .isInstanceOf(AccessDeniedException.class);
         verifyNoInteractions(getOrderByIdInternalHandler);
     }
@@ -194,7 +194,7 @@ class OrderControllerTest {
     @Test
     @DisplayName("getInternal rejects a null token")
     void getInternal_nullToken() {
-        assertThatThrownBy(() -> controller.getInternal(1L, null))
+        assertThatThrownBy(() -> controller.getInternal("00000000-0000-0000-0000-000000000001", null))
                 .isInstanceOf(AccessDeniedException.class);
     }
 
@@ -203,7 +203,7 @@ class OrderControllerTest {
     void getInternal_correctToken() {
         when(getOrderByIdInternalHandler.handle(any())).thenReturn(DTO);
 
-        var result = controller.getInternal(1L, "secret-123");
+        var result = controller.getInternal("00000000-0000-0000-0000-000000000001", "secret-123");
 
         assertThat(result).isSameAs(DTO);
         var captor = ArgumentCaptor.forClass(GetOrderByIdInternalQuery.class);
@@ -216,7 +216,7 @@ class OrderControllerTest {
     void getInternal_blankConfigured() {
         ReflectionTestUtils.setField(controller, "internalToken", "");
 
-        assertThatThrownBy(() -> controller.getInternal(1L, "anything"))
+        assertThatThrownBy(() -> controller.getInternal("00000000-0000-0000-0000-000000000001", "anything"))
                 .isInstanceOf(AccessDeniedException.class);
     }
 

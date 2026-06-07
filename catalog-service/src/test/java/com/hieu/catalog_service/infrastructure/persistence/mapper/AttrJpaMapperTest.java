@@ -32,7 +32,7 @@ class AttrJpaMapperTest {
         @Test
         @DisplayName("maps scalar fields and enum type to its name")
         void mapsScalars() {
-            Attr a = Attr.reconstitute(AttrId.of(1L), "COLOR", "Color", AttrType.SELECT, 5, List.of());
+            Attr a = Attr.reconstitute(AttrId.of("1"), "COLOR", "Color", AttrType.SELECT, 5, List.of());
 
             AttrJpaEntity e = mapper.toJpa(a, null);
 
@@ -45,8 +45,8 @@ class AttrJpaMapperTest {
         @Test
         @DisplayName("new value (null id) becomes a fresh child wired to the attr")
         void insertsNewValue() {
-            var val = AttrVal.create(1L, "Red", "RED");
-            Attr a = Attr.reconstitute(AttrId.of(1L), "COLOR", "Color", AttrType.SELECT, 0, List.of(val));
+            var val = AttrVal.create("attr-1", "Red", "RED");
+            Attr a = Attr.reconstitute(AttrId.of("1"), "COLOR", "Color", AttrType.SELECT, 0, List.of(val));
 
             AttrJpaEntity e = mapper.toJpa(a, null);
 
@@ -62,16 +62,16 @@ class AttrJpaMapperTest {
         @DisplayName("existing value id is matched and the same child instance mutated in place")
         void updatesExistingValueInPlace() {
             var existing = new AttrJpaEntity();
-            existing.setId(1L);
+            existing.setId("1");
             var existingVal = new AttrValJpaEntity();
-            existingVal.setId(50L);
+            existingVal.setId("50");
             existingVal.setVal("OldRed");
             existingVal.setCode("RED");
             existingVal.setAttr(existing);
             existing.getValues().add(existingVal);
 
-            var domainVal = AttrVal.reconstitute(50L, 1L, "Crimson", "RED", 2);
-            Attr a = Attr.reconstitute(AttrId.of(1L), "COLOR", "Color", AttrType.SELECT, 0, List.of(domainVal));
+            var domainVal = AttrVal.reconstitute("50", "1", "Crimson", "RED", 2);
+            Attr a = Attr.reconstitute(AttrId.of("1"), "COLOR", "Color", AttrType.SELECT, 0, List.of(domainVal));
 
             AttrJpaEntity e = mapper.toJpa(a, existing);
 
@@ -86,14 +86,14 @@ class AttrJpaMapperTest {
         @DisplayName("value absent from domain is dropped (orphan removal)")
         void removesMissingValue() {
             var existing = new AttrJpaEntity();
-            existing.setId(1L);
-            var keep = new AttrValJpaEntity(); keep.setId(50L); keep.setVal("Red"); keep.setCode("RED"); keep.setAttr(existing);
-            var drop = new AttrValJpaEntity(); drop.setId(51L); drop.setVal("Blue"); drop.setCode("BLUE"); drop.setAttr(existing);
+            existing.setId("1");
+            var keep = new AttrValJpaEntity(); keep.setId("50"); keep.setVal("Red"); keep.setCode("RED"); keep.setAttr(existing);
+            var drop = new AttrValJpaEntity(); drop.setId("51"); drop.setVal("Blue"); drop.setCode("BLUE"); drop.setAttr(existing);
             existing.getValues().add(keep);
             existing.getValues().add(drop);
 
-            var domainVal = AttrVal.reconstitute(50L, 1L, "Red", "RED", 0);
-            Attr a = Attr.reconstitute(AttrId.of(1L), "COLOR", "Color", AttrType.SELECT, 0, List.of(domainVal));
+            var domainVal = AttrVal.reconstitute("50", "1", "Red", "RED", 0);
+            Attr a = Attr.reconstitute(AttrId.of("1"), "COLOR", "Color", AttrType.SELECT, 0, List.of(domainVal));
 
             AttrJpaEntity e = mapper.toJpa(a, existing);
 
@@ -109,13 +109,13 @@ class AttrJpaMapperTest {
         @DisplayName("reconstitutes attr and its values, parsing the type string")
         void mapsAll() {
             var e = new AttrJpaEntity();
-            e.setId(1L);
+            e.setId("1");
             e.setCode("SIZE");
             e.setName("Size");
             e.setType("TEXT");
             e.setSortOrder(3);
             var val = new AttrValJpaEntity();
-            val.setId(7L);
+            val.setId("7");
             val.setVal("XL");
             val.setCode("XL");
             val.setSortOrder(1);
@@ -124,16 +124,16 @@ class AttrJpaMapperTest {
 
             Attr a = mapper.toDomain(e);
 
-            assertThat(a.getId().value()).isEqualTo(1L);
+            assertThat(a.getId().value()).isEqualTo("1");
             assertThat(a.getCode()).isEqualTo("SIZE");
             assertThat(a.getName()).isEqualTo("Size");
             assertThat(a.getType()).isEqualTo(AttrType.TEXT);
             assertThat(a.getSortOrder()).isEqualTo(3);
             assertThat(a.getValues()).singleElement().satisfies(v -> {
-                assertThat(v.getId()).isEqualTo(7L);
+                assertThat(v.getId()).isEqualTo("7");
                 assertThat(v.getVal()).isEqualTo("XL");
                 assertThat(v.getCode()).isEqualTo("XL");
-                assertThat(v.getAttrId()).isEqualTo(1L);
+                assertThat(v.getAttrId()).isEqualTo("1");
             });
         }
     }
@@ -141,14 +141,14 @@ class AttrJpaMapperTest {
     @Test
     @DisplayName("round-trip toJpa → toDomain preserves attr and value fields")
     void roundTrip() {
-        var val = AttrVal.reconstitute(7L, 1L, "Red", "RED", 0);
-        Attr original = Attr.reconstitute(AttrId.of(1L), "COLOR", "Color", AttrType.SELECT, 2, List.of(val));
+        var val = AttrVal.reconstitute("7", "1", "Red", "RED", 0);
+        Attr original = Attr.reconstitute(AttrId.of("1"), "COLOR", "Color", AttrType.SELECT, 2, List.of(val));
 
         AttrJpaEntity e = mapper.toJpa(original, null);
-        e.setId(1L);
+        e.setId("1");
         // toJpa builds a fresh child value with no id; reconstitute() requires non-null id,
         // so simulate the post-flush id assignment before reading back.
-        e.getValues().get(0).setId(7L);
+        e.getValues().get(0).setId("7");
         Attr back = mapper.toDomain(e);
 
         assertThat(back.getCode()).isEqualTo("COLOR");

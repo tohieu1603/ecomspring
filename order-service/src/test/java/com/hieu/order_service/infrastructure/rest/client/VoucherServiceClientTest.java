@@ -56,7 +56,7 @@ class VoucherServiceClientTest {
                 .thenReturn(new ApiResponse<>(true, "OK", null, data, Instant.now(), null));
 
         BigDecimal discount = facade.validateAndApply(
-                "SUMMER", BigDecimal.valueOf(500_000), "user-1", 100L, List.of(1L, 2L), null);
+                "SUMMER", BigDecimal.valueOf(500_000), "user-1", "00000000-0000-0000-0000-000000000100", List.of("1", "2"), null);
 
         assertThat(discount).isEqualByComparingTo("50000");
     }
@@ -68,7 +68,7 @@ class VoucherServiceClientTest {
                 .thenThrow(new VoucherInvalidException("voucher expired", null));
 
         assertThatThrownBy(() -> facade.validateAndApply(
-                "EXPIRED", BigDecimal.TEN, "user-1", 1L, List.of(), null))
+                "EXPIRED", BigDecimal.TEN, "user-1", "00000000-0000-0000-0000-000000000001", List.of(), null))
                 .isInstanceOf(VoucherInvalidException.class)
                 .hasMessageContaining("expired");
     }
@@ -81,7 +81,7 @@ class VoucherServiceClientTest {
                 .thenReturn(new ApiResponse<>(true, "OK", null, data, Instant.now(), null));
 
         assertThatThrownBy(() -> facade.validateAndApply(
-                "BROKEN", BigDecimal.TEN, "user-1", 1L, List.of(), null))
+                "BROKEN", BigDecimal.TEN, "user-1", "00000000-0000-0000-0000-000000000001", List.of(), null))
                 .isInstanceOf(ServiceUnavailableException.class);
     }
 
@@ -92,7 +92,7 @@ class VoucherServiceClientTest {
                 .thenThrow(feignError(503));
 
         assertThatThrownBy(() -> facade.validateAndApply(
-                "X", BigDecimal.TEN, "u", 1L, List.of(), null))
+                "X", BigDecimal.TEN, "u", "00000000-0000-0000-0000-000000000001", List.of(), null))
                 .isInstanceOf(ServiceUnavailableException.class);
     }
 
@@ -103,7 +103,7 @@ class VoucherServiceClientTest {
         when(voucherClient.validate(org.mockito.ArgumentMatchers.any()))
                 .thenReturn(new ApiResponse<>(true, "OK", null, data, Instant.now(), null));
 
-        facade.validateAndApply("X", BigDecimal.TEN, "u", 42L, List.of(10L, 20L), null);
+        facade.validateAndApply("X", BigDecimal.TEN, "u", "00000000-0000-0000-0000-000000000042", List.of("10", "20"), null);
 
         ArgumentCaptor<VoucherClient.ValidateRequest> captor =
                 ArgumentCaptor.forClass(VoucherClient.ValidateRequest.class);
@@ -120,7 +120,7 @@ class VoucherServiceClientTest {
         org.mockito.Mockito.doThrow(new ServiceUnavailableException("voucher-service"))
                 .when(voucherClient).release(org.mockito.ArgumentMatchers.any());
 
-        assertThatCode(() -> facade.release("CODE", 100L)).doesNotThrowAnyException();
+        assertThatCode(() -> facade.release("CODE", "00000000-0000-0000-0000-000000000100")).doesNotThrowAnyException();
     }
 
     @Test
@@ -129,7 +129,7 @@ class VoucherServiceClientTest {
         org.mockito.Mockito.doThrow(feignError(500))
                 .when(voucherClient).release(org.mockito.ArgumentMatchers.any());
 
-        assertThatCode(() -> facade.release("CODE", 100L)).doesNotThrowAnyException();
+        assertThatCode(() -> facade.release("CODE", "00000000-0000-0000-0000-000000000100")).doesNotThrowAnyException();
     }
 
     // ── helpers ───────────────────────────────────────────────────────────────

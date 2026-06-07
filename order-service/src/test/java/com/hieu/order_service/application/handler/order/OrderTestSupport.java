@@ -21,10 +21,10 @@ final class OrderTestSupport {
                 new ShippingAddress("123 Le Loi", "Ben Thanh", "District 1", "Ho Chi Minh", "VN", "70000"),
                 "COD", "note", null, "idem-1", userId);
         o.addItem(OrderItem.create(
-                ProductId.of(1L), ProductName.of("Product A"),
-                10L, "SKU-001", null,
+                ProductId.of("11111111-1111-1111-1111-111111111111"), ProductName.of("Product A"),
+                "10000000-0000-0000-0000-000000000001", "SKU-001", null,
                 Money.of(BigDecimal.valueOf(100_000)), Quantity.of(2)));
-        o.assignId(1L);
+        o.assignId("00000000-0000-0000-0000-000000000001");
         return o;
     }
 }

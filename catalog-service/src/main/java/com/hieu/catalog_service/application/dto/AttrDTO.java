@@ -3,7 +3,7 @@ package com.hieu.catalog_service.application.dto;
 import java.util.List;
 
 public record AttrDTO(
-        Long id,
+        String id,
         String code,
         String name,
         String type,

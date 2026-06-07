@@ -4,10 +4,7 @@ import com.hieu.catalog_service.domain.shared.DomainException;
 import com.hieu.common.error.ErrorCode;
 
 public final class AttrNotFoundException extends DomainException {
-    public AttrNotFoundException(Long attrId) {
-        super(ErrorCode.ATTR_NOT_FOUND.code(), "Attribute not found: " + attrId);
-    }
-    public AttrNotFoundException(String code) {
-        super(ErrorCode.ATTR_NOT_FOUND.code(), "Attribute not found: " + code);
+    public AttrNotFoundException(String attrIdOrCode) {
+        super(ErrorCode.ATTR_NOT_FOUND.code(), "Attribute not found: " + attrIdOrCode);
     }
 }

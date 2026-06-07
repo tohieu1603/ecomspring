@@ -60,7 +60,7 @@ public class VoucherController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<VoucherDTO>> getVoucher(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<VoucherDTO>> getVoucher(@PathVariable String id) {
         return ResponseEntity.ok(ApiResponse.ok(voucherService.getVoucher(id)));
     }
 
@@ -72,14 +72,14 @@ public class VoucherController {
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ADMIN')")
     public ResponseEntity<ApiResponse<VoucherDTO>> updateVoucher(
-            @PathVariable Long id,
+            @PathVariable String id,
             @Valid @RequestBody UpdateVoucherRequest request) {
         return ResponseEntity.ok(ApiResponse.ok(voucherService.updateVoucher(id, request), "Voucher updated"));
     }
 
     @DeleteMapping("/{id}/deactivate")
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ADMIN')")
-    public ResponseEntity<ApiResponse<VoucherDTO>> deactivateVoucher(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<VoucherDTO>> deactivateVoucher(@PathVariable String id) {
         return ResponseEntity.ok(ApiResponse.ok(voucherService.deactivateVoucher(id), "Voucher deactivated"));
     }
 

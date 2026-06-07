@@ -27,7 +27,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
@@ -41,7 +41,9 @@ import static org.mockito.Mockito.*;
 @DisplayName("CreateOrderHandler")
 class CreateOrderHandlerTest {
 
-    private static final String USER = "11111111-1111-1111-1111-111111111111";
+    private static final String USER    = "11111111-1111-1111-1111-111111111111";
+    private static final String PROD_ID = "22222222-2222-2222-2222-222222222222";
+    private static final String VAR_ID  = "33333333-3333-3333-3333-333333333333";
 
     @Mock OrderRepository orderRepository;
     @Mock OrderDomainService domainService;
@@ -59,7 +61,7 @@ class CreateOrderHandlerTest {
         return new CreateOrderCommand(
                 USER,
                 List.of(new CreateOrderCommand.ItemCmd(
-                        1L, "Product A", 10L, "SKU-001", null,
+                        PROD_ID, "Product A", VAR_ID, "SKU-001", null,
                         BigDecimal.valueOf(100_000), 2)),
                 "Nguyen Van A", "0901234567",
                 "123 Le Loi", "Ben Thanh", "District 1", "Ho Chi Minh", "VN", "70000",
@@ -68,8 +70,7 @@ class CreateOrderHandlerTest {
 
     /** A domain Order with id assigned, as domainService.createOrder + save would yield. */
     static Order savedOrder() {
-        var o = OrderTestSupport.order(USER);
-        return o;
+        return OrderTestSupport.order(USER);
     }
 
     @Nested
@@ -80,7 +81,7 @@ class CreateOrderHandlerTest {
         @DisplayName("blank userId → ValidationException with field error")
         void blankUserId() {
             var cmd = new CreateOrderCommand(
-                    "  ", List.of(new CreateOrderCommand.ItemCmd(1L, "P", 10L, "S", null, BigDecimal.ONE, 1)),
+                    "  ", List.of(new CreateOrderCommand.ItemCmd(PROD_ID, "P", VAR_ID, "S", null, BigDecimal.ONE, 1)),
                     "name", "phone", "s", "w", "d", "c", "VN", "70000", "COD", null, null, null, null);
 
             assertThatThrownBy(() -> handler.handle(cmd))
@@ -105,7 +106,7 @@ class CreateOrderHandlerTest {
         @DisplayName("missing recipient/phone/paymentMethod → all reported")
         void multipleMissing() {
             var cmd = new CreateOrderCommand(
-                    USER, List.of(new CreateOrderCommand.ItemCmd(1L, "P", 10L, "S", null, BigDecimal.ONE, 1)),
+                    USER, List.of(new CreateOrderCommand.ItemCmd(PROD_ID, "P", VAR_ID, "S", null, BigDecimal.ONE, 1)),
                     null, null, "s", "w", "d", "c", "VN", "70000", null, null, null, null, null);
 
             assertThatThrownBy(() -> handler.handle(cmd))
@@ -132,7 +133,7 @@ class CreateOrderHandlerTest {
             assertThat(result).isSameAs(sagaDto);
             verifyNoInteractions(saga);
             verifyNoInteractions(domainService);
-            verify(idempotencyService, never()).markCompleted(any(), anyLong(), any());
+            verify(idempotencyService, never()).markCompleted(any(), anyString(), any());
         }
 
         @Test

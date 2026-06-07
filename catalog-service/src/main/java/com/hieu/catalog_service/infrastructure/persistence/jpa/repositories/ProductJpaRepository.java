@@ -10,7 +10,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
-public interface ProductJpaRepository extends JpaRepository<ProductJpaEntity, Long> {
+public interface ProductJpaRepository extends JpaRepository<ProductJpaEntity, String> {
 
     /**
      * Full hydration with variants + variant attrs in a single query. The DISTINCT avoids
@@ -21,7 +21,7 @@ public interface ProductJpaRepository extends JpaRepository<ProductJpaEntity, Lo
            LEFT JOIN FETCH p.variants v
            WHERE p.id = :id
            """)
-    Optional<ProductJpaEntity> findByIdWithVariants(@Param("id") Long id);
+    Optional<ProductJpaEntity> findByIdWithVariants(@Param("id") String id);
 
     @Query("SELECT p FROM ProductJpaEntity p WHERE p.slug = :slug")
     Optional<ProductJpaEntity> findBySlug(@Param("slug") String slug);
@@ -63,7 +63,7 @@ public interface ProductJpaRepository extends JpaRepository<ProductJpaEntity, Lo
            WHERE p.status = 'ACTIVE'
            ORDER BY p.createdAt DESC, p.id DESC
            """)
-    List<Long> findFirstPageIds(Pageable pageable);
+    List<String> findFirstPageIds(Pageable pageable);
 
     @Query("""
            SELECT p.id FROM ProductJpaEntity p
@@ -72,9 +72,9 @@ public interface ProductJpaRepository extends JpaRepository<ProductJpaEntity, Lo
                   OR (p.createdAt = :cursorCreatedAt AND p.id < :cursorId))
            ORDER BY p.createdAt DESC, p.id DESC
            """)
-    List<Long> findIdsAfterCursor(@Param("cursorCreatedAt") Instant cursorCreatedAt,
-                                   @Param("cursorId") Long cursorId,
-                                   Pageable pageable);
+    List<String> findIdsAfterCursor(@Param("cursorCreatedAt") Instant cursorCreatedAt,
+                                    @Param("cursorId") String cursorId,
+                                    Pageable pageable);
 
     /** Batch hydrate — order by {@code createdAt DESC, id DESC} to match the cursor query. */
     @Query("""
@@ -83,7 +83,7 @@ public interface ProductJpaRepository extends JpaRepository<ProductJpaEntity, Lo
            WHERE p.id IN :ids
            ORDER BY p.createdAt DESC, p.id DESC
            """)
-    List<ProductJpaEntity> findAllByIdInWithVariants(@Param("ids") List<Long> ids);
+    List<ProductJpaEntity> findAllByIdInWithVariants(@Param("ids") List<String> ids);
 
     // ── Sorted offset pagination (price / name) ───────────────────────────────
     // Sort over MIN(variant.price) per product. Category filter is optional;
@@ -100,7 +100,7 @@ public interface ProductJpaRepository extends JpaRepository<ProductJpaEntity, Lo
            GROUP BY p.id, p.name, p.createdAt
            ORDER BY MIN(COALESCE(v.salePrice, v.price)) ASC, p.id ASC
            """)
-    List<Long> findIdsSortedPriceAsc(@Param("categoryId") Long categoryId, Pageable pageable);
+    List<String> findIdsSortedPriceAsc(@Param("categoryId") String categoryId, Pageable pageable);
 
     @Query("""
            SELECT p.id FROM ProductJpaEntity p
@@ -110,7 +110,7 @@ public interface ProductJpaRepository extends JpaRepository<ProductJpaEntity, Lo
            GROUP BY p.id, p.name, p.createdAt
            ORDER BY MIN(COALESCE(v.salePrice, v.price)) DESC, p.id DESC
            """)
-    List<Long> findIdsSortedPriceDesc(@Param("categoryId") Long categoryId, Pageable pageable);
+    List<String> findIdsSortedPriceDesc(@Param("categoryId") String categoryId, Pageable pageable);
 
     @Query("""
            SELECT p.id FROM ProductJpaEntity p
@@ -118,7 +118,7 @@ public interface ProductJpaRepository extends JpaRepository<ProductJpaEntity, Lo
              AND (:categoryId IS NULL OR p.categoryId = :categoryId)
            ORDER BY p.name ASC, p.id ASC
            """)
-    List<Long> findIdsSortedNameAsc(@Param("categoryId") Long categoryId, Pageable pageable);
+    List<String> findIdsSortedNameAsc(@Param("categoryId") String categoryId, Pageable pageable);
 
     @Query("""
            SELECT p.id FROM ProductJpaEntity p
@@ -126,7 +126,7 @@ public interface ProductJpaRepository extends JpaRepository<ProductJpaEntity, Lo
              AND (:categoryId IS NULL OR p.categoryId = :categoryId)
            ORDER BY p.name DESC, p.id DESC
            """)
-    List<Long> findIdsSortedNameDesc(@Param("categoryId") Long categoryId, Pageable pageable);
+    List<String> findIdsSortedNameDesc(@Param("categoryId") String categoryId, Pageable pageable);
 
     @Query("""
            SELECT p.id FROM ProductJpaEntity p
@@ -134,5 +134,5 @@ public interface ProductJpaRepository extends JpaRepository<ProductJpaEntity, Lo
              AND (:categoryId IS NULL OR p.categoryId = :categoryId)
            ORDER BY p.createdAt DESC, p.id DESC
            """)
-    List<Long> findIdsSortedNewest(@Param("categoryId") Long categoryId, Pageable pageable);
+    List<String> findIdsSortedNewest(@Param("categoryId") String categoryId, Pageable pageable);
 }

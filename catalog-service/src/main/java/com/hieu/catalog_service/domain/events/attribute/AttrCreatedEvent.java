@@ -9,17 +9,17 @@ import java.util.Objects;
 @Getter
 public final class AttrCreatedEvent extends DomainEvent {
 
-    private final Long attrId;
+    private final String attrId;
     private final String code;
     private final String name;
     private final AttrType type;
 
-    public AttrCreatedEvent(Long attrId, String code, String name, AttrType type) {
+    public AttrCreatedEvent(String attrId, String code, String name, AttrType type) {
         this.attrId = Objects.requireNonNull(attrId, "attrId");
         this.code = Objects.requireNonNull(code, "code");
         this.name = Objects.requireNonNull(name, "name");
         this.type = Objects.requireNonNull(type, "type");
     }
 
-    @Override public String aggregateId() { return String.valueOf(attrId); }
+    @Override public String aggregateId() { return attrId; }
 }

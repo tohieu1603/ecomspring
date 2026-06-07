@@ -8,8 +8,8 @@ import java.util.Objects;
 /**
  * Opaque cursor codec for keyset pagination.
  *
- * <p>Encodes {@code (createdAt, id)} as a URL-safe base64 string. The id is a {@code Long}
- * (BIGSERIAL) in catalog-service; epoch micros preserve ordering even when rows are
+ * <p>Encodes {@code (createdAt, id)} as a URL-safe base64 string. The id is a UUID
+ * {@code String} in catalog-service; epoch micros preserve ordering even when rows are
  * created in the same millisecond (Postgres stores micros). Malformed input throws
  * {@link IllegalArgumentException} so clients cannot forge cursors that skip ahead.
  */
@@ -19,15 +19,14 @@ public final class CursorCodec {
 
     private CursorCodec() {}
 
-    public record Cursor(Instant createdAt, Long id) {
+    public record Cursor(Instant createdAt, String id) {
         public Cursor {
             Objects.requireNonNull(createdAt, "createdAt");
             Objects.requireNonNull(id, "id");
-            if (id <= 0) throw new IllegalArgumentException("cursor id must be positive");
         }
     }
 
-    public static String encode(Instant createdAt, Long id) {
+    public static String encode(Instant createdAt, String id) {
         if (createdAt == null || id == null) return null;
         long epochMicros = createdAt.getEpochSecond() * 1_000_000L + createdAt.getNano() / 1_000;
         String raw = epochMicros + DELIM + id;
@@ -43,7 +42,7 @@ public final class CursorCodec {
             if (split < 0) throw new IllegalArgumentException("missing delimiter");
 
             long epochMicros = Long.parseLong(raw.substring(0, split));
-            long id = Long.parseLong(raw.substring(split + DELIM.length()));
+            String id = raw.substring(split + DELIM.length());
             Instant ts = Instant.ofEpochSecond(
                     epochMicros / 1_000_000L,
                     (epochMicros % 1_000_000L) * 1_000L);

@@ -24,7 +24,7 @@ public class AttrJpaMapper {
         e.setType(a.getType().name());
         e.setSortOrder(a.getSortOrder());
 
-        Map<Long, AttrValJpaEntity> byId = new HashMap<>();
+        Map<String, AttrValJpaEntity> byId = new HashMap<>();
         e.getValues().forEach(v -> { if (v.getId() != null) byId.put(v.getId(), v); });
 
         // Compute the target set from the domain; match by id when present, else insert.

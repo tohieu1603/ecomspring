@@ -9,15 +9,15 @@ import java.util.Objects;
 @Getter
 public final class ProductDeletedEvent extends DomainEvent {
 
-    private final Long productId;
-    private final List<Long> variantIds;
+    private final String productId;
+    private final List<String> variantIds;
     private final String deletedBy;
 
-    public ProductDeletedEvent(Long productId, List<Long> variantIds, String deletedBy) {
+    public ProductDeletedEvent(String productId, List<String> variantIds, String deletedBy) {
         this.productId = Objects.requireNonNull(productId, "productId");
         this.variantIds = List.copyOf(Objects.requireNonNullElse(variantIds, List.of()));
         this.deletedBy = deletedBy;
     }
 
-    @Override public String aggregateId() { return String.valueOf(productId); }
+    @Override public String aggregateId() { return productId; }
 }

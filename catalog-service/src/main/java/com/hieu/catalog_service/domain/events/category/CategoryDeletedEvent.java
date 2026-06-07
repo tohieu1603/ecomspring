@@ -8,13 +8,13 @@ import java.util.Objects;
 @Getter
 public final class CategoryDeletedEvent extends DomainEvent {
 
-    private final Long categoryId;
+    private final String categoryId;
     private final String deletedBy;
 
-    public CategoryDeletedEvent(Long categoryId, String deletedBy) {
+    public CategoryDeletedEvent(String categoryId, String deletedBy) {
         this.categoryId = Objects.requireNonNull(categoryId, "categoryId");
         this.deletedBy = deletedBy;
     }
 
-    @Override public String aggregateId() { return String.valueOf(categoryId); }
+    @Override public String aggregateId() { return categoryId; }
 }

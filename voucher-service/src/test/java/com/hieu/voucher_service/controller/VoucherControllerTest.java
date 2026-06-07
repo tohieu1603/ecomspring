@@ -1,6 +1,7 @@
 package com.hieu.voucher_service.controller;
 
 import com.hieu.common.api.ApiResponse;
+import com.hieu.common.security.AuthenticatedUser;
 import com.hieu.voucher_service.dto.ApplyVoucherResponse;
 import com.hieu.voucher_service.dto.CreateVoucherRequest;
 import com.hieu.voucher_service.dto.ReleaseVoucherRequest;
@@ -46,7 +47,7 @@ class VoucherControllerTest {
     @DisplayName("createVoucher returns 201 CREATED with payload and 'Voucher created' message")
     void createVoucher() {
         CreateVoucherRequest req = new CreateVoucherRequest();
-        VoucherDTO dto = VoucherDTO.builder().id(1L).code("SAVE10").build();
+        VoucherDTO dto = VoucherDTO.builder().id("1").code("SAVE10").build();
         when(voucherService.createVoucher(req)).thenReturn(dto);
 
         ResponseEntity<ApiResponse<VoucherDTO>> resp = controller.createVoucher(req);
@@ -61,7 +62,7 @@ class VoucherControllerTest {
     @Test
     @DisplayName("listVouchers returns 200 OK and forwards page/size to service")
     void listVouchers() {
-        Page<VoucherDTO> page = new PageImpl<>(List.of(VoucherDTO.builder().id(1L).build()));
+        Page<VoucherDTO> page = new PageImpl<>(List.of(VoucherDTO.builder().id("1").build()));
         when(voucherService.listVouchers(2, 25)).thenReturn(page);
 
         ResponseEntity<ApiResponse<Page<VoucherDTO>>> resp = controller.listVouchers(2, 25);
@@ -76,7 +77,7 @@ class VoucherControllerTest {
     @Test
     @DisplayName("listActiveVouchers returns 200 OK and forwards page/size to service")
     void listActiveVouchers() {
-        Page<VoucherDTO> page = new PageImpl<>(List.of(VoucherDTO.builder().id(7L).build()));
+        Page<VoucherDTO> page = new PageImpl<>(List.of(VoucherDTO.builder().id("7").build()));
         when(voucherService.listActiveVouchers(0, 10)).thenReturn(page);
 
         ResponseEntity<ApiResponse<Page<VoucherDTO>>> resp = controller.listActiveVouchers(0, 10);
@@ -90,10 +91,10 @@ class VoucherControllerTest {
     @Test
     @DisplayName("getVoucher returns 200 OK with the service DTO")
     void getVoucher() {
-        VoucherDTO dto = VoucherDTO.builder().id(42L).code("X").build();
-        when(voucherService.getVoucher(42L)).thenReturn(dto);
+        VoucherDTO dto = VoucherDTO.builder().id("42").code("X").build();
+        when(voucherService.getVoucher("42")).thenReturn(dto);
 
-        ResponseEntity<ApiResponse<VoucherDTO>> resp = controller.getVoucher(42L);
+        ResponseEntity<ApiResponse<VoucherDTO>> resp = controller.getVoucher("42");
 
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(resp.getBody()).isNotNull();
@@ -104,7 +105,7 @@ class VoucherControllerTest {
     @Test
     @DisplayName("getVoucherByCode returns 200 OK with the service DTO")
     void getVoucherByCode() {
-        VoucherDTO dto = VoucherDTO.builder().id(5L).code("SUMMER").build();
+        VoucherDTO dto = VoucherDTO.builder().id("5").code("SUMMER").build();
         when(voucherService.getVoucherByCode("SUMMER")).thenReturn(dto);
 
         ResponseEntity<ApiResponse<VoucherDTO>> resp = controller.getVoucherByCode("SUMMER");
@@ -118,10 +119,10 @@ class VoucherControllerTest {
     @DisplayName("updateVoucher returns 200 OK with 'Voucher updated' message")
     void updateVoucher() {
         UpdateVoucherRequest req = new UpdateVoucherRequest();
-        VoucherDTO dto = VoucherDTO.builder().id(9L).build();
-        when(voucherService.updateVoucher(9L, req)).thenReturn(dto);
+        VoucherDTO dto = VoucherDTO.builder().id("9").build();
+        when(voucherService.updateVoucher("9", req)).thenReturn(dto);
 
-        ResponseEntity<ApiResponse<VoucherDTO>> resp = controller.updateVoucher(9L, req);
+        ResponseEntity<ApiResponse<VoucherDTO>> resp = controller.updateVoucher("9", req);
 
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(resp.getBody()).isNotNull();
@@ -132,10 +133,10 @@ class VoucherControllerTest {
     @Test
     @DisplayName("deactivateVoucher returns 200 OK with 'Voucher deactivated' message")
     void deactivateVoucher() {
-        VoucherDTO dto = VoucherDTO.builder().id(3L).active(false).build();
-        when(voucherService.deactivateVoucher(3L)).thenReturn(dto);
+        VoucherDTO dto = VoucherDTO.builder().id("3").active(false).build();
+        when(voucherService.deactivateVoucher("3")).thenReturn(dto);
 
-        ResponseEntity<ApiResponse<VoucherDTO>> resp = controller.deactivateVoucher(3L);
+        ResponseEntity<ApiResponse<VoucherDTO>> resp = controller.deactivateVoucher("3");
 
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(resp.getBody()).isNotNull();
@@ -162,7 +163,8 @@ class VoucherControllerTest {
         when(voucherService.validateAndApply("SAVE10", BigDecimal.valueOf(200),
                 "user-1", "order-1", List.of("p1", "p2"))).thenReturn(applied);
 
-        ResponseEntity<ApiResponse<ApplyVoucherResponse>> resp = controller.validateAndApply(req);
+        AuthenticatedUser currentUser = new AuthenticatedUser("user-1", "testuser", List.of(), List.of());
+        ResponseEntity<ApiResponse<ApplyVoucherResponse>> resp = controller.validateAndApply(req, currentUser);
 
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(resp.getBody()).isNotNull();

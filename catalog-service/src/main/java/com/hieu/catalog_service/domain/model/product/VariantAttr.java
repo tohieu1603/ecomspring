@@ -18,14 +18,14 @@ import java.util.Objects;
 @Getter
 public final class VariantAttr {
 
-    private Long id;                 // null until persisted
+    private String id;                 // null until persisted
     private final AttrId attrId;
     private final String attrCode;
     private final String attrName;
-    private final Long valId;        // null for free-text
+    private final String valId;        // null for free-text
     private final String valText;
 
-    private VariantAttr(Long id, AttrId attrId, String attrCode, String attrName, Long valId, String valText) {
+    private VariantAttr(String id, AttrId attrId, String attrCode, String attrName, String valId, String valText) {
         this.id = id;
         this.attrId = Objects.requireNonNull(attrId, "attrId");
         this.attrCode = Objects.requireNonNull(attrCode, "attrCode");
@@ -34,7 +34,7 @@ public final class VariantAttr {
         this.valText = valText;
     }
 
-    public static VariantAttr create(AttrId attrId, String attrCode, String attrName, Long valId, String valText) {
+    public static VariantAttr create(AttrId attrId, String attrCode, String attrName, String valId, String valText) {
         if (valId == null && (valText == null || valText.isBlank())) {
             throw new IllegalArgumentException(
                 "VariantAttr must have either a valId (SELECT) or non-blank valText (TEXT/NUMBER)");
@@ -42,13 +42,13 @@ public final class VariantAttr {
         return new VariantAttr(null, attrId, attrCode, attrName, valId, valText);
     }
 
-    public static VariantAttr reconstitute(Long id, AttrId attrId, String attrCode, String attrName,
-                                           Long valId, String valText) {
+    public static VariantAttr reconstitute(String id, AttrId attrId, String attrCode, String attrName,
+                                           String valId, String valText) {
         Objects.requireNonNull(id, "id");
         return new VariantAttr(id, attrId, attrCode, attrName, valId, valText);
     }
 
-    public void assignId(Long id) {
+    public void assignId(String id) {
         if (this.id != null) throw new IllegalStateException("VariantAttr id is already set");
         this.id = Objects.requireNonNull(id, "id");
     }

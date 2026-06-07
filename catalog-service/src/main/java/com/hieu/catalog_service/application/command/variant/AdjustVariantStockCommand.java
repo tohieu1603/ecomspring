@@ -5,8 +5,8 @@ import com.hieu.catalog_service.application.dto.VariantDTO;
 
 /** Delta-adjust stock — negative value deducts, positive receives. */
 public record AdjustVariantStockCommand(
-        Long productId,
-        Long variantId,
+        String productId,
+        String variantId,
         int delta,
         String updatedBy
 ) implements Command<VariantDTO> {}

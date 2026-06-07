@@ -23,16 +23,15 @@ class OrderItemTest {
     @Test
     @DisplayName("class loads + JUnit discovers @Nested tests")
     void smokeTest_classDiscovered() {
-        // Nếu tới được đây tức là JUnit có thể instantiate test class.
-        // assertThat(this).isNotNull() được tự thực hiện ngầm.
     }
 
+    private static final String PROD_ID = "11111111-1111-1111-1111-111111111111";
 
     static OrderItem item(long unitPrice, int qty) {
         return OrderItem.create(
-                ProductId.of(1L),
+                ProductId.of(PROD_ID),
                 ProductName.of("Áo thun"),
-                10L, "SKU-001", null,
+                null, "SKU-001", null,
                 Money.of(BigDecimal.valueOf(unitPrice)),
                 Quantity.of(qty));
     }

@@ -40,7 +40,7 @@ public class ListProductsHandler implements QueryHandler<ListProductsQuery, Page
     public PageDTO<ProductSummaryDTO> handle(ListProductsQuery query) {
         int pageSize = Math.clamp(query.limit(), 1, MAX_LIMIT);
         String sort = query.sort() == null ? "newest" : query.sort();
-        Long categoryId = query.categoryId();
+        String categoryId = query.categoryId();
 
         boolean useKeyset = KEYSET_SORTS.contains(sort.toLowerCase()) && categoryId == null;
         return useKeyset ? handleKeyset(query, pageSize) : handleSorted(sort, categoryId, query.cursor(), pageSize);
@@ -71,7 +71,7 @@ public class ListProductsHandler implements QueryHandler<ListProductsQuery, Page
      * Offset-based fallback for price / name sorts. Cursor here is "page=N"
      * (just a number) — the FE never inspects it.
      */
-    private PageDTO<ProductSummaryDTO> handleSorted(String sort, Long categoryId, String cursor, int pageSize) {
+    private PageDTO<ProductSummaryDTO> handleSorted(String sort, String categoryId, String cursor, int pageSize) {
         int page = 0;
         try { if (cursor != null && !cursor.isBlank()) page = Math.max(0, Integer.parseInt(cursor)); }
         catch (NumberFormatException ignored) {}

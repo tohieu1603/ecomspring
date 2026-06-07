@@ -15,7 +15,7 @@ import java.util.List;
  *
  * @param name          display name; used to derive the slug
  * @param description   long description
- * @param categoryId    optional category assignment
+ * @param categoryId    optional category assignment (UUID string)
  * @param brand         optional brand label
  * @param thumbnail     primary image URL
  * @param images        gallery image URLs
@@ -30,7 +30,7 @@ import java.util.List;
 public record CreateProductCommand(
         String name,
         String description,
-        Long categoryId,
+        String categoryId,
         String brand,
         String thumbnail,
         List<String> images,
@@ -58,5 +58,5 @@ public record CreateProductCommand(
             List<AttrCmd> attrs
     ) {}
 
-    public record AttrCmd(Long attrId, Long attrValId, String valText) {}
+    public record AttrCmd(String attrId, String attrValId, String valText) {}
 }

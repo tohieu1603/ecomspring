@@ -7,7 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import java.time.OffsetDateTime;
 import java.util.List;
 
-public interface HeroBannerJpaRepository extends JpaRepository<HeroBannerJpaEntity, Long> {
+public interface HeroBannerJpaRepository extends JpaRepository<HeroBannerJpaEntity, String> {
 
     @Query("""
            SELECT b FROM HeroBannerJpaEntity b

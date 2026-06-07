@@ -60,7 +60,7 @@ public class HeroBannerController {
 
     @PatchMapping("/admin/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public Map<String, Object> update(@PathVariable Long id, @RequestBody BannerRequest req) {
+    public Map<String, Object> update(@PathVariable String id, @RequestBody BannerRequest req) {
         var e = repo.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Banner not found: " + id));
         applyAll(e, req);
         e.setUpdatedAt(OffsetDateTime.now());
@@ -70,7 +70,7 @@ public class HeroBannerController {
     @DeleteMapping("/admin/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable Long id) {
+    public void delete(@PathVariable String id) {
         repo.deleteById(id);
     }
 

@@ -78,7 +78,7 @@ public final class Attr extends AggregateRoot {
         values.add(val);
     }
 
-    public void removeValue(Long valId) {
+    public void removeValue(String valId) {
         values.removeIf(v -> Objects.equals(v.getId(), valId));
     }
 

@@ -9,6 +9,7 @@ import lombok.Setter;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * {@code products} table mapping. The {@code images} array is stored as a JSON-encoded
@@ -22,8 +23,9 @@ import java.util.List;
 @NoArgsConstructor @AllArgsConstructor
 public class ProductJpaEntity {
 
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Id
+    @Column(length = 36)
+    private String id;
 
     @Column(nullable = false, length = 255)
     private String name;
@@ -34,8 +36,8 @@ public class ProductJpaEntity {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(name = "category_id")
-    private Long categoryId;
+    @Column(name = "category_id", length = 36)
+    private String categoryId;
 
     @Column(length = 100)
     private String brand;
@@ -76,4 +78,9 @@ public class ProductJpaEntity {
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<VariantJpaEntity> variants = new ArrayList<>();
+
+    @PrePersist
+    void prePersist() {
+        if (id == null) id = UUID.randomUUID().toString();
+    }
 }

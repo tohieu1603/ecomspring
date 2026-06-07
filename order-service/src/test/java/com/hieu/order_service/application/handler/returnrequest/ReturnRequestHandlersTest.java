@@ -43,7 +43,11 @@ import static org.mockito.Mockito.*;
 @DisplayName("Return-request handlers")
 class ReturnRequestHandlersTest {
 
-    private static final String USER = "11111111-1111-1111-1111-111111111111";
+    private static final String USER      = "11111111-1111-1111-1111-111111111111";
+    private static final String ORDER_ID  = "00000000-0000-0000-0000-000000000001";
+    private static final String RR_ID     = "00000000-0000-0000-0000-000000000050";
+    private static final String PAYMENT_ID = "00000000-0000-0000-0000-000000000009";
+    private static final String SHIPMENT_ID = "00000000-0000-0000-0000-000000000005";
 
     @Mock OrderRepository orderRepository;
     @Mock ReturnRequestRepository returnRequestRepository;
@@ -54,19 +58,19 @@ class ReturnRequestHandlersTest {
 
     static Order deliveredOrder(Instant deliveredAt) {
         return Order.reconstitute(
-                OrderId.of(1L), OrderNumber.of("ORD-20260101-000001"), UserId.of(USER),
+                OrderId.of(ORDER_ID), OrderNumber.of("ORD-20260101-000001"), UserId.of(USER),
                 OrderStatus.DELIVERED, Money.of(BigDecimal.valueOf(100_000)), Money.ZERO, Money.ZERO,
                 Money.of(BigDecimal.valueOf(100_000)), null,
                 RecipientName.of("Nguyen Van A"), RecipientPhone.of("0901234567"),
                 new ShippingAddress("123 Le Loi", "Ben Thanh", "District 1", "Ho Chi Minh", "VN", "70000"),
-                null, "COD", 5L, ReservationId.of("res-1"), 9L, "idem-1", null,
+                null, "COD", PAYMENT_ID, ReservationId.of("res-1"), SHIPMENT_ID, "idem-1", null,
                 Instant.now().minus(30, ChronoUnit.DAYS), Instant.now(), null, deliveredAt, null,
                 USER, USER, 0L);
     }
 
     static Order pendingOrder() {
         return Order.reconstitute(
-                OrderId.of(1L), OrderNumber.of("ORD-20260101-000001"), UserId.of(USER),
+                OrderId.of(ORDER_ID), OrderNumber.of("ORD-20260101-000001"), UserId.of(USER),
                 OrderStatus.PENDING, Money.ZERO, Money.ZERO, Money.ZERO, Money.ZERO, null,
                 RecipientName.of("Nguyen Van A"), RecipientPhone.of("0901234567"),
                 new ShippingAddress("123 Le Loi", "Ben Thanh", "District 1", "Ho Chi Minh", "VN", "70000"),
@@ -75,15 +79,15 @@ class ReturnRequestHandlersTest {
     }
 
     static ReturnRequest pendingReturn() {
-        var rr = ReturnRequest.create(OrderId.of(1L), UserId.of(USER),
+        var rr = ReturnRequest.create(OrderId.of(ORDER_ID), UserId.of(USER),
                 ReturnReason.of("hỏng hàng"), ReturnType.REFUND, "[]");
-        rr.assignId(50L);
+        rr.assignId(RR_ID);
         return rr;
     }
 
     static ReturnRequest approvedReturn() {
         return ReturnRequest.reconstitute(
-                ReturnRequestId.of(50L), OrderId.of(1L), UserId.of(USER),
+                ReturnRequestId.of(RR_ID), OrderId.of(ORDER_ID), UserId.of(USER),
                 ReturnReason.of("hỏng hàng"), ReturnType.REFUND, ReturnStatus.APPROVED,
                 null, "ok", "[]", Instant.now(), Instant.now());
     }
@@ -99,13 +103,13 @@ class ReturnRequestHandlersTest {
         }
 
         RequestReturnCommand cmd() {
-            return new RequestReturnCommand(1L, USER, "hỏng hàng khi nhận", "REFUND", "[]");
+            return new RequestReturnCommand(ORDER_ID, USER, "hỏng hàng khi nhận", "REFUND", "[]");
         }
 
         @Test
         @DisplayName("order not found → OrderNotFoundException")
         void notFound() {
-            when(orderRepository.findById(OrderId.of(1L))).thenReturn(Optional.empty());
+            when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> handler().handle(cmd()))
                     .isInstanceOf(OrderNotFoundException.class);
@@ -115,7 +119,7 @@ class ReturnRequestHandlersTest {
         @Test
         @DisplayName("order in non-returnable state → InvalidOrderStateException")
         void notReturnable() {
-            when(orderRepository.findById(OrderId.of(1L))).thenReturn(Optional.of(pendingOrder()));
+            when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.of(pendingOrder()));
 
             assertThatThrownBy(() -> handler().handle(cmd()))
                     .isInstanceOf(InvalidOrderStateException.class);
@@ -125,7 +129,7 @@ class ReturnRequestHandlersTest {
         @Test
         @DisplayName("delivered > 7 days ago → InvalidOrderStateException (window expired)")
         void windowExpired() {
-            when(orderRepository.findById(OrderId.of(1L)))
+            when(orderRepository.findById(OrderId.of(ORDER_ID)))
                     .thenReturn(Optional.of(deliveredOrder(Instant.now().minus(8, ChronoUnit.DAYS))));
 
             assertThatThrownBy(() -> handler().handle(cmd()))
@@ -137,7 +141,7 @@ class ReturnRequestHandlersTest {
         @Test
         @DisplayName("delivered within window → creates request, publishes requested event, maps DTO")
         void withinWindow_success() {
-            when(orderRepository.findById(OrderId.of(1L)))
+            when(orderRepository.findById(OrderId.of(ORDER_ID)))
                     .thenReturn(Optional.of(deliveredOrder(Instant.now().minus(2, ChronoUnit.DAYS))));
             var saved = pendingReturn();
             when(returnRequestRepository.save(any(ReturnRequest.class))).thenReturn(saved);
@@ -165,9 +169,9 @@ class ReturnRequestHandlersTest {
         @Test
         @DisplayName("not found → ReturnRequestNotFoundException")
         void notFound() {
-            when(returnRequestRepository.findById(ReturnRequestId.of(50L))).thenReturn(Optional.empty());
+            when(returnRequestRepository.findById(ReturnRequestId.of(RR_ID))).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> handler().handle(new ApproveReturnCommand(50L, "ok", null)))
+            assertThatThrownBy(() -> handler().handle(new ApproveReturnCommand(RR_ID, "ok", null)))
                     .isInstanceOf(ReturnRequestNotFoundException.class);
         }
 
@@ -175,11 +179,11 @@ class ReturnRequestHandlersTest {
         @DisplayName("PENDING → APPROVED, persisted, events published")
         void approvesPending() {
             var rr = pendingReturn();
-            when(returnRequestRepository.findById(ReturnRequestId.of(50L))).thenReturn(Optional.of(rr));
+            when(returnRequestRepository.findById(ReturnRequestId.of(RR_ID))).thenReturn(Optional.of(rr));
             when(returnRequestRepository.save(rr)).thenReturn(rr);
             when(mapper.toReturnDto(rr)).thenReturn(dto);
 
-            var result = handler().handle(new ApproveReturnCommand(50L, "ok", null));
+            var result = handler().handle(new ApproveReturnCommand(RR_ID, "ok", null));
 
             assertThat(result).isSameAs(dto);
             assertThat(rr.getStatus()).isEqualTo(ReturnStatus.APPROVED);
@@ -191,9 +195,9 @@ class ReturnRequestHandlersTest {
         @DisplayName("already APPROVED → IllegalStateException, no save")
         void rejectsNonPending() {
             var rr = approvedReturn();
-            when(returnRequestRepository.findById(ReturnRequestId.of(50L))).thenReturn(Optional.of(rr));
+            when(returnRequestRepository.findById(ReturnRequestId.of(RR_ID))).thenReturn(Optional.of(rr));
 
-            assertThatThrownBy(() -> handler().handle(new ApproveReturnCommand(50L, "ok", null)))
+            assertThatThrownBy(() -> handler().handle(new ApproveReturnCommand(RR_ID, "ok", null)))
                     .isInstanceOf(IllegalStateException.class);
             verify(returnRequestRepository, never()).save(any());
         }
@@ -212,9 +216,9 @@ class ReturnRequestHandlersTest {
         @Test
         @DisplayName("not found → ReturnRequestNotFoundException")
         void notFound() {
-            when(returnRequestRepository.findById(ReturnRequestId.of(50L))).thenReturn(Optional.empty());
+            when(returnRequestRepository.findById(ReturnRequestId.of(RR_ID))).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> handler().handle(new RejectReturnCommand(50L, "không hợp lệ")))
+            assertThatThrownBy(() -> handler().handle(new RejectReturnCommand(RR_ID, "không hợp lệ")))
                     .isInstanceOf(ReturnRequestNotFoundException.class);
         }
 
@@ -222,11 +226,11 @@ class ReturnRequestHandlersTest {
         @DisplayName("PENDING → REJECTED with admin note")
         void rejectsPending() {
             var rr = pendingReturn();
-            when(returnRequestRepository.findById(ReturnRequestId.of(50L))).thenReturn(Optional.of(rr));
+            when(returnRequestRepository.findById(ReturnRequestId.of(RR_ID))).thenReturn(Optional.of(rr));
             when(returnRequestRepository.save(rr)).thenReturn(rr);
             when(mapper.toReturnDto(rr)).thenReturn(dto);
 
-            handler().handle(new RejectReturnCommand(50L, "không hợp lệ"));
+            handler().handle(new RejectReturnCommand(RR_ID, "không hợp lệ"));
 
             assertThat(rr.getStatus()).isEqualTo(ReturnStatus.REJECTED);
             assertThat(rr.getAdminNote()).isEqualTo("không hợp lệ");
@@ -247,9 +251,9 @@ class ReturnRequestHandlersTest {
         @Test
         @DisplayName("not found → ReturnRequestNotFoundException")
         void notFound() {
-            when(returnRequestRepository.findById(ReturnRequestId.of(50L))).thenReturn(Optional.empty());
+            when(returnRequestRepository.findById(ReturnRequestId.of(RR_ID))).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> handler().handle(new CompleteReturnCommand(50L, BigDecimal.TEN)))
+            assertThatThrownBy(() -> handler().handle(new CompleteReturnCommand(RR_ID, BigDecimal.TEN)))
                     .isInstanceOf(ReturnRequestNotFoundException.class);
         }
 
@@ -257,11 +261,11 @@ class ReturnRequestHandlersTest {
         @DisplayName("APPROVED → COMPLETED with refund amount")
         void completesApproved() {
             var rr = approvedReturn();
-            when(returnRequestRepository.findById(ReturnRequestId.of(50L))).thenReturn(Optional.of(rr));
+            when(returnRequestRepository.findById(ReturnRequestId.of(RR_ID))).thenReturn(Optional.of(rr));
             when(returnRequestRepository.save(rr)).thenReturn(rr);
             when(mapper.toReturnDto(rr)).thenReturn(dto);
 
-            handler().handle(new CompleteReturnCommand(50L, BigDecimal.valueOf(99_000)));
+            handler().handle(new CompleteReturnCommand(RR_ID, BigDecimal.valueOf(99_000)));
 
             assertThat(rr.getStatus()).isEqualTo(ReturnStatus.COMPLETED);
             assertThat(rr.getRefundAmount().amount()).isEqualByComparingTo(BigDecimal.valueOf(99_000));
@@ -272,9 +276,9 @@ class ReturnRequestHandlersTest {
         @DisplayName("PENDING (not APPROVED) → IllegalStateException, no save")
         void rejectsNonApproved() {
             var rr = pendingReturn();
-            when(returnRequestRepository.findById(ReturnRequestId.of(50L))).thenReturn(Optional.of(rr));
+            when(returnRequestRepository.findById(ReturnRequestId.of(RR_ID))).thenReturn(Optional.of(rr));
 
-            assertThatThrownBy(() -> handler().handle(new CompleteReturnCommand(50L, BigDecimal.TEN)))
+            assertThatThrownBy(() -> handler().handle(new CompleteReturnCommand(RR_ID, BigDecimal.TEN)))
                     .isInstanceOf(IllegalStateException.class);
             verify(returnRequestRepository, never()).save(any());
         }

@@ -32,10 +32,10 @@ class AttrTest {
     @DisplayName("SELECT attrs accept predefined values; duplicates by code are rejected")
     void addValue() {
         Attr a = Attr.create("color", "Color", AttrType.SELECT);
-        a.addValue(AttrVal.create(1L, "Red", "RED"));
+        a.addValue(AttrVal.create("attr-1", "Red", "RED"));
 
         assertThat(a.getValues()).hasSize(1);
-        assertThatThrownBy(() -> a.addValue(AttrVal.create(1L, "Reddish", "RED")))
+        assertThatThrownBy(() -> a.addValue(AttrVal.create("attr-1", "Reddish", "RED")))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
@@ -43,7 +43,7 @@ class AttrTest {
     @DisplayName("non-SELECT attrs reject predefined values")
     void addValueOnTextRejected() {
         Attr text = Attr.create("note", "Note", AttrType.TEXT);
-        assertThatThrownBy(() -> text.addValue(AttrVal.create(1L, "x", "X")))
+        assertThatThrownBy(() -> text.addValue(AttrVal.create("attr-1", "x", "X")))
                 .isInstanceOf(IllegalStateException.class);
     }
 
@@ -51,11 +51,11 @@ class AttrTest {
     @DisplayName("removeValue removes a predefined value by id")
     void removeValue() {
         Attr a = Attr.create("color", "Color", AttrType.SELECT);
-        AttrVal red = AttrVal.create(1L, "Red", "RED");
-        red.assignId(10L);
+        AttrVal red = AttrVal.create("attr-1", "Red", "RED");
+        red.assignId("10");
         a.addValue(red);
 
-        a.removeValue(10L);
+        a.removeValue("10");
 
         assertThat(a.getValues()).isEmpty();
     }

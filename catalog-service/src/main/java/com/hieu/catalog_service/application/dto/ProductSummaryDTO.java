@@ -11,10 +11,10 @@ import java.util.List;
  * variantImages). Full variant attributes still load from the detail endpoint.
  */
 public record ProductSummaryDTO(
-        Long id,
+        String id,
         String name,
         String slug,
-        Long categoryId,
+        String categoryId,
         String brand,
         String thumbnail,
         String status,

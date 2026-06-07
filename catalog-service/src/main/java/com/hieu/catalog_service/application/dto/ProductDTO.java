@@ -5,11 +5,11 @@ import java.time.Instant;
 import java.util.List;
 
 public record ProductDTO(
-        Long id,
+        String id,
         String name,
         String slug,
         String description,
-        Long categoryId,
+        String categoryId,
         String brand,
         String thumbnail,
         List<String> images,

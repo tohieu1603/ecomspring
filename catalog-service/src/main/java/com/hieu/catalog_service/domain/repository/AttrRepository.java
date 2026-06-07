@@ -20,7 +20,7 @@ public interface AttrRepository {
     List<Attr> findAllWithValues();
 
     /** Batch fetch — replaces N round-trips through {@link #findById} during variant ingestion. */
-    List<Attr> findAllByIdsWithValues(List<Long> ids);
+    List<Attr> findAllByIdsWithValues(List<String> ids);
 
     void delete(Attr attr);
 }

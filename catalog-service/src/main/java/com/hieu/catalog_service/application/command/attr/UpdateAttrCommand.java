@@ -4,7 +4,7 @@ import com.hieu.catalog_service.application.common.Command;
 import com.hieu.catalog_service.application.dto.AttrDTO;
 
 public record UpdateAttrCommand(
-        Long attrId,
+        String attrId,
         String name,
         String type,
         Integer sortOrder

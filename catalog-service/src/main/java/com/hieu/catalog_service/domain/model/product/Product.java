@@ -192,7 +192,7 @@ public final class Product extends AggregateRoot {
         status = ProductStatus.DELETED;
         touch(deletedBy);
         requirePersisted();
-        List<Long> variantIds = variants.stream()
+        List<String> variantIds = variants.stream()
             .map(v -> v.getId() != null ? v.getId().value() : null)
             .filter(Objects::nonNull)
             .toList();

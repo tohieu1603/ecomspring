@@ -25,7 +25,7 @@ public record ListProductsQuery(
         String cursor,
         int limit,
         String sort,
-        Long categoryId
+        String categoryId
 ) implements Query<PageDTO<ProductSummaryDTO>> {
     public ListProductsQuery(String cursor, int limit) {
         this(cursor, limit, null, null);

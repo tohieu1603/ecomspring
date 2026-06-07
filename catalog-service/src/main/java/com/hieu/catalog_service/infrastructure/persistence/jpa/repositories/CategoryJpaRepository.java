@@ -7,7 +7,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
-public interface CategoryJpaRepository extends JpaRepository<CategoryJpaEntity, Long> {
+public interface CategoryJpaRepository extends JpaRepository<CategoryJpaEntity, String> {
 
     @Query("SELECT COUNT(c) > 0 FROM CategoryJpaEntity c WHERE LOWER(c.name) = LOWER(:name)")
     boolean existsByNameIgnoreCase(@Param("name") String name);
@@ -15,7 +15,7 @@ public interface CategoryJpaRepository extends JpaRepository<CategoryJpaEntity, 
     @Query("SELECT c FROM CategoryJpaEntity c WHERE c.active = true ORDER BY c.parentId NULLS FIRST, c.sortOrder, c.id")
     List<CategoryJpaEntity> findAllActive();
 
-    List<CategoryJpaEntity> findByParentIdOrderBySortOrderAscIdAsc(Long parentId);
+    List<CategoryJpaEntity> findByParentIdOrderBySortOrderAscIdAsc(String parentId);
 
     List<CategoryJpaEntity> findByParentIdIsNullOrderBySortOrderAscIdAsc();
 }

@@ -2,8 +2,6 @@ package com.hieu.voucher_service.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.PrePersist;
@@ -15,6 +13,7 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.UUID;
 
 @Entity
 @Table(
@@ -30,8 +29,8 @@ import java.time.Instant;
 public class VoucherJpaEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(length = 36)
+    private String id;
 
     @Column(nullable = false, unique = true)
     private String code;
@@ -92,6 +91,7 @@ public class VoucherJpaEntity {
 
     @PrePersist
     void prePersist() {
+        if (this.id == null) this.id = UUID.randomUUID().toString();
         Instant now = Instant.now();
         this.createdAt = now;
         this.updatedAt = now;

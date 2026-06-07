@@ -55,7 +55,7 @@ class CreateProductHandlerIT extends AbstractIntegrationTest {
         var dto = handler.handle(aCommand(uniqueName, sku));
 
         assertThat(dto).isNotNull();
-        assertThat(dto.id()).isPositive();
+        assertThat(dto.id()).isNotBlank();
         assertThat(dto.slug()).isNotBlank();
         assertThat(dto.variants()).hasSize(1);
         assertThat(dto.variants().get(0).sku()).isEqualTo(sku);

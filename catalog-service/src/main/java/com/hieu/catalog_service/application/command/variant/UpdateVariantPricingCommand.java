@@ -6,8 +6,8 @@ import com.hieu.catalog_service.application.dto.VariantDTO;
 import java.math.BigDecimal;
 
 public record UpdateVariantPricingCommand(
-        Long productId,
-        Long variantId,
+        String productId,
+        String variantId,
         BigDecimal price,
         BigDecimal cost,
         BigDecimal salePrice,

@@ -8,13 +8,13 @@ import java.util.Objects;
 @Getter
 public final class AttrVal {
 
-    private Long id;
-    private final Long attrId;
+    private String id;
+    private final String attrId;
     private String val;
     private String code;
     private int sortOrder;
 
-    private AttrVal(Long id, Long attrId, String val, String code, int sortOrder) {
+    private AttrVal(String id, String attrId, String val, String code, int sortOrder) {
         this.id = id;
         this.attrId = attrId;
         this.val = Objects.requireNonNull(val, "val");
@@ -22,7 +22,7 @@ public final class AttrVal {
         this.sortOrder = sortOrder;
     }
 
-    public static AttrVal create(Long attrId, String val, String code) {
+    public static AttrVal create(String attrId, String val, String code) {
         Objects.requireNonNull(val, "val");
         String resolvedCode = (code != null && !code.isBlank())
             ? code.trim().toUpperCase()
@@ -30,12 +30,12 @@ public final class AttrVal {
         return new AttrVal(null, attrId, val.trim(), resolvedCode, 0);
     }
 
-    public static AttrVal reconstitute(Long id, Long attrId, String val, String code, int sortOrder) {
+    public static AttrVal reconstitute(String id, String attrId, String val, String code, int sortOrder) {
         Objects.requireNonNull(id, "id");
         return new AttrVal(id, attrId, val, code, sortOrder);
     }
 
-    public void assignId(Long id) {
+    public void assignId(String id) {
         if (this.id != null) throw new IllegalStateException("AttrVal id already set");
         this.id = Objects.requireNonNull(id, "id");
     }

@@ -8,11 +8,11 @@ public final class CategoryIntegrationEvents {
     private CategoryIntegrationEvents() {}
 
     public record CategoryCreated(UUID eventId, Instant occurredOn,
-                                   Long categoryId, String name, Long parentId, String createdBy) {}
+                                   String categoryId, String name, String parentId, String createdBy) {}
 
     public record CategoryUpdated(UUID eventId, Instant occurredOn,
-                                   Long categoryId, String name, Long parentId, String updatedBy) {}
+                                   String categoryId, String name, String parentId, String updatedBy) {}
 
     public record CategoryDeleted(UUID eventId, Instant occurredOn,
-                                   Long categoryId, String deletedBy) {}
+                                   String categoryId, String deletedBy) {}
 }

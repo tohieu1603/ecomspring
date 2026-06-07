@@ -6,7 +6,7 @@ import com.hieu.catalog_service.application.dto.CategoryDTO;
 public record CreateCategoryCommand(
         String name,
         String description,
-        Long parentId,
+        String parentId,
         int sortOrder,
         String createdBy
 ) implements Command<CategoryDTO> {}

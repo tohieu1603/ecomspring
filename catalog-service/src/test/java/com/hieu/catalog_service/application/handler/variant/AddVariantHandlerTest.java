@@ -52,13 +52,13 @@ class AddVariantHandlerTest {
     @InjectMocks AddVariantHandler handler;
 
     private final VariantDTO dummyDto = new VariantDTO(
-            100L, 1L, "SKU-NEW", new BigDecimal("10.00"), null, null,
+            "100", "1", "SKU-NEW", new BigDecimal("10.00"), null, null,
             new BigDecimal("10.00"), null, null, 3, "ACTIVE", true, List.of());
 
     /** Persisted product with one existing variant. */
     private static Product persistedProduct() {
         Product p = Product.create("Prod", "desc", null, "Brand", "creator");
-        p.assignId(ProductId.of(1L));
+        p.assignId(ProductId.of("1"));
         Variant existing = Variant.create(Sku.of("SKU-OLD"), Money.of(new BigDecimal("5.00")),
                 null, null, null, null, Quantity.of(2));
         p.addVariant(existing);
@@ -66,14 +66,14 @@ class AddVariantHandlerTest {
     }
 
     private static AddVariantCommand command(String sku, List<AttrCmd> attrs) {
-        return new AddVariantCommand(1L, sku, new BigDecimal("10.00"), null, null,
+        return new AddVariantCommand("1", sku, new BigDecimal("10.00"), null, null,
                 null, new BigDecimal("0.5"), 3, attrs, "tester");
     }
 
     @Test
     @DisplayName("product not found → ProductNotFoundException")
     void add_productNotFound_throws() {
-        when(productRepository.findByIdWithVariants(ProductId.of(1L))).thenReturn(Optional.empty());
+        when(productRepository.findByIdWithVariants(ProductId.of("1"))).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> handler.handle(command("SKU-NEW", List.of())))
                 .isInstanceOf(ProductNotFoundException.class);
@@ -84,7 +84,7 @@ class AddVariantHandlerTest {
     @DisplayName("existsBySku true → VariantSkuAlreadyExistsException, nothing saved")
     void add_duplicateSku_throws() {
         var product = persistedProduct();
-        when(productRepository.findByIdWithVariants(ProductId.of(1L))).thenReturn(Optional.of(product));
+        when(productRepository.findByIdWithVariants(ProductId.of("1"))).thenReturn(Optional.of(product));
         when(productRepository.existsBySku(Sku.of("SKU-NEW"))).thenReturn(true);
 
         assertThatThrownBy(() -> handler.handle(command("SKU-NEW", List.of())))
@@ -96,7 +96,7 @@ class AddVariantHandlerTest {
     @DisplayName("no attrs → variant added, saved, events published, mapped DTO returned")
     void add_happyPath_noAttrs() {
         var product = persistedProduct();
-        when(productRepository.findByIdWithVariants(ProductId.of(1L))).thenReturn(Optional.of(product));
+        when(productRepository.findByIdWithVariants(ProductId.of("1"))).thenReturn(Optional.of(product));
         when(productRepository.existsBySku(Sku.of("SKU-NEW"))).thenReturn(false);
         when(productRepository.save(product)).thenReturn(product);
         when(mapper.toDto(any(Variant.class))).thenReturn(dummyDto);
@@ -112,13 +112,13 @@ class AddVariantHandlerTest {
     @DisplayName("SELECT attr without attrValId → ValidationException")
     void add_selectAttrMissingValId_throws() {
         var product = persistedProduct();
-        var attr = Attr.reconstitute(AttrId.of(5L), "COLOR", "Colour", AttrType.SELECT, 0,
-                List.of(AttrVal.reconstitute(50L, 5L, "Red", "RED", 0)));
-        when(productRepository.findByIdWithVariants(ProductId.of(1L))).thenReturn(Optional.of(product));
+        var attr = Attr.reconstitute(AttrId.of("5"), "COLOR", "Colour", AttrType.SELECT, 0,
+                List.of(AttrVal.reconstitute("50", "5", "Red", "RED", 0)));
+        when(productRepository.findByIdWithVariants(ProductId.of("1"))).thenReturn(Optional.of(product));
         when(productRepository.existsBySku(Sku.of("SKU-NEW"))).thenReturn(false);
-        when(attrRepository.findById(AttrId.of(5L))).thenReturn(Optional.of(attr));
+        when(attrRepository.findById(AttrId.of("5"))).thenReturn(Optional.of(attr));
 
-        assertThatThrownBy(() -> handler.handle(command("SKU-NEW", List.of(new AttrCmd(5L, null, null)))))
+        assertThatThrownBy(() -> handler.handle(command("SKU-NEW", List.of(new AttrCmd("5", null, null)))))
                 .isInstanceOf(ValidationException.class)
                 .hasMessageContaining("SELECT");
         verify(productRepository, never()).save(any());
@@ -128,13 +128,13 @@ class AddVariantHandlerTest {
     @DisplayName("SELECT attr with unknown attrValId → AttrValNotFoundException")
     void add_selectAttrUnknownValId_throws() {
         var product = persistedProduct();
-        var attr = Attr.reconstitute(AttrId.of(5L), "COLOR", "Colour", AttrType.SELECT, 0,
-                List.of(AttrVal.reconstitute(50L, 5L, "Red", "RED", 0)));
-        when(productRepository.findByIdWithVariants(ProductId.of(1L))).thenReturn(Optional.of(product));
+        var attr = Attr.reconstitute(AttrId.of("5"), "COLOR", "Colour", AttrType.SELECT, 0,
+                List.of(AttrVal.reconstitute("50", "5", "Red", "RED", 0)));
+        when(productRepository.findByIdWithVariants(ProductId.of("1"))).thenReturn(Optional.of(product));
         when(productRepository.existsBySku(Sku.of("SKU-NEW"))).thenReturn(false);
-        when(attrRepository.findById(AttrId.of(5L))).thenReturn(Optional.of(attr));
+        when(attrRepository.findById(AttrId.of("5"))).thenReturn(Optional.of(attr));
 
-        assertThatThrownBy(() -> handler.handle(command("SKU-NEW", List.of(new AttrCmd(5L, 999L, null)))))
+        assertThatThrownBy(() -> handler.handle(command("SKU-NEW", List.of(new AttrCmd("5", "999", null)))))
                 .isInstanceOf(AttrValNotFoundException.class);
     }
 
@@ -142,12 +142,12 @@ class AddVariantHandlerTest {
     @DisplayName("TEXT attr with blank valText → ValidationException")
     void add_textAttrBlank_throws() {
         var product = persistedProduct();
-        var attr = Attr.reconstitute(AttrId.of(8L), "MATERIAL", "Material", AttrType.TEXT, 0, List.of());
-        when(productRepository.findByIdWithVariants(ProductId.of(1L))).thenReturn(Optional.of(product));
+        var attr = Attr.reconstitute(AttrId.of("8"), "MATERIAL", "Material", AttrType.TEXT, 0, List.of());
+        when(productRepository.findByIdWithVariants(ProductId.of("1"))).thenReturn(Optional.of(product));
         when(productRepository.existsBySku(Sku.of("SKU-NEW"))).thenReturn(false);
-        when(attrRepository.findById(AttrId.of(8L))).thenReturn(Optional.of(attr));
+        when(attrRepository.findById(AttrId.of("8"))).thenReturn(Optional.of(attr));
 
-        assertThatThrownBy(() -> handler.handle(command("SKU-NEW", List.of(new AttrCmd(8L, null, " ")))))
+        assertThatThrownBy(() -> handler.handle(command("SKU-NEW", List.of(new AttrCmd("8", null, " ")))))
                 .isInstanceOf(ValidationException.class)
                 .hasMessageContaining("valText is required");
     }
@@ -156,11 +156,11 @@ class AddVariantHandlerTest {
     @DisplayName("unknown attrId → AttrNotFoundException")
     void add_unknownAttr_throws() {
         var product = persistedProduct();
-        when(productRepository.findByIdWithVariants(ProductId.of(1L))).thenReturn(Optional.of(product));
+        when(productRepository.findByIdWithVariants(ProductId.of("1"))).thenReturn(Optional.of(product));
         when(productRepository.existsBySku(Sku.of("SKU-NEW"))).thenReturn(false);
-        when(attrRepository.findById(AttrId.of(42L))).thenReturn(Optional.empty());
+        when(attrRepository.findById(AttrId.of("42"))).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> handler.handle(command("SKU-NEW", List.of(new AttrCmd(42L, 1L, null)))))
+        assertThatThrownBy(() -> handler.handle(command("SKU-NEW", List.of(new AttrCmd("42", "1", null)))))
                 .isInstanceOf(AttrNotFoundException.class);
     }
 
@@ -168,15 +168,15 @@ class AddVariantHandlerTest {
     @DisplayName("valid SELECT attr → variant carries resolved attr, saved")
     void add_validSelectAttr_saves() {
         var product = persistedProduct();
-        var attr = Attr.reconstitute(AttrId.of(5L), "COLOR", "Colour", AttrType.SELECT, 0,
-                List.of(AttrVal.reconstitute(50L, 5L, "Red", "RED", 0)));
-        when(productRepository.findByIdWithVariants(ProductId.of(1L))).thenReturn(Optional.of(product));
+        var attr = Attr.reconstitute(AttrId.of("5"), "COLOR", "Colour", AttrType.SELECT, 0,
+                List.of(AttrVal.reconstitute("50", "5", "Red", "RED", 0)));
+        when(productRepository.findByIdWithVariants(ProductId.of("1"))).thenReturn(Optional.of(product));
         when(productRepository.existsBySku(Sku.of("SKU-NEW"))).thenReturn(false);
-        when(attrRepository.findById(AttrId.of(5L))).thenReturn(Optional.of(attr));
+        when(attrRepository.findById(AttrId.of("5"))).thenReturn(Optional.of(attr));
         when(productRepository.save(product)).thenReturn(product);
         when(mapper.toDto(any(Variant.class))).thenReturn(dummyDto);
 
-        handler.handle(command("SKU-NEW", List.of(new AttrCmd(5L, 50L, null))));
+        handler.handle(command("SKU-NEW", List.of(new AttrCmd("5", "50", null))));
 
         var added = product.getVariants().stream()
                 .filter(v -> v.getSku().equals(Sku.of("SKU-NEW"))).findFirst().orElseThrow();

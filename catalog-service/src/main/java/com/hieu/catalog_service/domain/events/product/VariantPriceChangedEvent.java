@@ -9,15 +9,15 @@ import java.util.Objects;
 @Getter
 public final class VariantPriceChangedEvent extends DomainEvent {
 
-    private final Long productId;
-    private final Long variantId;
+    private final String productId;
+    private final String variantId;
     private final String sku;
     private final BigDecimal oldPrice;
     private final BigDecimal newPrice;
     private final BigDecimal newSalePrice;
     private final String updatedBy;
 
-    public VariantPriceChangedEvent(Long productId, Long variantId, String sku,
+    public VariantPriceChangedEvent(String productId, String variantId, String sku,
                                      BigDecimal oldPrice, BigDecimal newPrice,
                                      BigDecimal newSalePrice, String updatedBy) {
         this.productId = Objects.requireNonNull(productId, "productId");
@@ -29,5 +29,5 @@ public final class VariantPriceChangedEvent extends DomainEvent {
         this.updatedBy = updatedBy;
     }
 
-    @Override public String aggregateId() { return String.valueOf(productId); }
+    @Override public String aggregateId() { return productId; }
 }

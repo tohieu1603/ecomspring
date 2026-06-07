@@ -41,7 +41,7 @@ class PaymentEventConsumerIT extends AbstractIntegrationTest {
         var cmd = new CreateOrderCommand(
                 UUID.randomUUID().toString(),
                 List.of(new CreateOrderCommand.ItemCmd(
-                        (long) s, "Item " + s, (long) s, "SKU-PAY-" + s, null,
+                        String.valueOf(s), "Item " + s, String.valueOf(s), "SKU-PAY-" + s, null,
                         BigDecimal.valueOf(50_000), 2)),
                 "Tran Thi B", "0912345678",
                 "45 Nguyen Hue", "Ben Nghe", "District 1", "HCMC", "VN", "70000",

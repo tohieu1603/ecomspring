@@ -55,7 +55,7 @@ class GlobalExceptionHandlerTest {
     @Test
     @DisplayName("not-found domain exceptions → 404 with the exception's code + message")
     void notFound() {
-        var resp = handler.notFound(new ProductNotFoundException(1L), req);
+        var resp = handler.notFound(new ProductNotFoundException("1"), req);
 
         assertBody(resp, HttpStatus.NOT_FOUND, ErrorCode.PRODUCT_NOT_FOUND.code());
         assertThat(resp.getBody().message()).isEqualTo("Product not found: 1");
@@ -64,7 +64,7 @@ class GlobalExceptionHandlerTest {
     @Test
     @DisplayName("category-not-found routed through the same 404 handler keeps its own code")
     void notFound_category() {
-        var resp = handler.notFound(new CategoryNotFoundException(5L), req);
+        var resp = handler.notFound(new CategoryNotFoundException("5"), req);
 
         assertBody(resp, HttpStatus.NOT_FOUND, ErrorCode.CATEGORY_NOT_FOUND.code());
     }

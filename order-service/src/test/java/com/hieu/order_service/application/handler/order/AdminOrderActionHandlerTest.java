@@ -35,7 +35,10 @@ import static org.mockito.Mockito.*;
 @DisplayName("AdminOrderActionHandler")
 class AdminOrderActionHandlerTest {
 
-    private static final String USER = "11111111-1111-1111-1111-111111111111";
+    private static final String USER       = "11111111-1111-1111-1111-111111111111";
+    private static final String ORDER_ID   = "00000000-0000-0000-0000-000000000001";
+    private static final String PAYMENT_ID = "00000000-0000-0000-0000-000000000005";
+    private static final String SHIPMENT_ID = "00000000-0000-0000-0000-000000000077";
 
     @Mock OrderRepository orderRepository;
     @Mock OrderDtoMapper mapper;
@@ -47,21 +50,21 @@ class AdminOrderActionHandlerTest {
 
     static Order orderInStatus(OrderStatus status) {
         return Order.reconstitute(
-                OrderId.of(1L), OrderNumber.of("ORD-20260101-000001"), UserId.of(USER),
+                OrderId.of(ORDER_ID), OrderNumber.of("ORD-20260101-000001"), UserId.of(USER),
                 status, Money.of(BigDecimal.valueOf(100_000)), Money.ZERO, Money.ZERO,
                 Money.of(BigDecimal.valueOf(100_000)), null,
                 RecipientName.of("Nguyen Van A"), RecipientPhone.of("0901234567"),
                 new ShippingAddress("123 Le Loi", "Ben Thanh", "District 1", "Ho Chi Minh", "VN", "70000"),
-                null, "COD", 5L, ReservationId.of("res-1"), null, "idem-1", null,
+                null, "COD", PAYMENT_ID, ReservationId.of("res-1"), null, "idem-1", null,
                 Instant.now(), Instant.now(), null, null, null, USER, USER, 0L);
     }
 
     @Test
     @DisplayName("order not found → OrderNotFoundException")
     void notFound() {
-        when(orderRepository.findById(OrderId.of(1L))).thenReturn(Optional.empty());
+        when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> handler.apply(1L, AdminOrderActionHandler.Action.DELIVER, null))
+        assertThatThrownBy(() -> handler.apply(ORDER_ID, AdminOrderActionHandler.Action.DELIVER, null))
                 .isInstanceOf(OrderNotFoundException.class);
         verifyNoInteractions(eventPublisher);
     }
@@ -74,11 +77,11 @@ class AdminOrderActionHandlerTest {
         @DisplayName("COD order at PAYMENT_PENDING → promotes to PAYMENT_COMPLETED then CONFIRMED")
         void codPaymentPending_promotedThenConfirmed() {
             var order = orderInStatus(OrderStatus.PAYMENT_PENDING);
-            when(orderRepository.findById(OrderId.of(1L))).thenReturn(Optional.of(order));
+            when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.of(order));
             when(orderRepository.save(order)).thenReturn(order);
             when(mapper.toDto(order)).thenReturn(dto);
 
-            var result = handler.apply(1L, AdminOrderActionHandler.Action.CONFIRM, null);
+            var result = handler.apply(ORDER_ID, AdminOrderActionHandler.Action.CONFIRM, null);
 
             assertThat(result).isSameAs(dto);
             assertThat(order.getStatus()).isEqualTo(OrderStatus.CONFIRMED);
@@ -89,11 +92,11 @@ class AdminOrderActionHandlerTest {
         @DisplayName("order at PAYMENT_COMPLETED → confirm() directly")
         void paymentCompleted_confirmed() {
             var order = orderInStatus(OrderStatus.PAYMENT_COMPLETED);
-            when(orderRepository.findById(OrderId.of(1L))).thenReturn(Optional.of(order));
+            when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.of(order));
             when(orderRepository.save(order)).thenReturn(order);
             when(mapper.toDto(order)).thenReturn(dto);
 
-            handler.apply(1L, AdminOrderActionHandler.Action.CONFIRM, null);
+            handler.apply(ORDER_ID, AdminOrderActionHandler.Action.CONFIRM, null);
 
             assertThat(order.getStatus()).isEqualTo(OrderStatus.CONFIRMED);
         }
@@ -102,9 +105,9 @@ class AdminOrderActionHandlerTest {
         @DisplayName("CONFIRM from illegal state (PENDING) → InvalidOrderStateException")
         void confirmFromPending_throws() {
             var order = orderInStatus(OrderStatus.PENDING);
-            when(orderRepository.findById(OrderId.of(1L))).thenReturn(Optional.of(order));
+            when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.of(order));
 
-            assertThatThrownBy(() -> handler.apply(1L, AdminOrderActionHandler.Action.CONFIRM, null))
+            assertThatThrownBy(() -> handler.apply(ORDER_ID, AdminOrderActionHandler.Action.CONFIRM, null))
                     .isInstanceOf(InvalidOrderStateException.class);
             verify(orderRepository, never()).save(any());
         }
@@ -118,9 +121,9 @@ class AdminOrderActionHandlerTest {
         @DisplayName("null shipmentId → InvalidOrderStateException, never saves")
         void nullShipmentId_throws() {
             var order = orderInStatus(OrderStatus.CONFIRMED);
-            when(orderRepository.findById(OrderId.of(1L))).thenReturn(Optional.of(order));
+            when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.of(order));
 
-            assertThatThrownBy(() -> handler.apply(1L, AdminOrderActionHandler.Action.SHIP, null))
+            assertThatThrownBy(() -> handler.apply(ORDER_ID, AdminOrderActionHandler.Action.SHIP, null))
                     .isInstanceOf(InvalidOrderStateException.class)
                     .hasMessageContaining("shipmentId");
             verify(orderRepository, never()).save(any());
@@ -130,14 +133,14 @@ class AdminOrderActionHandlerTest {
         @DisplayName("CONFIRMED + shipmentId → SHIPPED with shipmentId set")
         void confirmed_shipsWithId() {
             var order = orderInStatus(OrderStatus.CONFIRMED);
-            when(orderRepository.findById(OrderId.of(1L))).thenReturn(Optional.of(order));
+            when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.of(order));
             when(orderRepository.save(order)).thenReturn(order);
             when(mapper.toDto(order)).thenReturn(dto);
 
-            handler.apply(1L, AdminOrderActionHandler.Action.SHIP, 77L);
+            handler.apply(ORDER_ID, AdminOrderActionHandler.Action.SHIP, SHIPMENT_ID);
 
             assertThat(order.getStatus()).isEqualTo(OrderStatus.SHIPPED);
-            assertThat(order.getShipmentId()).isEqualTo(77L);
+            assertThat(order.getShipmentId()).isEqualTo(SHIPMENT_ID);
             verify(eventPublisher).publishEventsOf(order);
         }
     }
@@ -150,11 +153,11 @@ class AdminOrderActionHandlerTest {
         @DisplayName("SHIPPED → DELIVERED, deliveredAt set")
         void shipped_delivered() {
             var order = orderInStatus(OrderStatus.SHIPPED);
-            when(orderRepository.findById(OrderId.of(1L))).thenReturn(Optional.of(order));
+            when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.of(order));
             when(orderRepository.save(order)).thenReturn(order);
             when(mapper.toDto(order)).thenReturn(dto);
 
-            handler.apply(1L, AdminOrderActionHandler.Action.DELIVER, null);
+            handler.apply(ORDER_ID, AdminOrderActionHandler.Action.DELIVER, null);
 
             assertThat(order.getStatus()).isEqualTo(OrderStatus.DELIVERED);
             assertThat(order.getDeliveredAt()).isNotNull();
@@ -164,9 +167,9 @@ class AdminOrderActionHandlerTest {
         @DisplayName("DELIVER from CONFIRMED (never shipped) → InvalidOrderStateException")
         void deliverWithoutShip_throws() {
             var order = orderInStatus(OrderStatus.CONFIRMED);
-            when(orderRepository.findById(OrderId.of(1L))).thenReturn(Optional.of(order));
+            when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.of(order));
 
-            assertThatThrownBy(() -> handler.apply(1L, AdminOrderActionHandler.Action.DELIVER, null))
+            assertThatThrownBy(() -> handler.apply(ORDER_ID, AdminOrderActionHandler.Action.DELIVER, null))
                     .isInstanceOf(InvalidOrderStateException.class);
         }
     }

@@ -43,7 +43,7 @@ public interface ProductRepository {
     List<ProductId> findFirstPageIds(int limit);
 
     /** Cursor pagination — rows strictly older than {@code (createdAt, id)}. */
-    List<ProductId> findIdsAfterCursor(Instant createdAt, Long id, int limit);
+    List<ProductId> findIdsAfterCursor(Instant createdAt, String id, int limit);
 
     /** Batch hydration preserving the input order — used after cursor lookup. */
     List<Product> findAllByIdsWithVariants(List<ProductId> ids);
@@ -58,7 +58,7 @@ public interface ProductRepository {
      * @param offset     0-based row offset
      * @param limit      page size
      */
-    List<ProductId> findIdsSorted(String sort, Long categoryId, int offset, int limit);
+    List<ProductId> findIdsSorted(String sort, String categoryId, int offset, int limit);
 
     void delete(Product product);
 }

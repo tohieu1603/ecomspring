@@ -45,7 +45,7 @@ public class VariantController {
     @Operation(summary = "Add a variant to a product (admin)")
     @PostMapping("/api/v1/products/{productId}/variants")
     @PreAuthorize(WRITE)
-    public ResponseEntity<VariantDTO> add(@PathVariable Long productId,
+    public ResponseEntity<VariantDTO> add(@PathVariable String productId,
                                             @Valid @RequestBody AddVariantRequest req,
                                             @AuthenticationPrincipal AuthenticatedUser user) {
         var attrs = req.attrs() == null ? List.<AttrCmd>of()
@@ -58,8 +58,8 @@ public class VariantController {
     @Operation(summary = "Update variant pricing (admin)")
     @PatchMapping("/api/v1/products/{productId}/variants/{variantId}/pricing")
     @PreAuthorize(WRITE)
-    public ResponseEntity<VariantDTO> updatePricing(@PathVariable Long productId,
-                                                      @PathVariable Long variantId,
+    public ResponseEntity<VariantDTO> updatePricing(@PathVariable String productId,
+                                                      @PathVariable String variantId,
                                                       @Valid @RequestBody UpdateVariantPricingRequest req,
                                                       @AuthenticationPrincipal AuthenticatedUser user) {
         return ResponseEntity.ok(updatePricing.handle(new UpdateVariantPricingCommand(
@@ -69,8 +69,8 @@ public class VariantController {
     @Operation(summary = "Set variant stock (admin)")
     @PutMapping("/api/v1/products/{productId}/variants/{variantId}/stock")
     @PreAuthorize(WRITE)
-    public ResponseEntity<VariantDTO> updateStock(@PathVariable Long productId,
-                                                    @PathVariable Long variantId,
+    public ResponseEntity<VariantDTO> updateStock(@PathVariable String productId,
+                                                    @PathVariable String variantId,
                                                     @Valid @RequestBody UpdateVariantStockRequest req,
                                                     @AuthenticationPrincipal AuthenticatedUser user) {
         return ResponseEntity.ok(updateStock.handle(new UpdateVariantStockCommand(
@@ -80,8 +80,8 @@ public class VariantController {
     @Operation(summary = "Adjust variant stock by delta (admin)")
     @PostMapping("/api/v1/products/{productId}/variants/{variantId}/stock/adjust")
     @PreAuthorize(WRITE)
-    public ResponseEntity<VariantDTO> adjustStock(@PathVariable Long productId,
-                                                    @PathVariable Long variantId,
+    public ResponseEntity<VariantDTO> adjustStock(@PathVariable String productId,
+                                                    @PathVariable String variantId,
                                                     @Valid @RequestBody AdjustVariantStockRequest req,
                                                     @AuthenticationPrincipal AuthenticatedUser user) {
         return ResponseEntity.ok(adjustStock.handle(new AdjustVariantStockCommand(
@@ -91,8 +91,8 @@ public class VariantController {
     @Operation(summary = "Remove variant (admin)")
     @DeleteMapping("/api/v1/products/{productId}/variants/{variantId}")
     @PreAuthorize(WRITE)
-    public ResponseEntity<Void> remove(@PathVariable Long productId,
-                                         @PathVariable Long variantId,
+    public ResponseEntity<Void> remove(@PathVariable String productId,
+                                         @PathVariable String variantId,
                                          @AuthenticationPrincipal AuthenticatedUser user) {
         removeVariant.handle(new RemoveVariantCommand(productId, variantId, user.userId()));
         return ResponseEntity.noContent().build();

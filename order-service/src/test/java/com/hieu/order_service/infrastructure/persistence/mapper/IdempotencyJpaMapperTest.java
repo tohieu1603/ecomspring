@@ -16,7 +16,7 @@ class IdempotencyJpaMapperTest {
     private IdempotencyRecord completedRecord() {
         return IdempotencyRecord.reconstitute(
                 "key-1",
-                123L,
+                "00000000-0000-0000-0000-000000000123",
                 IdempotencyRecord.Status.COMPLETED,
                 "{\"id\":123}",
                 Instant.parse("2024-03-01T00:00:00Z"),

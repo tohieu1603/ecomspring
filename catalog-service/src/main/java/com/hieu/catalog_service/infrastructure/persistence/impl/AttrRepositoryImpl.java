@@ -10,6 +10,7 @@ import com.hieu.catalog_service.infrastructure.persistence.mapper.AttrJpaMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 
@@ -28,11 +29,11 @@ public class AttrRepositoryImpl implements AttrRepository {
         AttrJpaEntity saved = jpa.save(mapper.toJpa(attr, existing));
         if (attr.getId() == null) attr.assignId(AttrId.of(saved.getId()));
         // Propagate generated value ids back onto the domain's AttrVals (match by code).
-        var idByCode = new java.util.HashMap<String, Long>();
+        var idByCode = new HashMap<String, String>();
         saved.getValues().forEach(v -> idByCode.put(v.getCode(), v.getId()));
         for (AttrVal v : attr.getValues()) {
             if (v.getId() == null) {
-                Long id = idByCode.get(v.getCode());
+                String id = idByCode.get(v.getCode());
                 if (id != null) v.assignId(id);
             }
         }
@@ -60,7 +61,7 @@ public class AttrRepositoryImpl implements AttrRepository {
     }
 
     @Override
-    public List<Attr> findAllByIdsWithValues(List<Long> ids) {
+    public List<Attr> findAllByIdsWithValues(List<String> ids) {
         if (ids == null || ids.isEmpty()) return List.of();
         return jpa.findAllByIdsWithValues(ids).stream().map(mapper::toDomain).toList();
     }

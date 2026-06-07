@@ -8,7 +8,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 public record AddVariantCommand(
-        Long productId,
+        String productId,
         String sku,
         BigDecimal price,
         BigDecimal cost,

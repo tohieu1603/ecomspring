@@ -89,7 +89,7 @@ public class ProductRepositoryImpl implements ProductRepository {
     }
 
     @Override
-    public List<ProductId> findIdsAfterCursor(Instant createdAt, Long id, int limit) {
+    public List<ProductId> findIdsAfterCursor(Instant createdAt, String id, int limit) {
         return jpa.findIdsAfterCursor(createdAt, id, PageRequest.of(0, limit))
             .stream().map(ProductId::of).toList();
     }
@@ -97,10 +97,10 @@ public class ProductRepositoryImpl implements ProductRepository {
     @Override
     public List<Product> findAllByIdsWithVariants(List<ProductId> ids) {
         if (ids.isEmpty()) return Collections.emptyList();
-        List<Long> raw = ids.stream().map(ProductId::value).toList();
+        List<String> raw = ids.stream().map(ProductId::value).toList();
         List<ProductJpaEntity> rows = jpa.findAllByIdInWithVariants(raw);
         // Preserve the caller's requested ordering (JPA IN clause loses it).
-        Map<Long, Integer> order = new HashMap<>();
+        Map<String, Integer> order = new HashMap<>();
         for (int i = 0; i < raw.size(); i++) order.put(raw.get(i), i);
         return rows.stream()
             .sorted(Comparator.comparingInt(p -> order.getOrDefault(p.getId(), Integer.MAX_VALUE)))
@@ -109,10 +109,10 @@ public class ProductRepositoryImpl implements ProductRepository {
     }
 
     @Override
-    public List<ProductId> findIdsSorted(String sort, Long categoryId, int offset, int limit) {
+    public List<ProductId> findIdsSorted(String sort, String categoryId, int offset, int limit) {
         PageRequest page = PageRequest.of(offset / Math.max(1, limit), limit);
         String key = sort == null ? "newest" : sort.toLowerCase();
-        List<Long> raw = switch (key) {
+        List<String> raw = switch (key) {
             case "priceasc"  -> jpa.findIdsSortedPriceAsc(categoryId, page);
             case "pricedesc" -> jpa.findIdsSortedPriceDesc(categoryId, page);
             case "nameasc"   -> jpa.findIdsSortedNameAsc(categoryId, page);

@@ -12,14 +12,14 @@ import java.util.Objects;
 @Getter
 public final class VariantStockChangedEvent extends DomainEvent {
 
-    private final Long productId;
-    private final Long variantId;
+    private final String productId;
+    private final String variantId;
     private final String sku;
     private final int oldQuantity;
     private final int newQuantity;
     private final String updatedBy;
 
-    public VariantStockChangedEvent(Long productId, Long variantId, String sku,
+    public VariantStockChangedEvent(String productId, String variantId, String sku,
                                      int oldQuantity, int newQuantity, String updatedBy) {
         this.productId = Objects.requireNonNull(productId, "productId");
         this.variantId = Objects.requireNonNull(variantId, "variantId");
@@ -29,7 +29,7 @@ public final class VariantStockChangedEvent extends DomainEvent {
         this.updatedBy = updatedBy;
     }
 
-    @Override public String aggregateId() { return String.valueOf(productId); }
+    @Override public String aggregateId() { return productId; }
 
     public int getDelta() { return newQuantity - oldQuantity; }
 }

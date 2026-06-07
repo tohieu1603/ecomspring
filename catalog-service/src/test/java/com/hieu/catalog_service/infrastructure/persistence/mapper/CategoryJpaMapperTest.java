@@ -21,7 +21,7 @@ class CategoryJpaMapperTest {
 
     private final CategoryJpaMapper mapper = new CategoryJpaMapper();
 
-    private static Category category(Long id, Long parentId, String description) {
+    private static Category category(String id, String parentId, String description) {
         Instant now = Instant.parse("2024-02-02T10:00:00Z");
         return Category.reconstitute(
             CategoryId.of(id),
@@ -34,13 +34,13 @@ class CategoryJpaMapperTest {
     @Test
     @DisplayName("toJpa maps all fields including parentId and description value")
     void toJpa_fullMapping() {
-        Category c = category(1L, 9L, "Footwear");
+        Category c = category("1", "9", "Footwear");
 
         CategoryJpaEntity e = mapper.toJpa(c, null);
 
         assertThat(e.getName()).isEqualTo("Shoes");
         assertThat(e.getDescription()).isEqualTo("Footwear");
-        assertThat(e.getParentId()).isEqualTo(9L);
+        assertThat(e.getParentId()).isEqualTo("9");
         assertThat(e.isActive()).isTrue();
         assertThat(e.getSortOrder()).isEqualTo(5);
         assertThat(e.getCreatedBy()).isEqualTo("creator");
@@ -51,7 +51,7 @@ class CategoryJpaMapperTest {
     @Test
     @DisplayName("toJpa with null description and null parentId → null columns")
     void toJpa_nullOptionalFields() {
-        Category c = category(1L, null, null);
+        Category c = category("1", null, null);
 
         CategoryJpaEntity e = mapper.toJpa(c, null);
 
@@ -63,22 +63,22 @@ class CategoryJpaMapperTest {
     @DisplayName("toJpa reuses provided entity instance")
     void toJpa_reusesExisting() {
         var existing = new CategoryJpaEntity();
-        existing.setId(42L);
+        existing.setId("42");
 
-        CategoryJpaEntity e = mapper.toJpa(category(42L, null, "x"), existing);
+        CategoryJpaEntity e = mapper.toJpa(category("42", null, "x"), existing);
 
         assertThat(e).isSameAs(existing);
-        assertThat(e.getId()).isEqualTo(42L);
+        assertThat(e.getId()).isEqualTo("42");
     }
 
     @Test
     @DisplayName("toDomain reconstitutes the aggregate with parentId and description")
     void toDomain_fullMapping() {
         var e = new CategoryJpaEntity();
-        e.setId(7L);
+        e.setId("7");
         e.setName("Boots");
         e.setDescription("Tall boots");
-        e.setParentId(3L);
+        e.setParentId("3");
         e.setActive(false);
         e.setSortOrder(2);
         Instant now = Instant.parse("2024-03-03T00:00:00Z");
@@ -89,10 +89,10 @@ class CategoryJpaMapperTest {
 
         Category c = mapper.toDomain(e);
 
-        assertThat(c.getId().value()).isEqualTo(7L);
+        assertThat(c.getId().value()).isEqualTo("7");
         assertThat(c.getName().value()).isEqualTo("Boots");
         assertThat(c.getDescription().value()).isEqualTo("Tall boots");
-        assertThat(c.getParentId().value()).isEqualTo(3L);
+        assertThat(c.getParentId().value()).isEqualTo("3");
         assertThat(c.isActive()).isFalse();
         assertThat(c.getSortOrder()).isEqualTo(2);
         assertThat(c.getCreatedBy()).isEqualTo("c");
@@ -103,7 +103,7 @@ class CategoryJpaMapperTest {
     @DisplayName("toDomain with null parentId → null CategoryId (not wrapped)")
     void toDomain_nullParent() {
         var e = new CategoryJpaEntity();
-        e.setId(7L);
+        e.setId("7");
         e.setName("Root");
         e.setParentId(null);
         e.setActive(true);
@@ -119,17 +119,17 @@ class CategoryJpaMapperTest {
     @Test
     @DisplayName("round-trip toJpa → toDomain preserves identity-bearing fields")
     void roundTrip() {
-        Category original = category(1L, 9L, "Footwear");
+        Category original = category("1", "9", "Footwear");
 
-        Category back = mapper.toDomain(setId(mapper.toJpa(original, null), 1L));
+        Category back = mapper.toDomain(setId(mapper.toJpa(original, null), "1"));
 
         assertThat(back.getName().value()).isEqualTo("Shoes");
         assertThat(back.getDescription().value()).isEqualTo("Footwear");
-        assertThat(back.getParentId().value()).isEqualTo(9L);
+        assertThat(back.getParentId().value()).isEqualTo("9");
         assertThat(back.getSortOrder()).isEqualTo(5);
     }
 
-    private static CategoryJpaEntity setId(CategoryJpaEntity e, Long id) {
+    private static CategoryJpaEntity setId(CategoryJpaEntity e, String id) {
         e.setId(id);
         return e;
     }

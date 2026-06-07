@@ -8,10 +8,10 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 import java.util.Optional;
 
-public interface AttrJpaRepository extends JpaRepository<AttrJpaEntity, Long> {
+public interface AttrJpaRepository extends JpaRepository<AttrJpaEntity, String> {
 
     @Query("SELECT a FROM AttrJpaEntity a LEFT JOIN FETCH a.values WHERE a.id = :id")
-    Optional<AttrJpaEntity> findByIdWithValues(@Param("id") Long id);
+    Optional<AttrJpaEntity> findByIdWithValues(@Param("id") String id);
 
     @Query("SELECT a FROM AttrJpaEntity a LEFT JOIN FETCH a.values WHERE a.code = :code")
     Optional<AttrJpaEntity> findByCodeWithValues(@Param("code") String code);
@@ -22,5 +22,5 @@ public interface AttrJpaRepository extends JpaRepository<AttrJpaEntity, Long> {
     List<AttrJpaEntity> findAllWithValues();
 
     @Query("SELECT DISTINCT a FROM AttrJpaEntity a LEFT JOIN FETCH a.values WHERE a.id IN :ids")
-    List<AttrJpaEntity> findAllByIdsWithValues(@Param("ids") List<Long> ids);
+    List<AttrJpaEntity> findAllByIdsWithValues(@Param("ids") List<String> ids);
 }

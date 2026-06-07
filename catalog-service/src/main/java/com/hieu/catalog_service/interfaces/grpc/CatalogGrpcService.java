@@ -99,11 +99,11 @@ public class CatalogGrpcService extends CatalogServiceGrpc.CatalogServiceImplBas
 
     private Product toProto(ProductDTO p) {
         Product.Builder b = Product.newBuilder()
-            .setId(p.id())
+            .setId(nz(p.id()))
             .setName(nz(p.name()))
             .setSlug(nz(p.slug()))
             .setDescription(nz(p.description()))
-            .setCategoryId(p.categoryId() != null ? p.categoryId() : 0L)
+            .setCategoryId(nz(p.categoryId()))
             .setBrand(nz(p.brand()))
             .setThumbnail(nz(p.thumbnail()))
             .setStatus(nz(p.status()));
@@ -113,8 +113,8 @@ public class CatalogGrpcService extends CatalogServiceGrpc.CatalogServiceImplBas
 
     private Variant toProto(VariantDTO v) {
         Variant.Builder b = Variant.newBuilder()
-            .setId(v.id() != null ? v.id() : 0L)
-            .setProductId(v.productId() != null ? v.productId() : 0L)
+            .setId(nz(v.id()))
+            .setProductId(nz(v.productId()))
             .setSku(nz(v.sku()))
             .setPrice(bd(v.price()))
             .setSalePrice(bd(v.salePrice()))
@@ -126,10 +126,10 @@ public class CatalogGrpcService extends CatalogServiceGrpc.CatalogServiceImplBas
 
     private VariantAttr toProto(VariantAttrDTO a) {
         return VariantAttr.newBuilder()
-            .setAttrId(a.attrId() != null ? a.attrId() : 0L)
+            .setAttrId(nz(a.attrId()))
             .setAttrCode(nz(a.attrCode()))
             .setAttrName(nz(a.attrName()))
-            .setValId(a.valId() != null ? a.valId() : 0L)
+            .setValId(nz(a.valId()))
             .setValText(nz(a.valText()))
             .build();
     }

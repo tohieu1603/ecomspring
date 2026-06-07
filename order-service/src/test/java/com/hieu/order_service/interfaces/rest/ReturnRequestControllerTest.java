@@ -43,7 +43,7 @@ class ReturnRequestControllerTest {
 
     ReturnRequestController controller;
     private static final ReturnRequestDTO DTO = new ReturnRequestDTO(
-            1L, 2L, "user-1", "reason", "REFUND", "PENDING", null, null, null,
+            "00000000-0000-0000-0000-000000000001", "00000000-0000-0000-0000-000000000002", "user-1", "reason", "REFUND", "PENDING", null, null, null,
             Instant.now(), Instant.now());
 
     @BeforeEach
@@ -62,7 +62,7 @@ class ReturnRequestControllerTest {
     void requestReturn_buildsCommand() {
         when(requestReturnHandler.handle(any())).thenReturn(DTO);
 
-        controller.requestReturn(2L, new CreateReturnRequest("broken", "REFUND", "[]"), user("ROLE_USER"));
+        controller.requestReturn("00000000-0000-0000-0000-000000000002", new CreateReturnRequest("broken", "REFUND", "[]"), user("ROLE_USER"));
 
         var captor = ArgumentCaptor.forClass(RequestReturnCommand.class);
         verify(requestReturnHandler).handle(captor.capture());
@@ -78,7 +78,7 @@ class ReturnRequestControllerTest {
     void getById_admin() {
         when(getReturnRequestByIdHandler.handle(any())).thenReturn(DTO);
 
-        controller.getById(7L, user("ROLE_ADMIN"));
+        controller.getById("00000000-0000-0000-0000-000000000007", user("ROLE_ADMIN"));
 
         var captor = ArgumentCaptor.forClass(GetReturnRequestByIdQuery.class);
         verify(getReturnRequestByIdHandler).handle(captor.capture());
@@ -94,7 +94,7 @@ class ReturnRequestControllerTest {
         body.put("adminNote", "ok");
         body.put("refundAmount", "150.75");
 
-        controller.approve(7L, body);
+        controller.approve("00000000-0000-0000-0000-000000000007", body);
 
         var captor = ArgumentCaptor.forClass(ApproveReturnCommand.class);
         verify(approveReturnHandler).handle(captor.capture());
@@ -108,7 +108,7 @@ class ReturnRequestControllerTest {
     void approve_withoutRefund() {
         when(approveReturnHandler.handle(any())).thenReturn(DTO);
 
-        controller.approve(7L, new HashMap<>());
+        controller.approve("00000000-0000-0000-0000-000000000007", new HashMap<>());
 
         var captor = ArgumentCaptor.forClass(ApproveReturnCommand.class);
         verify(approveReturnHandler).handle(captor.capture());
@@ -120,7 +120,7 @@ class ReturnRequestControllerTest {
     void reject_forwardsNote() {
         when(rejectReturnHandler.handle(any())).thenReturn(DTO);
 
-        controller.reject(7L, Map.of("adminNote", "not eligible"));
+        controller.reject("00000000-0000-0000-0000-000000000007", Map.of("adminNote", "not eligible"));
 
         var captor = ArgumentCaptor.forClass(RejectReturnCommand.class);
         verify(rejectReturnHandler).handle(captor.capture());
@@ -135,7 +135,7 @@ class ReturnRequestControllerTest {
         Map<String, Object> body = new HashMap<>();
         body.put("refundAmount", "42.00");
 
-        controller.complete(7L, body);
+        controller.complete("00000000-0000-0000-0000-000000000007", body);
 
         var captor = ArgumentCaptor.forClass(CompleteReturnCommand.class);
         verify(completeReturnHandler).handle(captor.capture());
@@ -147,7 +147,7 @@ class ReturnRequestControllerTest {
     void complete_nullBody() {
         when(completeReturnHandler.handle(any())).thenReturn(DTO);
 
-        controller.complete(7L, null);
+        controller.complete("00000000-0000-0000-0000-000000000007", null);
 
         var captor = ArgumentCaptor.forClass(CompleteReturnCommand.class);
         verify(completeReturnHandler).handle(captor.capture());

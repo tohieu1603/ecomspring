@@ -7,10 +7,10 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
 @Repository
-public interface VoucherUsageRecordRepository extends JpaRepository<VoucherUsageRecord, Long> {
+public interface VoucherUsageRecordRepository extends JpaRepository<VoucherUsageRecord, String> {
 
     /** Đếm số lần user đã dùng voucher — enforce usageLimitPerUser. */
-    long countByVoucherIdAndUserId(Long voucherId, String userId);
+    long countByVoucherIdAndUserId(String voucherId, String userId);
 
     /** Tìm record theo orderId — dùng cho idempotent release. */
     Optional<VoucherUsageRecord> findByOrderId(String orderId);

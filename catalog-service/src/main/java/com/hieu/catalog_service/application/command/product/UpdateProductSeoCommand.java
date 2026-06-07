@@ -4,7 +4,7 @@ import com.hieu.catalog_service.application.common.Command;
 import com.hieu.catalog_service.application.dto.ProductDTO;
 
 public record UpdateProductSeoCommand(
-        Long productId,
+        String productId,
         String metaTitle,
         String metaDescription,
         String metaKeywords,

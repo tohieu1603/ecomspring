@@ -217,10 +217,10 @@ class VoucherTest {
             var entity = build(new VoucherSpec(
                     "FIXED_AMOUNT", BigDecimal.valueOf(20_000), null,
                     null, 10, 4, null));
-            entity.setId(1L);   // releaseVoucher matches entity.id against the usage record's voucherId
+            entity.setId("1");   // releaseVoucher matches entity.id against the usage record's voucherId
 
             var usageRecord = new com.hieu.voucher_service.entity.VoucherUsageRecord(
-                    1L, "u1", "o1");
+                    "1", "u1", "o1");
             when(usageRepo.findByOrderId("o1")).thenReturn(Optional.of(usageRecord));
             when(voucherRepo.findByCodeForUpdate("TEST")).thenReturn(Optional.of(entity));
             when(voucherRepo.save(any())).thenReturn(entity);

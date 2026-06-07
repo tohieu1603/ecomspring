@@ -44,7 +44,7 @@ class PaymentServiceClientTest {
     @Test
     @DisplayName("initiate(): unwraps ApiResponse and returns PaymentInitiated")
     void initiate_unwrapsResponse() {
-        var data = new PaymentClient.PaymentInitiated(42L, "qr://abc", "https://pay/123");
+        var data = new PaymentClient.PaymentInitiated("00000000-0000-0000-0000-000000000042", "qr://abc", "https://pay/123");
         when(paymentClient.initiate(any(), any()))
                 .thenReturn(new ApiResponse<>(true, "OK", null, data, Instant.now(), null));
 
@@ -86,21 +86,21 @@ class PaymentServiceClientTest {
         verify(paymentClient).getPaymentByOrderId(ORDER_ID);
         // Refund endpoint must NOT be called when no payment exists.
         verify(paymentClient, org.mockito.Mockito.never())
-                .processRefund(org.mockito.ArgumentMatchers.anyLong(), any());
+                .processRefund(org.mockito.ArgumentMatchers.anyString(), any());
     }
 
     @Test
     @DisplayName("processRefundForOrder(): payment exists → invokes processRefund with correct id")
     void refund_paymentExists_callsRefund() {
-        var payment = new PaymentClient.Payment(99L, ORDER_ID, BigDecimal.valueOf(100), "COMPLETED");
+        var payment = new PaymentClient.Payment("00000000-0000-0000-0000-000000000099", ORDER_ID, BigDecimal.valueOf(100), "COMPLETED");
         when(paymentClient.getPaymentByOrderId(ORDER_ID))
                 .thenReturn(new ApiResponse<>(true, "OK", null, payment, Instant.now(), null));
-        when(paymentClient.processRefund(org.mockito.ArgumentMatchers.eq(99L), any()))
+        when(paymentClient.processRefund(org.mockito.ArgumentMatchers.eq("99"), any()))
                 .thenReturn(new ApiResponse<>(true, "OK", null, null, Instant.now(), null));
 
         facade.processRefundForOrder(ORDER_ID, BigDecimal.valueOf(100), ADMIN_TOKEN);
 
-        verify(paymentClient).processRefund(org.mockito.ArgumentMatchers.eq(99L),
+        verify(paymentClient).processRefund(org.mockito.ArgumentMatchers.eq("99"),
                 any(PaymentClient.RefundRequest.class));
     }
 
@@ -115,7 +115,7 @@ class PaymentServiceClientTest {
 
         // Refund endpoint must NOT be called when lookup itself failed.
         verify(paymentClient, org.mockito.Mockito.never())
-                .processRefund(org.mockito.ArgumentMatchers.anyLong(), any());
+                .processRefund(org.mockito.ArgumentMatchers.anyString(), any());
     }
 
     // ── helpers ───────────────────────────────────────────────────────────────

@@ -6,14 +6,17 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.UUID;
+
 @Entity
 @Table(name = "attr_vals")
 @Getter @Setter
 @NoArgsConstructor @AllArgsConstructor
 public class AttrValJpaEntity {
 
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Id
+    @Column(length = 36)
+    private String id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "attr_id", nullable = false)
@@ -27,4 +30,9 @@ public class AttrValJpaEntity {
 
     @Column(name = "sort_order", nullable = false)
     private int sortOrder;
+
+    @PrePersist
+    void prePersist() {
+        if (id == null) id = UUID.randomUUID().toString();
+    }
 }

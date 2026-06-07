@@ -8,10 +8,10 @@ public final class AttrIntegrationEvents {
     private AttrIntegrationEvents() {}
 
     public record AttrCreated(UUID eventId, Instant occurredOn,
-                               Long attrId, String code, String name, String type) {}
+                               String attrId, String code, String name, String type) {}
 
     public record AttrUpdated(UUID eventId, Instant occurredOn,
-                               Long attrId, String name) {}
+                               String attrId, String name) {}
 
-    public record AttrDeleted(UUID eventId, Instant occurredOn, Long attrId) {}
+    public record AttrDeleted(UUID eventId, Instant occurredOn, String attrId) {}
 }

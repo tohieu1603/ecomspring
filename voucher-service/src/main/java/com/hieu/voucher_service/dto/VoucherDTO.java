@@ -14,7 +14,7 @@ import java.time.Instant;
 @AllArgsConstructor
 public class VoucherDTO {
 
-    private Long id;
+    private String id;
     private String code;
     private String type;
     private BigDecimal discountValue;

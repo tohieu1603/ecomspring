@@ -47,7 +47,7 @@ public class AttrController {
 
     @Operation(summary = "Get attribute by id")
     @GetMapping("/{id}")
-    public ResponseEntity<AttrDTO> byId(@PathVariable Long id) {
+    public ResponseEntity<AttrDTO> byId(@PathVariable String id) {
         return ResponseEntity.ok(getById.handle(new GetAttrByIdQuery(id)));
     }
 
@@ -63,14 +63,14 @@ public class AttrController {
     @Operation(summary = "Update attribute (admin)")
     @PatchMapping("/{id}")
     @PreAuthorize(WRITE)
-    public ResponseEntity<AttrDTO> update(@PathVariable Long id, @Valid @RequestBody UpdateAttrRequest req) {
+    public ResponseEntity<AttrDTO> update(@PathVariable String id, @Valid @RequestBody UpdateAttrRequest req) {
         return ResponseEntity.ok(update.handle(new UpdateAttrCommand(id, req.name(), req.type(), req.sortOrder())));
     }
 
     @Operation(summary = "Delete attribute (admin)")
     @DeleteMapping("/{id}")
     @PreAuthorize(WRITE)
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
+    public ResponseEntity<Void> delete(@PathVariable String id) {
         delete.handle(new DeleteAttrCommand(id));
         return ResponseEntity.noContent().build();
     }
@@ -78,14 +78,14 @@ public class AttrController {
     @Operation(summary = "Add attribute value (admin)")
     @PostMapping("/{id}/values")
     @PreAuthorize(WRITE)
-    public ResponseEntity<AttrDTO> addValue(@PathVariable Long id, @Valid @RequestBody AddAttrValueRequest req) {
+    public ResponseEntity<AttrDTO> addValue(@PathVariable String id, @Valid @RequestBody AddAttrValueRequest req) {
         return ResponseEntity.ok(addValue.handle(new AddAttrValueCommand(id, req.val(), req.code())));
     }
 
     @Operation(summary = "Remove attribute value (admin)")
     @DeleteMapping("/{id}/values/{valId}")
     @PreAuthorize(WRITE)
-    public ResponseEntity<Void> removeValue(@PathVariable Long id, @PathVariable Long valId) {
+    public ResponseEntity<Void> removeValue(@PathVariable String id, @PathVariable String valId) {
         removeValue.handle(new RemoveAttrValueCommand(id, valId));
         return ResponseEntity.noContent().build();
     }

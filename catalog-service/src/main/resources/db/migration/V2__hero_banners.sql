@@ -4,7 +4,7 @@
 -- external CDN URL or a path served by the asset host of choice.
 
 CREATE TABLE IF NOT EXISTS hero_banners (
-    id            BIGSERIAL    PRIMARY KEY,
+    id            VARCHAR(36)  PRIMARY KEY,
     title         VARCHAR(200) NOT NULL,
     subtitle      VARCHAR(500),
     image_url     VARCHAR(1024) NOT NULL,

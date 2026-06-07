@@ -5,10 +5,10 @@ import com.hieu.catalog_service.application.dto.ProductDTO;
 
 /** Partial update of core product fields. {@code null} fields are left unchanged. */
 public record UpdateProductCommand(
-        Long productId,
+        String productId,
         String name,
         String description,
-        Long categoryId,
+        String categoryId,
         String brand,
         String updatedBy
 ) implements Command<ProductDTO> {}

@@ -24,10 +24,7 @@ class OrderTest {
     @Test
     @DisplayName("class loads + JUnit discovers @Nested tests")
     void smokeTest_classDiscovered() {
-        // Nếu tới được đây tức là JUnit có thể instantiate test class.
-        // assertThat(this).isNotNull() được tự thực hiện ngầm.
     }
-
 
     // ── Fixture helpers ─────────────────────────────────────────────────────────
 
@@ -39,7 +36,11 @@ class OrderTest {
             ShippingAddress shippingAddress
     ) {}
 
-    static final String USER_UUID = "11111111-1111-1111-1111-111111111111";
+    static final String USER_UUID   = "11111111-1111-1111-1111-111111111111";
+    static final String PROD_ID_1   = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
+    static final String ORDER_ID_1  = "00000000-0000-0000-0000-000000000001";
+    static final String SHIPMENT_1  = "00000000-0000-0000-0000-000000000011";
+    static final String SHIPMENT_99 = "00000000-0000-0000-0000-000000000099";
 
     static OrderFixture fixture() {
         return new OrderFixture(
@@ -61,8 +62,8 @@ class OrderTest {
 
     static OrderItem item(long price, int qty) {
         return OrderItem.create(
-                ProductId.of(1L), ProductName.of("Product A"),
-                10L, "SKU-001", null,
+                ProductId.of(PROD_ID_1), ProductName.of("Product A"),
+                null, "SKU-001", null,
                 Money.of(BigDecimal.valueOf(price)), Quantity.of(qty));
     }
 
@@ -70,7 +71,7 @@ class OrderTest {
     static Order persistedOrder() {
         var o = newOrder();
         o.addItem(item(100_000, 2));
-        o.assignId(1L);
+        o.assignId(ORDER_ID_1);
         return o;
     }
 
@@ -133,9 +134,9 @@ class OrderTest {
             order.markPaymentPending();
             order.markPaymentCompleted();
             order.confirm();
-            order.markShipped(99L);
+            order.markShipped(SHIPMENT_99);
             assertThat(order.getStatus()).isEqualTo(OrderStatus.SHIPPED);
-            assertThat(order.getShipmentId()).isEqualTo(99L);
+            assertThat(order.getShipmentId()).isEqualTo(SHIPMENT_99);
         }
 
         @Test
@@ -145,7 +146,7 @@ class OrderTest {
             order.markPaymentPending();
             order.markPaymentCompleted();
             order.confirm();
-            order.markShipped(99L);
+            order.markShipped(SHIPMENT_99);
             order.markDelivered();
             assertThat(order.getStatus()).isEqualTo(OrderStatus.DELIVERED);
             assertThat(order.getDeliveredAt()).isNotNull();
@@ -164,7 +165,7 @@ class OrderTest {
             o.markPaymentPending();
             o.markPaymentCompleted();
             o.confirm();
-            o.markShipped(1L);
+            o.markShipped(SHIPMENT_1);
             o.markDelivered();
             assertThatThrownBy(() -> o.cancel("too late"))
                     .isInstanceOf(InvalidOrderStateException.class);
@@ -238,7 +239,7 @@ class OrderTest {
         @DisplayName("cancel() trên order có voucher → event.voucherCode == code")
         void cancel_withVoucher_eventContainsVoucherCode() {
             var o = newOrder("SUMMER20");
-            o.assignId(1L);
+            o.assignId(ORDER_ID_1);
             o.markInventoryReserved(ReservationId.of("res-1"));
             o.markPaymentPending();
             o.cancel("customer request");
@@ -257,7 +258,7 @@ class OrderTest {
         @DisplayName("cancel() trên order không có voucher → event.voucherCode == null")
         void cancel_withoutVoucher_eventVoucherCodeIsNull() {
             var o = newOrder(null);
-            o.assignId(1L);
+            o.assignId(ORDER_ID_1);
             o.cancel("no voucher cancel");
 
             var events = o.peekDomainEvents();

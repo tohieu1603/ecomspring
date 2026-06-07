@@ -10,6 +10,7 @@ import org.hibernate.annotations.BatchSize;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Entity
 @Table(name = "variants")
@@ -17,8 +18,9 @@ import java.util.List;
 @NoArgsConstructor @AllArgsConstructor
 public class VariantJpaEntity {
 
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Id
+    @Column(length = 36)
+    private String id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "product_id", nullable = false)
@@ -59,4 +61,9 @@ public class VariantJpaEntity {
     @OneToMany(mappedBy = "variant", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @BatchSize(size = 50)
     private List<VariantAttrJpaEntity> attrs = new ArrayList<>();
+
+    @PrePersist
+    void prePersist() {
+        if (id == null) id = UUID.randomUUID().toString();
+    }
 }

@@ -195,7 +195,7 @@ info "C06: POST /products (with variant)"
 SKU="FULL-SKU-$TS"
 PROD=$(curl -s -b "$COOKIES" -X POST "$GW/api/v1/products" \
     -H "Content-Type: application/json" \
-    -d "{\"name\":\"Full Phone $TS\",\"description\":\"full e2e\",\"categoryId\":${CAT_ID:-1},\"brand\":\"Full\",\"variants\":[{\"sku\":\"$SKU\",\"price\":1500000,\"quantity\":100,\"attrs\":[]}],\"activate\":true}")
+    -d "{\"name\":\"Full Phone $TS\",\"description\":\"full e2e\",\"categoryId\":\"${CAT_ID}\",\"brand\":\"Full\",\"variants\":[{\"sku\":\"$SKU\",\"price\":1500000,\"quantity\":100,\"attrs\":[]}],\"activate\":true}")
 PROD_ID=$(echo "$PROD" | jpath "id")
 VAR_ID=$(echo "$PROD" | jpath "variants.0.id")
 [[ -n "$PROD_ID" && -n "$VAR_ID" ]] && ok "C06 Product created (id=$PROD_ID var=$VAR_ID)" || fail "C06 Product" "$PROD"
@@ -252,7 +252,7 @@ KG=$(http_code -b "$COOKIES" "$GW/api/v1/cart")
 info "K02: POST /cart/items (add)"
 KADD=$(curl -s -b "$COOKIES" -X POST "$GW/api/v1/cart/items" \
     -H "Content-Type: application/json" \
-    -d "{\"productId\":$PROD_ID,\"variantId\":$VAR_ID,\"quantity\":2}")
+    -d "{\"productId\":\"$PROD_ID\",\"variantId\":\"$VAR_ID\",\"quantity\":2}")
 PRICE=$(echo "$KADD" | jpath "items.0.unitPrice")
 [[ -n "$PRICE" ]] && ok "K02 Cart add (unitPrice=$PRICE)" || fail "K02 Cart add" "$KADD"
 
@@ -269,7 +269,7 @@ KD=$(http_code -b "$COOKIES" -X DELETE "$GW/api/v1/cart/items/$VAR_ID")
 info "K05: Re-add for order test"
 curl -s -b "$COOKIES" -X POST "$GW/api/v1/cart/items" \
     -H "Content-Type: application/json" \
-    -d "{\"productId\":$PROD_ID,\"variantId\":$VAR_ID,\"quantity\":2}" >/dev/null
+    -d "{\"productId\":\"$PROD_ID\",\"variantId\":\"$VAR_ID\",\"quantity\":2}" >/dev/null
 ok "K05 Re-add for downstream tests"
 
 info "K06: DELETE /cart (clear)"
@@ -343,7 +343,7 @@ section "ORDER"
 info "O01: POST /orders (saga)"
 ORDER=$(curl -s -b "$COOKIES" -X POST "$GW/api/v1/orders" \
     -H "Content-Type: application/json" \
-    -d "{\"items\":[{\"productId\":$PROD_ID,\"productName\":\"Full Phone $TS\",\"variantId\":$VAR_ID,\"variantSku\":\"$SKU\",\"unitPrice\":1500000,\"quantity\":2}],\"recipientName\":\"Full E2E\",\"recipientPhone\":\"0900111222\",\"street\":\"1 Le Loi\",\"ward\":\"Ben Nghe\",\"district\":\"Q1\",\"city\":\"HCM\",\"country\":\"VN\",\"postalCode\":\"700000\",\"paymentMethod\":\"BANK_TRANSFER\"}")
+    -d "{\"items\":[{\"productId\":\"$PROD_ID\",\"productName\":\"Full Phone $TS\",\"variantId\":\"$VAR_ID\",\"variantSku\":\"$SKU\",\"unitPrice\":1500000,\"quantity\":2}],\"recipientName\":\"Full E2E\",\"recipientPhone\":\"0900111222\",\"street\":\"1 Le Loi\",\"ward\":\"Ben Nghe\",\"district\":\"Q1\",\"city\":\"HCM\",\"country\":\"VN\",\"postalCode\":\"700000\",\"paymentMethod\":\"BANK_TRANSFER\"}")
 ORDER_ID=$(echo "$ORDER" | jpath "id")
 [[ -z "$ORDER_ID" ]] && ORDER_ID=$(echo "$ORDER" | jpath "data.id")
 ORDER_NUM=$(echo "$ORDER" | jpath "orderNumber")

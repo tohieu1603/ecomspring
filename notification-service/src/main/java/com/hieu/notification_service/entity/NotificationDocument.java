@@ -85,10 +85,8 @@ public class NotificationDocument {
     @Field("error_message")
     private String errorMessage;
 
-    @Field("reference_type")
     private String referenceType;
 
-    @Field("reference_id")
     private String referenceId;
 
     @CreatedDate

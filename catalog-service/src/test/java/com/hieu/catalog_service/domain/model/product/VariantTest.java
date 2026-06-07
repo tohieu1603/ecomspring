@@ -88,10 +88,10 @@ class VariantTest {
     @DisplayName("a duplicate attribute id is rejected")
     void duplicateAttr() {
         Variant v = variant(5, BigDecimal.valueOf(100), null);
-        v.addAttr(VariantAttr.create(AttrId.of(1L), "COLOR", "Color", null, "Red"));
+        v.addAttr(VariantAttr.create(AttrId.of("1"), "COLOR", "Color", null, "Red"));
 
         assertThatThrownBy(() ->
-                v.addAttr(VariantAttr.create(AttrId.of(1L), "COLOR", "Color", null, "Blue")))
+                v.addAttr(VariantAttr.create(AttrId.of("1"), "COLOR", "Color", null, "Blue")))
                 .isInstanceOf(IllegalArgumentException.class);
         assertThat(v.getAttrs()).hasSize(1);
     }

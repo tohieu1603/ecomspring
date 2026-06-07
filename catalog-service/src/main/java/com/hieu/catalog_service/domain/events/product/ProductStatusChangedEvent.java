@@ -9,12 +9,12 @@ import java.util.Objects;
 @Getter
 public final class ProductStatusChangedEvent extends DomainEvent {
 
-    private final Long productId;
+    private final String productId;
     private final ProductStatus oldStatus;
     private final ProductStatus newStatus;
     private final String updatedBy;
 
-    public ProductStatusChangedEvent(Long productId, ProductStatus oldStatus,
+    public ProductStatusChangedEvent(String productId, ProductStatus oldStatus,
                                       ProductStatus newStatus, String updatedBy) {
         this.productId = Objects.requireNonNull(productId, "productId");
         this.oldStatus = Objects.requireNonNull(oldStatus, "oldStatus");
@@ -22,5 +22,5 @@ public final class ProductStatusChangedEvent extends DomainEvent {
         this.updatedBy = updatedBy;
     }
 
-    @Override public String aggregateId() { return String.valueOf(productId); }
+    @Override public String aggregateId() { return productId; }
 }

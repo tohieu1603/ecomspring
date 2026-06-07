@@ -13,7 +13,7 @@ import java.util.List;
 public record CreateProductRequest(
         @NotBlank String name,
         String description,
-        Long categoryId,
+        String categoryId,
         String brand,
         @Pattern(regexp = "^https?://[\\w\\-./%?=&:#]+$", message = "thumbnail must be http(s) URL")
         String thumbnail,
@@ -41,8 +41,8 @@ public record CreateProductRequest(
     ) {}
 
     public record AttrRequest(
-            @NotNull Long attrId,
-            Long attrValId,
+            @NotNull String attrId,
+            String attrValId,
             String valText
     ) {}
 }

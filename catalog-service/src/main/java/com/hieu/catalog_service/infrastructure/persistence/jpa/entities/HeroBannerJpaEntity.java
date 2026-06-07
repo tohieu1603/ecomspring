@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.OffsetDateTime;
+import java.util.UUID;
 
 /**
  * Homepage hero slideshow row. Image URLs are stored as external strings —
@@ -23,8 +24,8 @@ import java.time.OffsetDateTime;
 public class HeroBannerJpaEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(length = 36)
+    private String id;
 
     @Column(nullable = false, length = 200)
     private String title;
@@ -58,4 +59,9 @@ public class HeroBannerJpaEntity {
 
     @Column(name = "updated_at", nullable = false)
     private OffsetDateTime updatedAt = OffsetDateTime.now();
+
+    @PrePersist
+    void prePersist() {
+        if (id == null) id = UUID.randomUUID().toString();
+    }
 }

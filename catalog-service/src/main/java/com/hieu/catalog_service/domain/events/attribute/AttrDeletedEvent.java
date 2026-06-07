@@ -8,11 +8,11 @@ import java.util.Objects;
 @Getter
 public final class AttrDeletedEvent extends DomainEvent {
 
-    private final Long attrId;
+    private final String attrId;
 
-    public AttrDeletedEvent(Long attrId) {
+    public AttrDeletedEvent(String attrId) {
         this.attrId = Objects.requireNonNull(attrId, "attrId");
     }
 
-    @Override public String aggregateId() { return String.valueOf(attrId); }
+    @Override public String aggregateId() { return attrId; }
 }

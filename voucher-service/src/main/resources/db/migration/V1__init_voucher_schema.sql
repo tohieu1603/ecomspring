@@ -1,7 +1,7 @@
 -- Voucher service schema init
 
 CREATE TABLE IF NOT EXISTS vouchers (
-    id                      BIGSERIAL PRIMARY KEY,
+    id                      VARCHAR(36) PRIMARY KEY,
     code                    VARCHAR(50)    NOT NULL,
     type                    VARCHAR(20)    NOT NULL,
     discount_value          NUMERIC(19,2)  NOT NULL,
@@ -29,8 +29,8 @@ CREATE INDEX IF NOT EXISTS idx_voucher_end_date ON vouchers (end_date);
 
 -- Per-user usage tracking: one record per successful voucher application
 CREATE TABLE IF NOT EXISTS voucher_usage_records (
-    id          BIGSERIAL    PRIMARY KEY,
-    voucher_id  BIGINT       NOT NULL,
+    id          VARCHAR(36)  PRIMARY KEY,
+    voucher_id  VARCHAR(36)       NOT NULL,
     user_id     VARCHAR(255) NOT NULL,
     order_id    VARCHAR(255) NOT NULL,
     used_at     TIMESTAMPTZ  NOT NULL,

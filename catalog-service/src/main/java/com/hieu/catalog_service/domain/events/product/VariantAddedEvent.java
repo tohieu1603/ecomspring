@@ -9,14 +9,14 @@ import java.util.Objects;
 @Getter
 public final class VariantAddedEvent extends DomainEvent {
 
-    private final Long productId;
-    private final Long variantId;
+    private final String productId;
+    private final String variantId;
     private final String sku;
     private final BigDecimal price;
     private final int quantity;
     private final String createdBy;
 
-    public VariantAddedEvent(Long productId, Long variantId, String sku, BigDecimal price,
+    public VariantAddedEvent(String productId, String variantId, String sku, BigDecimal price,
                               int quantity, String createdBy) {
         this.productId = Objects.requireNonNull(productId, "productId");
         this.variantId = Objects.requireNonNull(variantId, "variantId");
@@ -26,5 +26,5 @@ public final class VariantAddedEvent extends DomainEvent {
         this.createdBy = createdBy;
     }
 
-    @Override public String aggregateId() { return String.valueOf(productId); }
+    @Override public String aggregateId() { return productId; }
 }

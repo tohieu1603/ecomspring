@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.Instant;
+import java.util.UUID;
 
 @Entity
 @Table(name = "categories")
@@ -14,8 +15,9 @@ import java.time.Instant;
 @NoArgsConstructor @AllArgsConstructor
 public class CategoryJpaEntity {
 
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Id
+    @Column(length = 36)
+    private String id;
 
     @Column(nullable = false, length = 100)
     private String name;
@@ -23,8 +25,8 @@ public class CategoryJpaEntity {
     @Column(length = 500)
     private String description;
 
-    @Column(name = "parent_id")
-    private Long parentId;
+    @Column(name = "parent_id", length = 36)
+    private String parentId;
 
     @Column(nullable = false)
     private boolean active;
@@ -43,4 +45,9 @@ public class CategoryJpaEntity {
 
     @Column(name = "updated_by", length = 64)
     private String updatedBy;
+
+    @PrePersist
+    void prePersist() {
+        if (id == null) id = UUID.randomUUID().toString();
+    }
 }

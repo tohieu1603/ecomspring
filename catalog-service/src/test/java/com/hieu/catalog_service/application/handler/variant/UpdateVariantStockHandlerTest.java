@@ -42,16 +42,16 @@ class UpdateVariantStockHandlerTest {
     @InjectMocks UpdateVariantStockHandler handler;
 
     private final VariantDTO dummyDto = new VariantDTO(
-            100L, 1L, "SKU-1", new BigDecimal("10.00"), null, null,
+            "100", "1", "SKU-1", new BigDecimal("10.00"), null, null,
             new BigDecimal("10.00"), null, null, 25, "ACTIVE", true, List.of());
 
-    /** Persisted product whose single variant has id 100 (so updateVariantStock resolves it). */
+    /** Persisted product whose single variant has id "100" (so updateVariantStock resolves it). */
     private static Product persistedProductWithVariant() {
-        Variant v = Variant.reconstitute(VariantId.of(100L), ProductId.of(1L), Sku.of("SKU-1"),
+        Variant v = Variant.reconstitute(VariantId.of("100"), ProductId.of("1"), Sku.of("SKU-1"),
                 Money.of(new BigDecimal("10.00")), null, null, null, new BigDecimal("0.5"),
                 Quantity.of(5), com.hieu.catalog_service.domain.model.product.valueobject.VariantStatus.ACTIVE,
                 null, List.of());
-        return Product.reconstitute(ProductId.of(1L), "Prod",
+        return Product.reconstitute(ProductId.of("1"), "Prod",
                 com.hieu.catalog_service.domain.model.product.valueobject.Slug.of("prod"), "desc",
                 null, "Brand", null, List.of(),
                 com.hieu.catalog_service.domain.model.product.valueobject.ProductStatus.ACTIVE,
@@ -62,8 +62,8 @@ class UpdateVariantStockHandlerTest {
     @Test
     @DisplayName("product not found → ProductNotFoundException, nothing saved")
     void update_productNotFound_throws() {
-        when(productRepository.findByIdWithVariants(ProductId.of(1L))).thenReturn(Optional.empty());
-        var cmd = new UpdateVariantStockCommand(1L, 100L, 25, "tester");
+        when(productRepository.findByIdWithVariants(ProductId.of("1"))).thenReturn(Optional.empty());
+        var cmd = new UpdateVariantStockCommand("1", "100", 25, "tester");
 
         assertThatThrownBy(() -> handler.handle(cmd))
                 .isInstanceOf(ProductNotFoundException.class);
@@ -75,8 +75,8 @@ class UpdateVariantStockHandlerTest {
     @DisplayName("variant id not on product → IllegalArgumentException from aggregate")
     void update_unknownVariant_throws() {
         var product = persistedProductWithVariant();
-        when(productRepository.findByIdWithVariants(ProductId.of(1L))).thenReturn(Optional.of(product));
-        var cmd = new UpdateVariantStockCommand(1L, 999L, 25, "tester");
+        when(productRepository.findByIdWithVariants(ProductId.of("1"))).thenReturn(Optional.of(product));
+        var cmd = new UpdateVariantStockCommand("1", "999", 25, "tester");
 
         assertThatThrownBy(() -> handler.handle(cmd))
                 .isInstanceOf(IllegalArgumentException.class);
@@ -87,10 +87,10 @@ class UpdateVariantStockHandlerTest {
     @DisplayName("valid → stock replaced, saved, events published, mapped DTO returned")
     void update_happyPath() {
         var product = persistedProductWithVariant();
-        when(productRepository.findByIdWithVariants(ProductId.of(1L))).thenReturn(Optional.of(product));
+        when(productRepository.findByIdWithVariants(ProductId.of("1"))).thenReturn(Optional.of(product));
         when(productRepository.save(product)).thenReturn(product);
         when(mapper.toDto(any(Variant.class))).thenReturn(dummyDto);
-        var cmd = new UpdateVariantStockCommand(1L, 100L, 25, "tester");
+        var cmd = new UpdateVariantStockCommand("1", "100", 25, "tester");
 
         var result = handler.handle(cmd);
 

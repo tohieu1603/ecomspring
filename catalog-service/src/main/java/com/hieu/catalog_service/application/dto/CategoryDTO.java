@@ -3,10 +3,10 @@ package com.hieu.catalog_service.application.dto;
 import java.time.Instant;
 
 public record CategoryDTO(
-        Long id,
+        String id,
         String name,
         String description,
-        Long parentId,
+        String parentId,
         boolean active,
         int sortOrder,
         Instant createdAt,

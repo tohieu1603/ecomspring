@@ -52,7 +52,7 @@ class ProductTest {
 
     static Product aProductWithId() {
         Product p = aProduct();
-        p.assignId(ProductId.of(1L));
+        p.assignId(ProductId.of("1"));
         return p;
     }
 

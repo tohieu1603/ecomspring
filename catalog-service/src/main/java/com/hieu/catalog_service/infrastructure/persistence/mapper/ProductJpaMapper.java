@@ -99,11 +99,11 @@ public class ProductJpaMapper {
             if (entity == null) continue;
             if (v.getId() == null) v.assignId(VariantId.of(entity.getId()));
             v.assignProductId(ProductId.of(saved.getId()));
-            Map<String, Long> attrIdByCode = new HashMap<>();
+            Map<String, String> attrIdByCode = new HashMap<>();
             entity.getAttrs().forEach(a -> attrIdByCode.put(a.getAttrCode(), a.getId()));
             v.getAttrs().forEach(va -> {
                 if (va.getId() == null) {
-                    Long id = attrIdByCode.get(va.getAttrCode());
+                    String id = attrIdByCode.get(va.getAttrCode());
                     if (id != null) va.assignId(id);
                 }
             });
@@ -113,7 +113,7 @@ public class ProductJpaMapper {
     // ── Internals ────────────────────────────────────────────────────────────
 
     private void reconcileVariants(ProductJpaEntity productEntity, List<Variant> domain) {
-        Map<Long, VariantJpaEntity> byId = new HashMap<>();
+        Map<String, VariantJpaEntity> byId = new HashMap<>();
         productEntity.getVariants().forEach(v -> { if (v.getId() != null) byId.put(v.getId(), v); });
 
         List<VariantJpaEntity> target = new ArrayList<>();
@@ -139,7 +139,7 @@ public class ProductJpaMapper {
     }
 
     private void reconcileVariantAttrs(VariantJpaEntity variantEntity, List<VariantAttr> domain) {
-        Map<Long, VariantAttrJpaEntity> byId = new HashMap<>();
+        Map<String, VariantAttrJpaEntity> byId = new HashMap<>();
         variantEntity.getAttrs().forEach(a -> { if (a.getId() != null) byId.put(a.getId(), a); });
 
         List<VariantAttrJpaEntity> target = new ArrayList<>();
