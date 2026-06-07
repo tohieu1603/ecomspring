@@ -9,7 +9,7 @@ import { api } from "@/lib/api/client";
 export interface StockEvent {
   ts: string;
   sku: string;
-  productId: number;
+  productId: string;
   delta: number;
   before: number;
   after: number;
@@ -44,8 +44,8 @@ export function appendHistory(evt: StockEvent) {
 }
 
 interface BeMovement {
-  id: number;
-  productId: number;
+  id: string;
+  productId: string;
   sku: string;
   delta: number;
   quantityBefore: number;

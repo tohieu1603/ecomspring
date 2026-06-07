@@ -25,7 +25,7 @@ export class ProductServerApi {
     );
   }
 
-  static async getRelated(categoryId: number | null | undefined, excludeId: number): Promise<BeProduct[]> {
+  static async getRelated(categoryId: string | null | undefined, excludeId: string): Promise<BeProduct[]> {
     const path = categoryId
       ? `/api/products?categoryId=${categoryId}&size=10`
       : `/api/products?size=10`;

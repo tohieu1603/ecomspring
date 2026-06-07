@@ -79,7 +79,7 @@ export function useCheckout() {
   const paymentMethods = paymentMethodsQ.data ?? FALLBACK_PAYMENT_METHODS;
 
   // ─── local UI state (transient) ─────────────────────────────────
-  const [selectedAddressId, setSelectedAddressId] = useState<number | null>(null);
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod["code"]>("COD");
   const [voucherCode, setVoucherCode] = useState("");
   const [applied, setApplied] = useState<AppliedVoucher | null>(null);
@@ -148,10 +148,10 @@ export function useCheckout() {
   }, [cart?.totalAmount]);
 
   // ─── line mutations ─────────────────────────────────────────────
-  const [busyVariant, setBusyVariant] = useState<number | null>(null);
+  const [busyVariant, setBusyVariant] = useState<string | null>(null);
 
   const changeQtyMut = useMutation({
-    mutationFn: ({ variantId, qty }: { variantId: number; qty: number }) =>
+    mutationFn: ({ variantId, qty }: { variantId: string; qty: number }) =>
       CheckoutApi.updateQty(variantId, qty),
     onMutate: ({ variantId }) => setBusyVariant(variantId),
     onSuccess: (fresh) => {
@@ -164,7 +164,7 @@ export function useCheckout() {
     },
     onSettled: () => setBusyVariant(null),
   });
-  const changeQty = useCallback((variantId: number, qty: number) => {
+  const changeQty = useCallback((variantId: string, qty: number) => {
     if (!Number.isFinite(qty) || qty < 0 || qty > 999) {
       toast.error("Số lượng không hợp lệ"); return;
     }
@@ -172,7 +172,7 @@ export function useCheckout() {
   }, [changeQtyMut]);
 
   const removeMut = useMutation({
-    mutationFn: (variantId: number) => CheckoutApi.removeItem(variantId),
+    mutationFn: (variantId: string) => CheckoutApi.removeItem(variantId),
     onMutate: (variantId) => setBusyVariant(variantId),
     onSuccess: () => {
       toast.success("Đã xoá khỏi giỏ");
@@ -181,7 +181,7 @@ export function useCheckout() {
     onError: () => toast.error("Không xoá được"),
     onSettled: () => setBusyVariant(null),
   });
-  const remove = useCallback((variantId: number) => removeMut.mutate(variantId), [removeMut]);
+  const remove = useCallback((variantId: string) => removeMut.mutate(variantId), [removeMut]);
 
   const clearAllMut = useMutation({
     mutationFn: () => CheckoutApi.clearCart(),
@@ -275,7 +275,7 @@ export function useCheckout() {
     placeOrderMut.mutate();
   }, [cart, placeOrderMut]);
 
-  const reloadAddresses = useCallback(async (preferId?: number) => {
+  const reloadAddresses = useCallback(async (preferId?: string) => {
     await qc.invalidateQueries({ queryKey: qk.addresses() });
     if (preferId) setSelectedAddressId(preferId);
   }, [qc]);

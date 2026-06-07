@@ -96,7 +96,7 @@ export function useProductDetail({ initialProduct, initialRelated = [] }: UsePro
     : null;
 
   // ─── actions ─────────────────────────────────────────────────────
-  const pick = useCallback((attrId: number, valId: number) => {
+  const pick = useCallback((attrId: string, valId: string) => {
     setPicked((cur) => {
       if (cur[attrId] === valId) {
         const { [attrId]: _drop, ...rest } = cur;
@@ -212,7 +212,7 @@ export function useProductDetail({ initialProduct, initialRelated = [] }: UsePro
 
   // ─── helpers exposed to components ───────────────────────────────
   const isReachable = useCallback(
-    (attrId: number, valId: number): boolean => {
+    (attrId: string, valId: string): boolean => {
       const reachable = reachableValues(product.variants ?? [], picked, attrId);
       return reachable.has(valId);
     },

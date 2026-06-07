@@ -9,7 +9,7 @@ import { NotificationItem } from "./NotificationItem";
 interface NotificationsListProps {
   loading: boolean;
   items: Notification[];
-  onMarkRead: (id: number) => void;
+  onMarkRead: (id: string) => void;
 }
 
 export function NotificationsList({ loading, items, onMarkRead }: NotificationsListProps) {

@@ -17,7 +17,7 @@ export class ShopApi {
   static async listProducts(params: {
     size?: number;
     cursor?: string | null;
-    categoryId?: number | null;
+    categoryId?: string | null;
     q?: string;
     sort?: string;
   } = {}): Promise<{ items: BeProduct[]; total: number; nextCursor: string | null }> {

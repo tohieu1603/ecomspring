@@ -48,13 +48,13 @@ interface VariantDraft {
   quantity: number;
   weight?: number | null;
   image?: string;
-  attrs: Array<{ attrId: number; attrValId?: number | null; valText?: string }>;
+  attrs: Array<{ attrId: string; attrValId?: string | null; valText?: string }>;
 }
 
 // A picked attribute + which of its values apply to *this* product.
 interface PickedAttr {
-  attrId: number;
-  attrValIds: number[]; // empty for TEXT/NUMBER attrs
+  attrId: string;
+  attrValIds: string[]; // empty for TEXT/NUMBER attrs
   textValues?: string[]; // free-text fallback for non-SELECT attrs
 }
 
@@ -90,8 +90,8 @@ export function ProductForm({ mode, product, categories, attrs }: FormProps) {
 
   const initialPicked: PickedAttr[] = useMemo(() => {
     if (!product) return [];
-    const map = new Map<number, Set<number>>();
-    const textMap = new Map<number, Set<string>>();
+    const map = new Map<string, Set<string>>();
+    const textMap = new Map<string, Set<string>>();
     for (const v of product.variants) {
       for (const a of v.attrs) {
         if (a.attrValId != null) {
@@ -103,7 +103,7 @@ export function ProductForm({ mode, product, categories, attrs }: FormProps) {
         }
       }
     }
-    const all = new Set<number>([...map.keys(), ...textMap.keys()]);
+    const all = new Set<string>([...map.keys(), ...textMap.keys()]);
     return Array.from(all).map((attrId) => ({
       attrId,
       attrValIds: Array.from(map.get(attrId) ?? []),
@@ -201,8 +201,8 @@ export function ProductForm({ mode, product, categories, attrs }: FormProps) {
       return;
     }
     type Combo = Array<{
-      attrId: number;
-      attrValId?: number | null;
+      attrId: string;
+      attrValId?: string | null;
       valText?: string;
       label: string;
     }>;
@@ -548,7 +548,7 @@ function VariantBuilder({
                   placeholder="Chọn thuộc tính"
                   value={p.attrId}
                   onChange={(v) =>
-                    updateRow(idx, { attrId: Number(v), attrValIds: [], textValues: [] })
+                    updateRow(idx, { attrId: String(v), attrValIds: [], textValues: [] })
                   }
                   options={attrs.map((a) => ({
                     value: a.id,
@@ -568,7 +568,7 @@ function VariantBuilder({
                     allowClear
                     placeholder={`Chọn giá trị ${attr?.name}…`}
                     value={p.attrValIds}
-                    onChange={(v) => updateRow(idx, { attrValIds: v as number[] })}
+                    onChange={(v) => updateRow(idx, { attrValIds: v as string[] })}
                     options={(attr?.values ?? []).map((vv: AttrValue) => ({
                       value: vv.id,
                       label: vv.val,
@@ -782,7 +782,7 @@ function MoneyInput(props: {
   );
 }
 
-function mapTree(nodes: Category[]): { value: number; title: string; children?: any[] }[] {
+function mapTree(nodes: Category[]): { value: string; title: string; children?: any[] }[] {
   return nodes.map((n) => ({
     value: n.id,
     title: n.name,

@@ -4,7 +4,7 @@ import { api } from "@/lib/api/client";
 export interface ReportPayload {
   summary: { revenue: number; orders: number; aov: number };
   byDay: { date: string; revenue: number; orders: number; newCustomers: number }[];
-  topProducts: { productId: number; name: string; qty: number; revenue: number }[];
+  topProducts: { productId: string; name: string; qty: number; revenue: number }[];
   lowStock: { sku: string; quantity: number; minStockLevel: number; sold30d: number }[];
   segments: { name: string; count: number }[];
 }
@@ -35,11 +35,11 @@ export function mockReport(from: Dayjs, to: Dayjs): ReportPayload {
     summary: { revenue, orders, aov: Math.floor(revenue / Math.max(orders, 1)) },
     byDay: days,
     topProducts: [
-      { productId: 1, name: "Áo thun cotton premium", qty: 412, revenue: 124_500_000 },
-      { productId: 2, name: "Tai nghe wireless V2", qty: 281, revenue: 198_000_000 },
-      { productId: 3, name: "Giày sneaker SK-01", qty: 244, revenue: 87_400_000 },
-      { productId: 4, name: "Túi da Premium", qty: 198, revenue: 152_000_000 },
-      { productId: 5, name: "Đồng hồ FitPro", qty: 156, revenue: 312_000_000 },
+      { productId: "1", name: "Áo thun cotton premium", qty: 412, revenue: 124_500_000 },
+      { productId: "2", name: "Tai nghe wireless V2", qty: 281, revenue: 198_000_000 },
+      { productId: "3", name: "Giày sneaker SK-01", qty: 244, revenue: 87_400_000 },
+      { productId: "4", name: "Túi da Premium", qty: 198, revenue: 152_000_000 },
+      { productId: "5", name: "Đồng hồ FitPro", qty: 156, revenue: 312_000_000 },
     ],
     lowStock: [
       { sku: "LMS-001-RED-M", quantity: 4, minStockLevel: 10, sold30d: 67 },

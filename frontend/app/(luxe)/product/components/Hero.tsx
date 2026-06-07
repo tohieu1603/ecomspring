@@ -1,11 +1,12 @@
 "use client";
 
+import { hashId } from "@/lib/hashId";
 import { useMemo } from "react";
 import { makeBg, IllustStyle } from "@/lib/illustrations";
 
 interface HeroProps {
   gallery: string[];
-  productId: number;
+  productId: string;
   galleryIdx: number;
   setGalleryIdx: (next: number | ((v: number) => number)) => void;
 }
@@ -17,7 +18,7 @@ const FALLBACK_STYLES: IllustStyle[] = ["hobo", "topHandle", "bucket", "chevron"
  * presentational — receives the gallery + index from the parent.
  */
 export function Hero({ gallery, productId, galleryIdx, setGalleryIdx }: HeroProps) {
-  const palette = (productId * 31) % 8;
+  const palette = (hashId(productId) * 31) % 8;
   const heroImages = gallery.length > 0
     ? gallery.slice(0, 6).map((url) => ({ url }))
     : FALLBACK_STYLES.map(() => ({ url: undefined as string | undefined }));

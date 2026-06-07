@@ -20,7 +20,7 @@ export function CategoriesManager({ initialTree }: { initialTree: Category[] }) 
   const [flat, setFlat] = useState<Category[]>(flattenTree(initialTree));
   const tree = useMemo(() => buildCategoryTree(flat), [flat]);
   const [editing, setEditing] = useState<Category | "new" | null>(null);
-  const [parentForNew, setParentForNew] = useState<number | null>(null);
+  const [parentForNew, setParentForNew] = useState<string | null>(null);
 
   async function refresh() {
     try {
@@ -32,7 +32,7 @@ export function CategoriesManager({ initialTree }: { initialTree: Category[] }) 
     }
   }
 
-  async function onDelete(id: number) {
+  async function onDelete(id: string) {
     try {
       await api.delete(`/api/categories/${id}`);
       toast.success("Đã xóa");
@@ -92,7 +92,7 @@ export function CategoriesManager({ initialTree }: { initialTree: Category[] }) 
 
 function mapToAntTree(
   nodes: Category[],
-  actions: { onEdit: (c: Category) => void; onDelete: (id: number) => void; onAddChild: (id: number) => void },
+  actions: { onEdit: (c: Category) => void; onDelete: (id: string) => void; onAddChild: (id: string) => void },
 ): any[] {
   return nodes.map((n) => ({
     key: n.id,
@@ -131,7 +131,7 @@ function CategoryDialog({
   open: boolean;
   mode: "create" | "edit";
   category?: Category;
-  parentDefault: number | null;
+  parentDefault: string | null;
   flat: Category[];
   onClose: () => void;
   onSaved: () => void;

@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { api } from "@/lib/api/client";
 
 interface OrderShape {
-  id: number;
+  id: string;
   orderNumber: string;
   status: string;
   paymentMethod: string;

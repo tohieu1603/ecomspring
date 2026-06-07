@@ -15,7 +15,7 @@ interface ListResp {
 export class ShopServerApi {
   static async listProducts(params: {
     size?: number;
-    categoryId?: number | null;
+    categoryId?: string | null;
     q?: string;
     sort?: string;
   } = {}): Promise<{ items: BeProduct[]; total: number }> {

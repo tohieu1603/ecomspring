@@ -12,7 +12,7 @@ interface RevalidateBody {
   /** One or more cache tags to bust (e.g. "catalog:list"). */
   tag?: string | string[];
   /** Product id — convenience: revalidates `/product` + `catalog:product:<id>` tag. */
-  productId?: number | string;
+  productId?: string | string;
 }
 
 /**

@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { api } from "@/lib/api/client";
 
 interface Role {
-  id: number;
+  id: string;
   name: string;
   description?: string;
   permissions: string[];
@@ -37,9 +37,9 @@ export default function PermissionsAdmin() {
       setRoles(body?.data ?? (res.data as Role[]));
     } catch {
       setRoles([
-        { id: 1, name: "ADMIN", description: "Quyền cao nhất", permissions: PERMISSIONS_GROUPS.flatMap((g) => g.items) },
-        { id: 2, name: "STAFF", description: "Quản trị viên cơ bản", permissions: ["PRODUCT_READ", "ORDER_READ", "ORDER_UPDATE"] },
-        { id: 3, name: "USER", description: "Khách hàng", permissions: [] },
+        { id: "1", name: "ADMIN", description: "Quyền cao nhất", permissions: PERMISSIONS_GROUPS.flatMap((g) => g.items) },
+        { id: "2", name: "STAFF", description: "Quản trị viên cơ bản", permissions: ["PRODUCT_READ", "ORDER_READ", "ORDER_UPDATE"] },
+        { id: "3", name: "USER", description: "Khách hàng", permissions: [] },
       ]);
     }
   }

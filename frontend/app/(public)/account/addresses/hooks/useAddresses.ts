@@ -52,7 +52,7 @@ export function useAddresses() {
     }
   }, [editing, form, load, closeForm]);
 
-  const setDefault = useCallback(async (id: number) => {
+  const setDefault = useCallback(async (id: string) => {
     try {
       await AddressesApi.setDefault(id);
       load();
@@ -61,7 +61,7 @@ export function useAddresses() {
     }
   }, [load]);
 
-  const remove = useCallback(async (id: number) => {
+  const remove = useCallback(async (id: string) => {
     if (!confirm("Xóa địa chỉ này?")) return;
     try {
       await AddressesApi.remove(id);

@@ -17,8 +17,8 @@ import { StockHistoryModal, appendHistory } from "./history-modal";
 import { HistoryOutlined } from "@ant-design/icons";
 
 interface InventoryRow {
-  id: number;
-  productId: number;
+  id: string;
+  productId: string;
   sku: string;
   quantity: number;
   reservedQuantity: number;
@@ -44,7 +44,7 @@ interface PageDto<T> {
  */
 export default function InventoryAdmin() {
   const [data, setData] = useState<PageDto<InventoryRow> | null>(null);
-  const [products, setProducts] = useState<Record<number, Product>>({});
+  const [products, setProducts] = useState<Record<string, Product>>({});
   const [loading, setLoading] = useState(true);
   const [adjustOf, setAdjustOf] = useState<InventoryRow | null>(null);
   const [form] = Form.useForm();
@@ -84,7 +84,7 @@ export default function InventoryAdmin() {
             `/api/products?size=200`,
           );
           const all = (pr.data.items ?? pr.data.content ?? []) as Product[];
-          const next: Record<number, Product> = { ...products };
+          const next: Record<string, Product> = { ...products };
           for (const p of all) next[p.id] = p;
           setProducts(next);
         } catch {

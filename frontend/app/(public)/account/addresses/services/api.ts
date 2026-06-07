@@ -16,15 +16,15 @@ export class AddressesApi {
     return (body.data ?? (res.data as Address));
   }
 
-  static async update(id: number, form: Partial<Address>): Promise<void> {
+  static async update(id: string, form: Partial<Address>): Promise<void> {
     await api.patch(`${BASE}/${id}`, form);
   }
 
-  static async setDefault(id: number): Promise<void> {
+  static async setDefault(id: string): Promise<void> {
     await api.post(`${BASE}/${id}/set-default`);
   }
 
-  static async remove(id: number): Promise<void> {
+  static async remove(id: string): Promise<void> {
     await api.delete(`${BASE}/${id}`);
   }
 }

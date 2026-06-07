@@ -17,7 +17,7 @@ interface Props {
  */
 export function MegaMenu({ categories }: Props) {
   const [open, setOpen] = useState(false);
-  const [hovered, setHovered] = useState<number | null>(
+  const [hovered, setHovered] = useState<string | null>(
     categories[0]?.id ?? null,
   );
   const activeRoot = categories.find((c) => c.id === hovered) ?? categories[0];

@@ -41,12 +41,12 @@ export class CheckoutApi {
     return res.data;
   }
 
-  static async updateQty(variantId: number, quantity: number): Promise<CartDto> {
+  static async updateQty(variantId: string, quantity: number): Promise<CartDto> {
     const res = await api.put<CartDto>(`/api/cart/items/${variantId}`, { quantity });
     return res.data;
   }
 
-  static async removeItem(variantId: number): Promise<void> {
+  static async removeItem(variantId: string): Promise<void> {
     await api.delete(`/api/cart/items/${variantId}`);
   }
 
@@ -94,11 +94,11 @@ export class CheckoutApi {
     paymentMethod: string;
     notes?: string;
     voucherCode?: string;
-  }): Promise<{ id: number; orderNumber: string; payUrl?: string; qrCodeUrl?: string }> {
+  }): Promise<{ id: string; orderNumber: string; payUrl?: string; qrCodeUrl?: string }> {
     // order-service wraps every response in {success, data, message, ...} via
     // ApiResponseBodyAdvice, so the actual order lives at res.data.data.
     // Unwrap if envelope present; fall back to bare body for legacy callers.
-    type OrderShape = { id: number; orderNumber: string; payUrl?: string; qrCodeUrl?: string };
+    type OrderShape = { id: string; orderNumber: string; payUrl?: string; qrCodeUrl?: string };
     const res = await api.post<OrderShape | { data: OrderShape }>(
       "/api/orders/from-cart",
       payload,

@@ -7,10 +7,10 @@ import { api } from "@/lib/api/client";
 import { qk } from "@/lib/query/keys";
 
 interface FlashSaleItem {
-  id: number;
-  productId: number;
+  id: string;
+  productId: string;
   productName: string;
-  variantId?: number;
+  variantId?: string;
   imageUrl?: string;
   originalPrice?: string | number;
   flashPrice: string | number;
@@ -19,7 +19,7 @@ interface FlashSaleItem {
 }
 
 interface FlashSale {
-  id: number;
+  id: string;
   name: string;
   endsAt: string;
   items: FlashSaleItem[];

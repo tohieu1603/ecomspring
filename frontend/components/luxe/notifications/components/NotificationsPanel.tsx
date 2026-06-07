@@ -9,7 +9,7 @@ interface NotificationsPanelProps {
   authed: boolean;
   items: NotificationItem[];
   onClose: () => void;
-  onMarkRead: (id: number) => void;
+  onMarkRead: (id: string) => void;
   onMarkAllRead: () => void;
 }
 

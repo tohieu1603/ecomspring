@@ -76,7 +76,7 @@ export function useNotifications() {
   }, [qc, open]);
 
   const markReadMut = useMutation({
-    mutationFn: (id: number) => NotificationsApi.markRead(id),
+    mutationFn: (id: string) => NotificationsApi.markRead(id),
     onMutate: async (id) => {
       qc.setQueryData<NotificationItem[]>(qk.notifications.feed(),
         (cur) => (cur ?? []).map((n) => (n.id === id ? { ...n, isRead: true } : n)));
@@ -106,7 +106,7 @@ export function useNotifications() {
     authed,
     toggle,
     close,
-    markRead: (id: number) => markReadMut.mutate(id),
+    markRead: (id: string) => markReadMut.mutate(id),
     markAllRead: () => markAllReadMut.mutate(),
   };
 }

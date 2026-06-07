@@ -1,5 +1,6 @@
 "use client";
 
+import { hashId } from "@/lib/hashId";
 import { useRouter } from "next/navigation";
 import { makeBg, IllustStyle } from "@/lib/illustrations";
 
@@ -36,7 +37,7 @@ export function Related({ items, idx, setIdx }: RelatedProps) {
               ...(it.variants ?? []).map((v) => v.image ?? undefined),
             ].filter(Boolean) as string[];
             const cover = imgs[0];
-            const pal = (it.id * 31) % 8;
+            const pal = (hashId(it.id) * 31) % 8;
             const style = FALLBACK_STYLES[i % FALLBACK_STYLES.length];
             const minPrice = it.variants?.[0]?.price;
             return (

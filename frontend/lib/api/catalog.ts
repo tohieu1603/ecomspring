@@ -23,7 +23,7 @@ function normalizeAttrs(p: Product): Product {
   if ((!p.variants || p.variants.length === 0) && summary.minPrice != null) {
     p.variants = [
       {
-        id: 0,
+        id: '',
         sku: p.slug || "summary",
         price: String(summary.minPrice),
         salePrice:
@@ -38,7 +38,7 @@ function normalizeAttrs(p: Product): Product {
   }
   for (const v of p.variants ?? []) {
     for (const a of v.attrs ?? []) {
-      const x = a as VariantAttr & { valId?: number | null; valText?: string };
+      const x = a as VariantAttr & { valId?: string | null; valText?: string };
       if (x.valId != null && x.attrValId == null) x.attrValId = x.valId;
       if (x.valText != null && x.val == null) x.val = x.valText;
     }
@@ -55,7 +55,7 @@ function normalizeAttrs(p: Product): Product {
 export interface ListProductsParams {
   page?: number;
   size?: number;
-  categoryId?: number;
+  categoryId?: string;
   q?: string;
   status?: string;
   sort?: string;
@@ -103,7 +103,7 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
   return p ? normalizeAttrs(p) : null;
 }
 
-export async function getProductById(id: number | string): Promise<Product | null> {
+export async function getProductById(id: string | string): Promise<Product | null> {
   const p = await fetchServerOrNull<Product>(`/api/products/${id}`);
   return p ? normalizeAttrs(p) : null;
 }

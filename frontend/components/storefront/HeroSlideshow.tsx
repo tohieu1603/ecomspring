@@ -5,7 +5,7 @@ import Link from "next/link";
 import { api } from "@/lib/api/client";
 
 interface Banner {
-  id: number;
+  id: string;
   title: string;
   subtitle?: string;
   imageUrl: string;

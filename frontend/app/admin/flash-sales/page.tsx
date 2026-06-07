@@ -4,7 +4,7 @@ import { FlashSalesTable } from "./flash-sales-table";
 import type { Page } from "@/lib/api/types";
 
 interface FlashSale {
-  id: number;
+  id: string;
   productId: string;
   productName: string;
   originalPrice: string;

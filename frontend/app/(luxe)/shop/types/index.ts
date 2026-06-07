@@ -1,7 +1,7 @@
 import type { IllustStyle } from "@/lib/illustrations";
 
 export interface BeVariant {
-  id: number;
+  id: string;
   sku: string;
   price: string;
   salePrice?: string | null;
@@ -9,7 +9,7 @@ export interface BeVariant {
 }
 
 export interface BeProduct {
-  id: number;
+  id: string;
   name: string;
   slug: string;
   thumbnail?: string;

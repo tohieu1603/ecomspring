@@ -5,8 +5,8 @@ import type { AttrGroup, PickedAttrs } from "../types";
 interface VariantPickerProps {
   groups: AttrGroup[];
   picked: PickedAttrs;
-  isReachable: (attrId: number, valId: number) => boolean;
-  onPick: (attrId: number, valId: number) => void;
+  isReachable: (attrId: string, valId: string) => boolean;
+  onPick: (attrId: string, valId: string) => void;
 }
 
 /**

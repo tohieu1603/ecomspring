@@ -16,9 +16,9 @@ interface InfoProps {
   maxQty: number;
   stockLabel: string | null;
   adding: boolean;
-  onPick: (attrId: number, valId: number) => void;
+  onPick: (attrId: string, valId: string) => void;
   onQtyChange: (next: number) => void;
-  isReachable: (attrId: number, valId: number) => boolean;
+  isReachable: (attrId: string, valId: string) => boolean;
   onAddToBag: () => void;
 }
 

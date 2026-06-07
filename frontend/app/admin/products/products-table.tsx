@@ -35,10 +35,10 @@ export function ProductsTable({
   const router = useRouter();
   const sp = useSearchParams();
   const [rows, setRows] = useState<Product[]>(page.content);
-  const [busy, setBusy] = useState<Set<number>>(new Set());
+  const [busy, setBusy] = useState<Set<string>>(new Set());
 
   const catNameById = useMemo(() => {
-    const m = new Map<number, string>();
+    const m = new Map<string, string>();
     for (const c of categories) m.set(c.id, c.name);
     return m;
   }, [categories]);

@@ -4,8 +4,8 @@ import { ReturnsTable } from "./returns-table";
 import type { Page } from "@/lib/api/types";
 
 interface ReturnRow {
-  id: number;
-  orderId: number;
+  id: string;
+  orderId: string;
   orderNumber: string;
   userId: string;
   reason: string;

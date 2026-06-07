@@ -17,7 +17,7 @@ import { fetchServerSilent } from "@/lib/api/server";
  */
 
 interface BeProduct {
-  id: number;
+  id: string;
   slug?: string;
   updatedAt?: string;
 }

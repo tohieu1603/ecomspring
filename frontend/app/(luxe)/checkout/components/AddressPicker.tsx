@@ -9,9 +9,9 @@ import { useVnAddress } from "../hooks/useVnAddress";
 
 interface Props {
   addresses: Address[];
-  selectedId: number | null;
-  onSelect: (id: number) => void;
-  onReload: (preferId?: number) => Promise<void>;
+  selectedId: string | null;
+  onSelect: (id: string) => void;
+  onReload: (preferId?: string) => Promise<void>;
 }
 
 /**

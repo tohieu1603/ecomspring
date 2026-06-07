@@ -6,17 +6,17 @@
 
 /** Variant attribute as returned by catalog-service. Both legacy + canon names. */
 export interface BeAttr {
-  attrId?: number;
+  attrId?: string;
   attrCode?: string;
   attrName?: string;
-  valId?: number | null;
+  valId?: string | null;
   valText?: string;
-  attrValId?: number | null;
+  attrValId?: string | null;
   val?: string;
 }
 
 export interface BeVariant {
-  id: number;
+  id: string;
   sku: string;
   price: string;
   salePrice?: string | null;
@@ -27,12 +27,12 @@ export interface BeVariant {
 }
 
 export interface BeProduct {
-  id: number;
+  id: string;
   name: string;
   slug: string;
   description?: string;
   brand?: string;
-  categoryId?: number | null;
+  categoryId?: string | null;
   thumbnail?: string;
   images?: string[];
   status?: string;
@@ -41,21 +41,21 @@ export interface BeProduct {
 
 /** One distinct attribute (e.g. "Color") with all of its possible values. */
 export interface AttrGroup {
-  attrId: number;
+  attrId: string;
   attrCode: string;
   attrName: string;
   values: AttrValue[];
 }
 
 export interface AttrValue {
-  valId: number;
+  valId: string;
   valText: string;
   /** Representative image for COLOR values, undefined for SIZE etc. */
   image?: string;
 }
 
 /** Picked = attrId → attrValId. */
-export type PickedAttrs = Record<number, number>;
+export type PickedAttrs = Record<string, string>;
 
 export type AddToBagResult =
   | { ok: true }

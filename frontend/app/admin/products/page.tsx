@@ -15,7 +15,7 @@ export default async function AdminProducts({ searchParams }: PageProps) {
   const [data, allActive, draft, categoriesFlat] = await Promise.all([
     listProducts({
       page, size: 20, q: sp.q, status: sp.status,
-      categoryId: sp.categoryId ? Number(sp.categoryId) : undefined,
+      categoryId: sp.categoryId ? sp.categoryId : undefined,
     }).catch(() => ({
       content: [], number: 0, size: 20, totalElements: 0, totalPages: 0,
     })),

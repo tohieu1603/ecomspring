@@ -6,7 +6,7 @@ import type { Category } from "@/lib/api/types";
  * page also needs it after mutations.
  */
 export function buildCategoryTree(flat: Category[]): Category[] {
-  const byId = new Map<number, Category>();
+  const byId = new Map<string, Category>();
   flat.forEach((c) => byId.set(c.id, { ...c, children: [] }));
 
   const roots: Category[] = [];

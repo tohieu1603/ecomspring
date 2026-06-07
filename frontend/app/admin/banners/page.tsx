@@ -9,7 +9,7 @@ import { api } from "@/lib/api/client";
 import { qk } from "@/lib/query/keys";
 
 interface Banner {
-  id: number;
+  id: string;
   title: string;
   subtitle?: string;
   imageUrl: string;
@@ -43,7 +43,7 @@ export default function BannersAdmin() {
 
   // Optimistic inline patch (used by Switch + InputNumber).
   const patchMut = useMutation({
-    mutationFn: ({ id, patch }: { id: number; patch: Partial<Banner> }) =>
+    mutationFn: ({ id, patch }: { id: string; patch: Partial<Banner> }) =>
       api.patch(`/api/banners/admin/${id}`, patch),
     onMutate: async ({ id, patch }) => {
       await qc.cancelQueries({ queryKey: qk.banners.admin() });
@@ -60,7 +60,7 @@ export default function BannersAdmin() {
   });
 
   const deleteMut = useMutation({
-    mutationFn: (id: number) => api.delete(`/api/banners/admin/${id}`),
+    mutationFn: (id: string) => api.delete(`/api/banners/admin/${id}`),
     onSuccess: () => {
       toast.success("Đã xoá");
       qc.invalidateQueries({ queryKey: qk.banners.admin() });
@@ -87,7 +87,7 @@ export default function BannersAdmin() {
     onError: () => toast.error("Lưu thất bại"),
   });
 
-  const remove = (id: number) => {
+  const remove = (id: string) => {
     if (!window.confirm("Xoá banner này?")) return;
     deleteMut.mutate(id);
   };
@@ -98,7 +98,7 @@ export default function BannersAdmin() {
       extra={
         <Button
           type="primary"
-          onClick={() => { setEditing({ id: 0 } as Banner); form.resetFields(); }}
+          onClick={() => { setEditing({ id: '' } as Banner); form.resetFields(); }}
         >
           + Thêm banner
         </Button>

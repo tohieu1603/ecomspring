@@ -42,23 +42,23 @@ export interface RegisterRequest {
 
 // Catalog ------------------------------------------------------------
 export interface Category {
-  id: number;
+  id: string;
   name: string;
   slug: string;
   description?: string;
-  parentId?: number | null;
+  parentId?: string | null;
   children?: Category[];
   sortOrder?: number;
 }
 
 export interface AttrValue {
-  id: number;
+  id: string;
   code: string;
   val: string;
 }
 
 export interface Attr {
-  id: number;
+  id: string;
   code: string;
   name: string;
   type: "SELECT" | "TEXT" | "NUMBER";
@@ -71,18 +71,18 @@ export interface Attr {
  * code that still references them.
  */
 export interface VariantAttr {
-  attrId: number;
+  attrId: string;
   attrCode: string;
   attrName: string;
-  valId?: number | null;
+  valId?: string | null;
   valText: string;
   // Aliases (writes from product-form set these; reads from BE include the canon).
-  attrValId?: number | null;
+  attrValId?: string | null;
   val?: string;
 }
 
 export interface Variant {
-  id: number;
+  id: string;
   sku: string;
   price: string;
   salePrice?: string | null;
@@ -96,12 +96,12 @@ export interface Variant {
 export type ProductStatus = "DRAFT" | "ACTIVE" | "ARCHIVED" | "DELETED";
 
 export interface Product {
-  id: number;
+  id: string;
   name: string;
   slug: string;
   description?: string;
   brand?: string;
-  categoryId?: number | null;
+  categoryId?: string | null;
   thumbnail?: string;
   images?: string[];
   metaTitle?: string;
@@ -115,10 +115,10 @@ export interface Product {
 
 // Cart ---------------------------------------------------------------
 export interface CartItem {
-  id?: number;
-  productId: number;
+  id?: string;
+  productId: string;
   productName: string;
-  variantId: number;
+  variantId: string;
   variantSku: string;
   variantImage?: string;
   unitPrice: string;
@@ -144,9 +144,9 @@ export type OrderStatus =
   | "FAILED";
 
 export interface OrderItem {
-  productId: number;
+  productId: string;
   productName: string;
-  variantId: number;
+  variantId: string;
   variantSku: string;
   variantImage?: string;
   unitPrice: string;
@@ -154,7 +154,7 @@ export interface OrderItem {
 }
 
 export interface Order {
-  id: number;
+  id: string;
   orderNumber: string;
   userId: string;
   status: OrderStatus;
@@ -183,7 +183,7 @@ export interface Order {
 
 // Voucher ------------------------------------------------------------
 export interface Voucher {
-  id: number;
+  id: string;
   code: string;
   type: "PERCENTAGE" | "FIXED_AMOUNT";
   discountValue: string;

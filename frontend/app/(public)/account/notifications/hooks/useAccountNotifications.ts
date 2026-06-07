@@ -39,7 +39,7 @@ export function useAccountNotifications() {
     }
   }, [load]);
 
-  const markRead = useCallback(async (id: number) => {
+  const markRead = useCallback(async (id: string) => {
     setItems((p) => p.map((x) => (x.id === id ? { ...x, read: true } : x)));
     try {
       await AccountNotificationsApi.markRead(id);

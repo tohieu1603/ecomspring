@@ -1,5 +1,6 @@
 "use client";
 
+import { hashId } from "@/lib/hashId";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api/client";
@@ -7,8 +8,8 @@ import { makeBg } from "@/lib/illustrations";
 import { qk } from "@/lib/query/keys";
 
 interface CartItem {
-  id: number;
-  productId: number;
+  id: string;
+  productId: string;
   productName: string;
   variantSku: string;
   variantImage?: string | null;
@@ -85,7 +86,7 @@ export default function CartOverlay({ onClose }: { onClose: () => void }) {
                             backgroundSize: "cover",
                             backgroundPosition: "center",
                           }
-                        : { backgroundImage: makeBg("topHandle", (it.id * 7) % 8) }
+                        : { backgroundImage: makeBg("topHandle", (hashId(it.id) * 7) % 8) }
                     }
                   />
                   <div className="cart-info">

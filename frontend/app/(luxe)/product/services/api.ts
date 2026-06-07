@@ -22,7 +22,7 @@ export class ProductDetailApi {
   }
 
   /** "You may also like" — same category, exclude the current product. */
-  static async getRelated(categoryId: number | null | undefined, excludeId: number): Promise<BeProduct[]> {
+  static async getRelated(categoryId: string | null | undefined, excludeId: string): Promise<BeProduct[]> {
     const path = categoryId
       ? `/api/products?categoryId=${categoryId}&size=10`
       : `/api/products?size=10`;
@@ -37,7 +37,7 @@ export class ProductDetailApi {
    * Returns the fresh server-side view so the caller can compare prices /
    * remaining stock against the local UI state.
    */
-  static async preflight(productId: number): Promise<BeProduct> {
+  static async preflight(productId: string): Promise<BeProduct> {
     return this.getProduct({ id: String(productId) });
   }
 
@@ -49,7 +49,7 @@ export class ProductDetailApi {
    * event here — every consumer (header badge, overlay, checkout) now
    * reads the cart through TanStack Query and reacts to invalidation.
    */
-  static async addToCart(payload: { productId: number; variantId: number; quantity: number }) {
+  static async addToCart(payload: { productId: string; variantId: string; quantity: number }) {
     await api.post("/api/cart/items", payload);
   }
 }

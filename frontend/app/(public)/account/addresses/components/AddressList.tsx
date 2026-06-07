@@ -8,8 +8,8 @@ interface AddressListProps {
   loading: boolean;
   list: Address[];
   onEdit: (a: Address) => void;
-  onSetDefault: (id: number) => void;
-  onRemove: (id: number) => void;
+  onSetDefault: (id: string) => void;
+  onRemove: (id: string) => void;
 }
 
 export function AddressList({ loading, list, onEdit, onSetDefault, onRemove }: AddressListProps) {

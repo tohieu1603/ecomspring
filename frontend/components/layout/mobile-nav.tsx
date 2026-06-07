@@ -8,7 +8,7 @@ import type { AuthUser, Category } from "@/lib/api/types";
 
 export function MobileNav({ user, categories }: { user: AuthUser | null; categories: Category[] }) {
   const [open, setOpen] = useState(false);
-  const [activeRoot, setActiveRoot] = useState<number | null>(null);
+  const [activeRoot, setActiveRoot] = useState<string | null>(null);
 
   return (
     <>

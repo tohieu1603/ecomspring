@@ -8,7 +8,7 @@ import { makeBg, IllustStyle } from "@/lib/illustrations";
 import { qk } from "@/lib/query/keys";
 
 interface BackendBanner {
-  id: number;
+  id: string;
   title: string;
   subtitle?: string;
   imageUrl: string;

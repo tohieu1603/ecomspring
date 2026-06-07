@@ -13,7 +13,7 @@ export class AccountNotificationsApi {
     return body.data?.content ?? body.content ?? [];
   }
 
-  static async markRead(id: number): Promise<void> {
+  static async markRead(id: string): Promise<void> {
     await api.post(`/api/notifications/${id}/read`);
   }
 }

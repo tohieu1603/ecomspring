@@ -1,5 +1,5 @@
 export interface NotificationItem {
-  id: number;
+  id: string;
   userId: string;
   type: string;
   channel: string;

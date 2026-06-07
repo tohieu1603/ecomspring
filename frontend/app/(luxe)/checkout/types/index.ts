@@ -1,10 +1,10 @@
 /** Cart + voucher view-model types for the checkout page. */
 
 export interface CartItem {
-  id: number;
-  productId: number;
+  id: string;
+  productId: string;
   productName: string;
-  variantId: number;
+  variantId: string;
   variantSku: string;
   variantImage?: string | null;
   unitPrice: string;
@@ -24,7 +24,7 @@ export interface CartDto {
 export type VoucherType = "PERCENTAGE" | "FIXED_AMOUNT";
 
 export interface Voucher {
-  id: number;
+  id: string;
   code: string;
   type: VoucherType;
   discountValue: string;
@@ -47,7 +47,7 @@ export type CheckoutPhase = "idle" | "loading" | "auth" | "ready" | "empty";
 
 /** Subset of the user-profile-service address — only what the checkout cares about. */
 export interface Address {
-  id: number;
+  id: string;
   recipientName: string;
   recipientPhone: string;
   street: string;

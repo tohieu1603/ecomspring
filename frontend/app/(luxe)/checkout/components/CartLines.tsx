@@ -1,5 +1,6 @@
 "use client";
 
+import { hashId } from "@/lib/hashId";
 import { useRouter } from "next/navigation";
 import { makeBg } from "@/lib/illustrations";
 
@@ -8,10 +9,10 @@ import { priceVND } from "../utils/format";
 
 interface CartLinesProps {
   items: CartItem[];
-  busyVariant: number | null;
+  busyVariant: string | null;
   warnings: string[];
-  onChangeQty: (variantId: number, qty: number) => void;
-  onRemove: (variantId: number) => void;
+  onChangeQty: (variantId: string, qty: number) => void;
+  onRemove: (variantId: string) => void;
   onClearAll?: () => void;
 }
 
@@ -46,7 +47,7 @@ export function CartLines({ items, busyVariant, warnings, onChangeQty, onRemove,
               style={
                 it.variantImage
                   ? { backgroundImage: `url(${it.variantImage})`, backgroundSize: "cover", backgroundPosition: "center" }
-                  : { backgroundImage: makeBg("topHandle", (it.variantId * 13) % 8) }
+                  : { backgroundImage: makeBg("topHandle", (hashId(it.variantId) * 13) % 8) }
               }
             />
             <div className="co-item-info">

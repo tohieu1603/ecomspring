@@ -5,7 +5,7 @@ import type { ColumnsType } from "antd/es/table";
 import { formatDate, formatVnd } from "@/lib/utils";
 
 interface FlashSale {
-  id: number;
+  id: string;
   productId: string;
   productName: string;
   originalPrice: string;

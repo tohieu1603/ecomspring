@@ -1,3 +1,4 @@
+import { hashId } from "@/lib/hashId";
 import type { IllustStyle } from "@/lib/illustrations";
 import type { BeProduct, HeroSlot, LuxeProduct } from "../types";
 
@@ -44,13 +45,13 @@ export function toLuxeProduct(p: BeProduct, idx: number): LuxeProduct {
   }
 
   const minPrice = p.minPrice ?? p.variants?.[0]?.price;
-  const palette = ((p.id ?? idx) * 31) % 8;
+  const palette = (hashId(p.id ?? idx) * 31) % 8;
   return {
     id: String(p.id),
     name: p.name,
     price: minPrice != null ? priceVND(minPrice) : "",
     imageUrls,
-    baseStyle: STYLES[(p.id ?? idx) % STYLES.length],
+    baseStyle: STYLES[hashId(p.id ?? idx) % STYLES.length],
     palette,
     tag: p.brand,
   };

@@ -5,7 +5,7 @@
 
 import type { AttrGroup, BeAttr, BeVariant, PickedAttrs } from "../types";
 
-export function attrValId(a: BeAttr): number | null {
+export function attrValId(a: BeAttr): string | null {
   return a.attrValId ?? a.valId ?? null;
 }
 export function attrVal(a: BeAttr): string {
@@ -20,7 +20,7 @@ export function attrVal(a: BeAttr): string {
  * Order: COLOR, SIZE, then everything else by their first-seen attrId.
  */
 export function buildGroups(variants: BeVariant[]): AttrGroup[] {
-  const byAttr = new Map<number, AttrGroup>();
+  const byAttr = new Map<string, AttrGroup>();
   for (const v of variants) {
     for (const a of v.attrs ?? []) {
       const aid = a.attrId;
@@ -76,13 +76,13 @@ export function findVariant(variants: BeVariant[], picked: PickedAttrs): BeVaria
 export function reachableValues(
   variants: BeVariant[],
   picked: PickedAttrs,
-  attrId: number,
-): Set<number> {
-  const out = new Set<number>();
+  attrId: string,
+): Set<string> {
+  const out = new Set<string>();
   for (const v of variants) {
     if ((v.quantity ?? 0) <= 0) continue;
     let ok = true;
-    let mine: number | null = null;
+    let mine: string | null = null;
     for (const a of v.attrs ?? []) {
       const aid = a.attrId;
       const vid = attrValId(a);

@@ -5,8 +5,8 @@ import type { ColumnsType } from "antd/es/table";
 import { formatDate, formatVnd } from "@/lib/utils";
 
 interface ReturnRow {
-  id: number;
-  orderId: number;
+  id: string;
+  orderId: string;
   orderNumber: string;
   userId: string;
   reason: string;

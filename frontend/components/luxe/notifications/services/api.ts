@@ -12,7 +12,7 @@ export class NotificationsApi {
     return Number(res.data.count ?? 0);
   }
 
-  static async markRead(id: number): Promise<void> {
+  static async markRead(id: string): Promise<void> {
     await api.put(`/api/notifications/${id}/read`, {});
   }
 
